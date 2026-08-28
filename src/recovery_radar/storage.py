@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 import sqlite3
 from dataclasses import asdict
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
+from .evidence import EvidenceDocument
 from .workflow import ClaimCase, PaymentRecord
 
 
@@ -32,6 +34,15 @@ class Storage:
               case_id TEXT NOT NULL,
               payload TEXT NOT NULL,
               PRIMARY KEY(workspace_id, case_id),
+              FOREIGN KEY(workspace_id) REFERENCES workspaces(workspace_id)
+            );
+            CREATE TABLE IF NOT EXISTS evidence_documents(
+              workspace_id TEXT NOT NULL,
+              document_id TEXT NOT NULL,
+              content_sha256 TEXT NOT NULL,
+              payload TEXT NOT NULL,
+              PRIMARY KEY(workspace_id, document_id),
+              UNIQUE(workspace_id, content_sha256),
               FOREIGN KEY(workspace_id) REFERENCES workspaces(workspace_id)
             );
             CREATE TABLE IF NOT EXISTS audit_events(
@@ -77,6 +88,36 @@ class Storage:
             ],
         }
 
+    @staticmethod
+    def _serialize_document(document: EvidenceDocument) -> dict:
+        return {
+            **asdict(document),
+            "document_date": document.document_date.isoformat()
+            if document.document_date
+            else None,
+        }
+
+    def _audit(
+        self,
+        workspace_id: str,
+        actor_id: str,
+        entity_type: str,
+        entity_id: str,
+        action: str,
+        payload: dict,
+    ) -> None:
+        self.conn.execute(
+            "INSERT INTO audit_events(workspace_id,actor_id,entity_type,entity_id,action,payload) VALUES (?,?,?,?,?,?)",
+            (
+                workspace_id,
+                actor_id,
+                entity_type,
+                entity_id,
+                action,
+                json.dumps(payload, sort_keys=True),
+            ),
+        )
+
     def put_claim_case(self, workspace_id: str, actor_id: str, case: ClaimCase) -> None:
         self._workspace_exists(workspace_id)
         if case.workspace_id != workspace_id:
@@ -87,10 +128,7 @@ class Storage:
             "INSERT OR REPLACE INTO claim_cases(workspace_id,case_id,payload) VALUES (?,?,?)",
             (workspace_id, case.case_id, raw),
         )
-        self.conn.execute(
-            "INSERT INTO audit_events(workspace_id,actor_id,entity_type,entity_id,action,payload) VALUES (?,?,?,?,?,?)",
-            (workspace_id, actor_id, "CLAIM_CASE", case.case_id, "UPSERT", raw),
-        )
+        self._audit(workspace_id, actor_id, "CLAIM_CASE", case.case_id, "UPSERT", payload)
         self.conn.commit()
 
     def get_claim_case(self, workspace_id: str, case_id: str) -> ClaimCase | None:
@@ -122,6 +160,69 @@ class Storage:
             payments,
         )
 
+    def put_evidence_document(
+        self, workspace_id: str, actor_id: str, document: EvidenceDocument
+    ) -> None:
+        self._workspace_exists(workspace_id)
+        if document.workspace_id != workspace_id:
+            raise ValueError("EVIDENCE_DOCUMENT_WORKSPACE_MISMATCH")
+        payload = self._serialize_document(document)
+        raw = json.dumps(payload, sort_keys=True)
+        existing = self.conn.execute(
+            "SELECT payload FROM evidence_documents WHERE workspace_id=? AND document_id=?",
+            (workspace_id, document.document_id),
+        ).fetchone()
+        if existing is not None:
+            if existing["payload"] == raw:
+                return
+            raise ValueError("DOCUMENT_ID_VERSION_CONFLICT")
+        duplicate = self.conn.execute(
+            "SELECT document_id FROM evidence_documents WHERE workspace_id=? AND content_sha256=?",
+            (workspace_id, document.content_sha256),
+        ).fetchone()
+        if duplicate is not None:
+            raise ValueError(f"DUPLICATE_DOCUMENT_CONTENT:{duplicate['document_id']}")
+        self.conn.execute(
+            "INSERT INTO evidence_documents(workspace_id,document_id,content_sha256,payload) VALUES (?,?,?,?)",
+            (workspace_id, document.document_id, document.content_sha256, raw),
+        )
+        self._audit(
+            workspace_id,
+            actor_id,
+            "EVIDENCE_DOCUMENT",
+            document.document_id,
+            "CREATE",
+            payload,
+        )
+        self.conn.commit()
+
+    def get_evidence_document(
+        self, workspace_id: str, document_id: str
+    ) -> EvidenceDocument | None:
+        self._workspace_exists(workspace_id)
+        row = self.conn.execute(
+            "SELECT payload FROM evidence_documents WHERE workspace_id=? AND document_id=?",
+            (workspace_id, document_id),
+        ).fetchone()
+        if row is None:
+            return None
+        payload = json.loads(row["payload"])
+        return EvidenceDocument(
+            document_id=payload["document_id"],
+            workspace_id=payload["workspace_id"],
+            supplier_id=payload["supplier_id"],
+            customer_id=payload["customer_id"],
+            program_id=payload["program_id"],
+            evidence_type=payload["evidence_type"],
+            source_ref=payload["source_ref"],
+            version_id=payload["version_id"],
+            document_date=date.fromisoformat(payload["document_date"])
+            if payload["document_date"]
+            else None,
+            content_sha256=payload["content_sha256"],
+            signed=payload["signed"],
+        )
+
     def audit_count(self, workspace_id: str) -> int:
         self._workspace_exists(workspace_id)
         row = self.conn.execute(
@@ -140,13 +241,22 @@ class Storage:
         import hashlib
 
         self._workspace_exists(workspace_id)
-        rows = [
-            row["payload"]
-            for row in self.conn.execute(
-                "SELECT payload FROM claim_cases WHERE workspace_id=? ORDER BY case_id",
-                (workspace_id,),
-            ).fetchall()
-        ]
+        snapshot = {
+            "claim_cases": [
+                row["payload"]
+                for row in self.conn.execute(
+                    "SELECT payload FROM claim_cases WHERE workspace_id=? ORDER BY case_id",
+                    (workspace_id,),
+                ).fetchall()
+            ],
+            "evidence_documents": [
+                row["payload"]
+                for row in self.conn.execute(
+                    "SELECT payload FROM evidence_documents WHERE workspace_id=? ORDER BY document_id",
+                    (workspace_id,),
+                ).fetchall()
+            ],
+        }
         return hashlib.sha256(
-            json.dumps(rows, separators=(",", ":")).encode()
+            json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
