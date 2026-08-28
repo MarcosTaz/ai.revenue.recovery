@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from decimal import Decimal
-from typing import Iterable
+from typing import Callable, Iterable, TypeVar
 
 from .audit import tenant_audit_trail
 from .auth import Principal
@@ -15,6 +15,8 @@ from .package import build_claim_package
 from .storage import Storage
 from .verification import EvidenceReviewStore, EntitlementReviewStore, ReviewState
 from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, record_payment
+
+T = TypeVar("T")
 
 
 class TenantService:
@@ -33,6 +35,20 @@ class TenantService:
         self.evidence_reviews = EvidenceReviewStore(storage)
         self.entitlement_reviews = EntitlementReviewStore(storage)
 
+    def _mutate(self, operation: Callable[..., T], *args, **kwargs) -> T:
+        """Fail closed at the application boundary on interrupted SQLite writes.
+
+        Some repository methods perform a business write followed by an audit
+        write before commit. If the second step fails, rollback is mandatory so
+        an un-audited partial state cannot remain visible on the connection or be
+        committed by a later operation.
+        """
+        try:
+            return operation(*args, **kwargs)
+        except Exception:
+            self.storage.conn.rollback()
+            raise
+
     @staticmethod
     def _require_source_write(principal: Principal) -> None:
         if principal.role not in {"ADMIN", "ANALYST"}:
@@ -45,21 +61,36 @@ class TenantService:
 
     def store_recovery_event(self, principal: Principal, event: RecoveryEvent) -> None:
         self._require_source_write(principal)
-        self.storage.put_recovery_event(principal.workspace_id, principal.actor_id, event)
+        self._mutate(
+            self.storage.put_recovery_event,
+            principal.workspace_id,
+            principal.actor_id,
+            event,
+        )
 
     def get_recovery_event(self, principal: Principal, event_id: str) -> RecoveryEvent | None:
         return self.storage.get_recovery_event(principal.workspace_id, event_id)
 
     def store_exposure_line(self, principal: Principal, line: ExposureLine) -> None:
         self._require_source_write(principal)
-        self.storage.put_exposure_line(principal.workspace_id, principal.actor_id, line)
+        self._mutate(
+            self.storage.put_exposure_line,
+            principal.workspace_id,
+            principal.actor_id,
+            line,
+        )
 
     def get_exposure_line(self, principal: Principal, exposure_id: str) -> ExposureLine | None:
         return self.storage.get_exposure_line(principal.workspace_id, exposure_id)
 
     def store_entitlement_basis(self, principal: Principal, basis: EntitlementBasis) -> None:
         self._require_source_write(principal)
-        self.storage.put_entitlement_basis(principal.workspace_id, principal.actor_id, basis)
+        self._mutate(
+            self.storage.put_entitlement_basis,
+            principal.workspace_id,
+            principal.actor_id,
+            basis,
+        )
 
     def get_entitlement_basis(self, principal: Principal, entitlement_id: str) -> EntitlementBasis | None:
         return self.storage.get_entitlement_basis(principal.workspace_id, entitlement_id)
@@ -72,7 +103,8 @@ class TenantService:
         note: str = "",
     ) -> None:
         self._require_reviewer(principal)
-        self.entitlement_reviews.review(
+        self._mutate(
+            self.entitlement_reviews.review,
             principal.workspace_id,
             principal.actor_id,
             entitlement_id,
@@ -85,8 +117,11 @@ class TenantService:
     ) -> None:
         if document.workspace_id != principal.workspace_id:
             raise PermissionError("CROSS_TENANT_DOCUMENT_REJECTED")
-        self.storage.put_evidence_document(
-            principal.workspace_id, principal.actor_id, document
+        self._mutate(
+            self.storage.put_evidence_document,
+            principal.workspace_id,
+            principal.actor_id,
+            document,
         )
 
     def get_evidence_document(
@@ -102,7 +137,8 @@ class TenantService:
         note: str = "",
     ) -> None:
         self._require_reviewer(principal)
-        self.evidence_reviews.review(
+        self._mutate(
+            self.evidence_reviews.review,
             principal.workspace_id,
             principal.actor_id,
             document_id,
@@ -179,7 +215,12 @@ class TenantService:
             gated,
             selected_exposure_ids=selected_exposure_ids,
         )
-        self.storage.put_claim_case(principal.workspace_id, principal.actor_id, case)
+        self._mutate(
+            self.storage.put_claim_case,
+            principal.workspace_id,
+            principal.actor_id,
+            case,
+        )
         return case
 
     def get_case(self, principal: Principal, case_id: str) -> ClaimCase | None:
@@ -208,7 +249,12 @@ class TenantService:
             settled_amount=settled_amount,
             settlement_evidence_ref=settlement_evidence_ref,
         )
-        self.storage.put_claim_case(principal.workspace_id, principal.actor_id, updated)
+        self._mutate(
+            self.storage.put_claim_case,
+            principal.workspace_id,
+            principal.actor_id,
+            updated,
+        )
         return updated
 
     def record_payment(
@@ -223,5 +269,10 @@ class TenantService:
         if current is None:
             raise KeyError("CLAIM_CASE_NOT_FOUND")
         updated = record_payment(current, payment)
-        self.storage.put_claim_case(principal.workspace_id, principal.actor_id, updated)
+        self._mutate(
+            self.storage.put_claim_case,
+            principal.workspace_id,
+            principal.actor_id,
+            updated,
+        )
         return updated
