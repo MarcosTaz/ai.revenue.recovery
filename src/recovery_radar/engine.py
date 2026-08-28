@@ -65,6 +65,8 @@ def _analyze_line(event: RecoveryEvent, line: ExposureLine, basis: EntitlementBa
         return {**base,"state":"POTENTIAL_EXPOSURE","reason":"CUSTOMER_OWNED_ASSET_NOT_SUPPLIER_LOSS","claimable_amount":"0.00"}
     if line.ownership == "UNKNOWN":
         return {**base,"state":"UNKNOWN","reason":"OWNERSHIP_UNKNOWN","claimable_amount":None}
+    if net_exposure == 0:
+        return {**base,"state":"POTENTIAL_EXPOSURE","reason":"NO_NET_EXPOSURE_AFTER_OFFSETS","claimable_amount":"0.00"}
     if basis is None:
         return {**base,"state":"POTENTIAL_EXPOSURE","reason":"EXPOSURE_WITHOUT_ENTITLEMENT_BASIS","claimable_amount":None}
     if basis.economic_loss_id != line.economic_loss_id:
