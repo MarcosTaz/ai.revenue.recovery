@@ -35,14 +35,17 @@ def document(document_id, source_ref, evidence_type, *, customer, program, suppl
     )
 
 
-def seed_alpha(service, *, with_documents=True, verify_documents=True):
+def seed_alpha(service, *, with_documents=True, verify_documents=True, verify_entitlements=True):
     event, exposures, entitlements, _ = alpha_components_fixture()
     p = principal()
+    r = reviewer()
     service.store_recovery_event(p, event)
     for line in exposures:
         service.store_exposure_line(p, line)
     for basis in entitlements:
         service.store_entitlement_basis(p, basis)
+        if verify_entitlements:
+            service.review_entitlement_basis(r, basis.entitlement_id, "VERIFIED", "synthetic entitlement reviewed")
     if with_documents:
         for doc in (
             document("D-N", "document://alpha/customer-notice", "CUSTOMER_NOTICE", customer="OEM-A", program="PRG-A"),
@@ -53,7 +56,7 @@ def seed_alpha(service, *, with_documents=True, verify_documents=True):
         ):
             service.store_evidence_document(p, doc)
             if verify_documents:
-                service.review_evidence_document(reviewer(), doc.document_id, "VERIFIED", "synthetic fixture reviewed")
+                service.review_evidence_document(r, doc.document_id, "VERIFIED", "synthetic fixture reviewed")
     return event
 
 
@@ -82,6 +85,24 @@ def test_public_case_creation_interface_rejects_arbitrary_claim_amount_keyword(t
         seed_alpha(service)
         with pytest.raises(TypeError):
             service.create_case(principal(), "EV-ALPHA-1", "SUP-A", claim_amount=Decimal("999999"))
+    finally:
+        store.close()
+
+
+def test_unverified_entitlement_cannot_be_promoted_even_with_verified_documents(tmp_path):
+    store = Storage(tmp_path / "rr.db")
+    try:
+        store.create_workspace("A", "Supplier A")
+        service = TenantService(store)
+        seed_alpha(service, verify_entitlements=False)
+        analysis = service.analyze_event(principal(), "EV-ALPHA-1", "SUP-A")
+        line = analysis["claim_lines"][0]
+        assert line["state"] == "UNKNOWN"
+        assert line["reason"] == "ENTITLEMENT_UNKNOWN"
+        assert line["entitlement_review_state"] is None
+        assert analysis["claimable_total"] == "0.00"
+        with pytest.raises(ValueError, match="NO_CLAIMABLE_REGISTERED_EVIDENCE_LINES"):
+            service.create_case(principal(), "EV-ALPHA-1", "SUP-A")
     finally:
         store.close()
 
@@ -151,12 +172,14 @@ def test_complete_evidence_does_not_auto_promote_legal_review_line_to_claim(tmp_
         store.create_workspace("A", "Supplier A")
         service = TenantService(store)
         p = principal()
+        r = reviewer()
         event, exposures, entitlements, _ = partial_recovery_fixture()
         service.store_recovery_event(p, event)
         for line in exposures:
             service.store_exposure_line(p, line)
         for basis in entitlements:
             service.store_entitlement_basis(p, basis)
+            service.review_entitlement_basis(r, basis.entitlement_id, "VERIFIED", "synthetic entitlement reviewed")
         for doc in (
             document("P-N", "document://partial/release", "CUSTOMER_NOTICE", customer="OEM-P", program="PRG-P", supplier="SUP-P"),
             document("P-I", "asset://partial/tool-1", "COST_RECORD", customer="OEM-P", program="PRG-P", supplier="SUP-P"),
@@ -164,7 +187,7 @@ def test_complete_evidence_does_not_auto_promote_legal_review_line_to_claim(tmp_
             document("P-A", "approval://partial/cap", "TOOLING_APPROVAL", customer="OEM-P", program="PRG-P", supplier="SUP-P", signed=True),
         ):
             service.store_evidence_document(p, doc)
-            service.review_evidence_document(reviewer(), doc.document_id, "VERIFIED", "synthetic fixture reviewed")
+            service.review_evidence_document(r, doc.document_id, "VERIFIED", "synthetic fixture reviewed")
         analysis = service.analyze_event(p, event.event_id, "SUP-P")
         assert analysis["requires_review_amount"] == "420000.00"
         with pytest.raises(ValueError, match="NO_CLAIMABLE_REGISTERED_EVIDENCE_LINES"):
