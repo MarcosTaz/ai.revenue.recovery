@@ -7,15 +7,12 @@ from .auth import AuthService, Role
 from .evidence import EvidenceDocument
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 from .service import TenantService
+from .verification import ReviewState
 from .workflow import ClaimCase, PaymentRecord, WorkflowState
 
 
 class RecoveryRadarGateway:
-    """Token-authenticated application boundary for an assisted pilot.
-
-    External callers provide an API token, never a Principal or workspace ID.
-    Tenant and role are derived by AuthService before TenantService is invoked.
-    """
+    """Token-authenticated application boundary for an assisted pilot."""
 
     def __init__(self, storage):
         self.auth = AuthService(storage)
@@ -41,6 +38,17 @@ class RecoveryRadarGateway:
 
     def store_evidence_document(self, token: str, document: EvidenceDocument) -> None:
         self.tenant.store_evidence_document(self.auth.authenticate(token), document)
+
+    def review_evidence_document(
+        self,
+        token: str,
+        document_id: str,
+        state: ReviewState,
+        note: str = "",
+    ) -> None:
+        self.tenant.review_evidence_document(
+            self.auth.authenticate(token), document_id, state, note
+        )
 
     def analyze_event(self, token: str, event_id: str, supplier_id: str) -> dict:
         return self.tenant.analyze_event(
