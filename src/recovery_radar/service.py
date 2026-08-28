@@ -9,6 +9,7 @@ from .claimability import apply_registered_evidence_gate
 from .engine import analyze_claim
 from .evidence import EvidenceDocument
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
+from .package import build_claim_package
 from .storage import Storage
 from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, record_payment
 
@@ -16,9 +17,8 @@ from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, rec
 class TenantService:
     """Tenant-scoped business boundary.
 
-    Claim amounts are never accepted from callers. A claim case is derived from
-    persisted source records, recomputed by the engine, passed through the
-    registered-evidence gate, and only then persisted with analysis provenance.
+    Claim amounts are never accepted from callers. Claim analysis is recomputed
+    from persisted source records and registered evidence inside the tenant.
     """
 
     _REVIEWER_ALLOWED_TRANSITIONS = {
@@ -58,6 +58,28 @@ class TenantService:
     def get_entitlement_basis(self, principal: Principal, entitlement_id: str) -> EntitlementBasis | None:
         return self.storage.get_entitlement_basis(principal.workspace_id, entitlement_id)
 
+    def analyze_event(self, principal: Principal, event_id: str, supplier_id: str) -> dict:
+        """Recompute a registry-gated analysis from persisted tenant source truth."""
+        event = self.storage.get_recovery_event(principal.workspace_id, event_id)
+        if event is None:
+            raise KeyError("RECOVERY_EVENT_NOT_FOUND")
+        exposures = self.storage.list_exposure_lines(principal.workspace_id, event_id)
+        entitlements = self.storage.list_entitlement_bases(principal.workspace_id, event_id)
+        documents = self.storage.list_evidence_documents(principal.workspace_id)
+        raw = analyze_claim(event, exposures, entitlements)
+        return apply_registered_evidence_gate(
+            raw,
+            documents,
+            workspace_id=principal.workspace_id,
+            supplier_id=supplier_id,
+        )
+
+    def build_claim_package(self, principal: Principal, event_id: str, supplier_id: str) -> dict:
+        package = build_claim_package(self.analyze_event(principal, event_id, supplier_id))
+        package["audit_event_count"] = self.storage.audit_count(principal.workspace_id)
+        package["workspace_id"] = principal.workspace_id
+        return package
+
     def create_case(
         self,
         principal: Principal,
@@ -74,19 +96,7 @@ class TenantService:
         """
         if principal.role not in {"ADMIN", "ANALYST"}:
             raise PermissionError("ROLE_NOT_AUTHORIZED_FOR_CASE_CREATE")
-        event = self.storage.get_recovery_event(principal.workspace_id, event_id)
-        if event is None:
-            raise KeyError("RECOVERY_EVENT_NOT_FOUND")
-        exposures = self.storage.list_exposure_lines(principal.workspace_id, event_id)
-        entitlements = self.storage.list_entitlement_bases(principal.workspace_id, event_id)
-        documents = self.storage.list_evidence_documents(principal.workspace_id)
-        analysis = analyze_claim(event, exposures, entitlements)
-        gated = apply_registered_evidence_gate(
-            analysis,
-            documents,
-            workspace_id=principal.workspace_id,
-            supplier_id=supplier_id,
-        )
+        gated = self.analyze_event(principal, event_id, supplier_id)
         case = case_from_gated_analysis(
             principal.workspace_id,
             gated,
