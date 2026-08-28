@@ -139,6 +139,7 @@ class Storage:
                 {**asdict(payment), "amount": str(payment.amount)}
                 for payment in case.payments
             ],
+            "selected_exposure_ids": list(case.selected_exposure_ids),
         }
 
     @staticmethod
@@ -270,6 +271,16 @@ class Storage:
             p["reimbursement_evidence_ref"]
         )
 
+    def list_exposure_lines(
+        self, workspace_id: str, event_id: str
+    ) -> list[ExposureLine]:
+        self._workspace_exists(workspace_id)
+        rows = self.conn.execute(
+            "SELECT exposure_id FROM exposure_lines WHERE workspace_id=? AND event_id=? ORDER BY exposure_id",
+            (workspace_id, event_id),
+        ).fetchall()
+        return [self.get_exposure_line(workspace_id, row["exposure_id"]) for row in rows]
+
     def put_entitlement_basis(
         self, workspace_id: str, actor_id: str, basis: EntitlementBasis
     ) -> None:
@@ -305,10 +316,28 @@ class Storage:
             p["legal_review_required"]
         )
 
+    def list_entitlement_bases(
+        self, workspace_id: str, event_id: str
+    ) -> list[EntitlementBasis]:
+        self._workspace_exists(workspace_id)
+        rows = self.conn.execute(
+            "SELECT entitlement_id FROM entitlement_bases WHERE workspace_id=? AND event_id=? ORDER BY entitlement_id",
+            (workspace_id, event_id),
+        ).fetchall()
+        return [self.get_entitlement_basis(workspace_id, row["entitlement_id"]) for row in rows]
+
     def put_claim_case(self, workspace_id: str, actor_id: str, case: ClaimCase) -> None:
         self._workspace_exists(workspace_id)
         if case.workspace_id != workspace_id:
             raise ValueError("CLAIM_CASE_WORKSPACE_MISMATCH")
+        if not case.event_id or not case.analysis_fingerprint or not case.selected_exposure_ids:
+            raise ValueError("CLAIM_CASE_PROVENANCE_REQUIRED")
+        if self.get_recovery_event(workspace_id, case.event_id) is None:
+            raise KeyError("CLAIM_CASE_EVENT_NOT_FOUND")
+        for exposure_id in case.selected_exposure_ids:
+            line = self.get_exposure_line(workspace_id, exposure_id)
+            if line is None or line.event_id != case.event_id:
+                raise ValueError("CLAIM_CASE_EXPOSURE_PROVENANCE_MISMATCH")
         payload = self._serialize_case(case)
         raw = json.dumps(payload, sort_keys=True)
         self.conn.execute(
@@ -326,20 +355,21 @@ class Storage:
         ).fetchone()
         if row is None:
             return None
-        payload = json.loads(row["payload"])
+        p = json.loads(row["payload"])
         payments = tuple(
             PaymentRecord(
-                item["payment_id"],
-                Decimal(item["amount"]),
-                item["currency"],
+                item["payment_id"], Decimal(item["amount"]), item["currency"],
                 item["payment_evidence_ref"],
             )
-            for item in payload["payments"]
+            for item in p["payments"]
         )
         return ClaimCase(
-            payload["case_id"], payload["workspace_id"], Decimal(payload["claim_amount"]),
-            payload["currency"], payload["state"], Decimal(payload["settled_amount"]),
-            payload["settlement_evidence_ref"], payments,
+            case_id=p["case_id"], workspace_id=p["workspace_id"],
+            claim_amount=Decimal(p["claim_amount"]), currency=p["currency"],
+            state=p["state"], settled_amount=Decimal(p["settled_amount"]),
+            settlement_evidence_ref=p["settlement_evidence_ref"], payments=payments,
+            event_id=p.get("event_id", ""), analysis_fingerprint=p.get("analysis_fingerprint", ""),
+            selected_exposure_ids=tuple(p.get("selected_exposure_ids", ())),
         )
 
     def put_evidence_document(
@@ -389,6 +419,14 @@ class Storage:
             version_id=p["version_id"], document_date=date.fromisoformat(p["document_date"]) if p["document_date"] else None,
             content_sha256=p["content_sha256"], signed=p["signed"],
         )
+
+    def list_evidence_documents(self, workspace_id: str) -> list[EvidenceDocument]:
+        self._workspace_exists(workspace_id)
+        rows = self.conn.execute(
+            "SELECT document_id FROM evidence_documents WHERE workspace_id=? ORDER BY document_id",
+            (workspace_id,),
+        ).fetchall()
+        return [self.get_evidence_document(workspace_id, row["document_id"]) for row in rows]
 
     def audit_count(self, workspace_id: str) -> int:
         self._workspace_exists(workspace_id)
