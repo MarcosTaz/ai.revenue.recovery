@@ -47,16 +47,18 @@ def seed_sources(service, principal, supplier_id, *, amount="100", verify=True):
         "contract://termination",
         "po://PO-1",
     )
+    reviewer = p(principal.workspace_id, f"reviewer-{principal.workspace_id}", "REVIEWER")
     service.store_recovery_event(principal, event)
     service.store_exposure_line(principal, exposure)
     service.store_entitlement_basis(principal, entitlement)
+    if verify:
+        service.review_entitlement_basis(reviewer, "ENT-1", "VERIFIED", "fixture entitlement reviewed")
     docs = (
         ("D-NOTICE", "CUSTOMER_NOTICE", "document://notice", None),
         ("D-INV", "INVENTORY_RECORD", "inventory://EXP-1", None),
         ("D-CONTRACT", "CONTRACT", "contract://termination", True),
         ("D-PO", "PURCHASE_ORDER", "po://PO-1", None),
     )
-    reviewer = p(principal.workspace_id, f"reviewer-{principal.workspace_id}", "REVIEWER")
     for document_id, evidence_type, source_ref, signed in docs:
         service.store_evidence_document(
             principal,
@@ -75,7 +77,7 @@ def seed_sources(service, principal, supplier_id, *, amount="100", verify=True):
             ),
         )
         if verify:
-            service.review_evidence_document(reviewer, document_id, "VERIFIED", "fixture reviewed")
+            service.review_evidence_document(reviewer, document_id, "VERIFIED", "fixture document reviewed")
 
 
 def seed_claimable_case(service, principal, supplier_id, *, amount="100"):
@@ -112,7 +114,7 @@ def test_cross_tenant_event_reference_cannot_create_foreign_claim(tmp_path):
         store.close()
 
 
-def test_only_reviewer_can_verify_evidence(tmp_path):
+def test_only_reviewer_can_verify_evidence_or_entitlement(tmp_path):
     store = Storage(tmp_path / "rr.db")
     try:
         store.create_workspace("A", "Supplier A")
@@ -121,9 +123,13 @@ def test_only_reviewer_can_verify_evidence(tmp_path):
         seed_sources(service, admin, "SUP-A", verify=False)
         with pytest.raises(PermissionError, match="REVIEWER_REQUIRED"):
             service.review_evidence_document(admin, "D-CONTRACT", "VERIFIED")
+        with pytest.raises(PermissionError, match="REVIEWER_REQUIRED"):
+            service.review_entitlement_basis(admin, "ENT-1", "VERIFIED")
         reviewer = p("A", "reviewer", "REVIEWER")
         service.review_evidence_document(reviewer, "D-CONTRACT", "VERIFIED", "checked")
+        service.review_entitlement_basis(reviewer, "ENT-1", "VERIFIED", "checked")
         assert service.evidence_reviews.current_state("A", "D-CONTRACT") == "VERIFIED"
+        assert service.entitlement_reviews.current_state("A", "ENT-1") == "VERIFIED"
     finally:
         store.close()
 
@@ -169,7 +175,7 @@ def test_reviewer_can_review_but_cannot_create_submit_settle_or_record_payment(t
         store.close()
 
 
-def test_backup_restore_preserves_claim_payment_and_evidence_review_truth(tmp_path):
+def test_backup_restore_preserves_claim_payment_and_review_truth(tmp_path):
     path = tmp_path / "rr.db"
     backup = tmp_path / "backup.db"
     store = Storage(path)
@@ -205,5 +211,6 @@ def test_backup_restore_preserves_claim_payment_and_evidence_review_truth(tmp_pa
         assert recovered.event_id == "EV-1"
         assert recovered.selected_exposure_ids == ("EXP-1",)
         assert restored_service.evidence_reviews.current_state("A", "D-CONTRACT") == "VERIFIED"
+        assert restored_service.entitlement_reviews.current_state("A", "ENT-1") == "VERIFIED"
     finally:
         restored.close()
