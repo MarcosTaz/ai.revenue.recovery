@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from .auth import Principal
+from .evidence import EvidenceDocument
 from .storage import Storage
 from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, record_payment
 
@@ -37,6 +38,22 @@ class TenantService:
 
     def get_case(self, principal: Principal, case_id: str) -> ClaimCase | None:
         return self.storage.get_claim_case(principal.workspace_id, case_id)
+
+    def store_evidence_document(
+        self, principal: Principal, document: EvidenceDocument
+    ) -> None:
+        if document.workspace_id != principal.workspace_id:
+            raise PermissionError("CROSS_TENANT_DOCUMENT_REJECTED")
+        self.storage.put_evidence_document(
+            principal.workspace_id, principal.actor_id, document
+        )
+
+    def get_evidence_document(
+        self, principal: Principal, document_id: str
+    ) -> EvidenceDocument | None:
+        return self.storage.get_evidence_document(
+            principal.workspace_id, document_id
+        )
 
     def advance_case(
         self,
