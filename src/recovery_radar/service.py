@@ -12,15 +12,12 @@ from .evidence import EvidenceDocument
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 from .package import build_claim_package
 from .storage import Storage
+from .verification import EvidenceReviewStore, ReviewState
 from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, record_payment
 
 
 class TenantService:
-    """Tenant-scoped business boundary.
-
-    Claim amounts are never accepted from callers. Claim analysis is recomputed
-    from persisted source records and registered evidence inside the tenant.
-    """
+    """Tenant-scoped business boundary with independent evidence review."""
 
     _REVIEWER_ALLOWED_TRANSITIONS = {
         "ANALYSIS",
@@ -32,6 +29,7 @@ class TenantService:
 
     def __init__(self, storage: Storage):
         self.storage = storage
+        self.evidence_reviews = EvidenceReviewStore(storage)
 
     @staticmethod
     def _require_source_write(principal: Principal) -> None:
@@ -59,20 +57,54 @@ class TenantService:
     def get_entitlement_basis(self, principal: Principal, entitlement_id: str) -> EntitlementBasis | None:
         return self.storage.get_entitlement_basis(principal.workspace_id, entitlement_id)
 
+    def store_evidence_document(
+        self, principal: Principal, document: EvidenceDocument
+    ) -> None:
+        if document.workspace_id != principal.workspace_id:
+            raise PermissionError("CROSS_TENANT_DOCUMENT_REJECTED")
+        self.storage.put_evidence_document(
+            principal.workspace_id, principal.actor_id, document
+        )
+
+    def get_evidence_document(
+        self, principal: Principal, document_id: str
+    ) -> EvidenceDocument | None:
+        return self.storage.get_evidence_document(principal.workspace_id, document_id)
+
+    def review_evidence_document(
+        self,
+        principal: Principal,
+        document_id: str,
+        state: ReviewState,
+        note: str = "",
+    ) -> None:
+        if principal.role != "REVIEWER":
+            raise PermissionError("REVIEWER_REQUIRED_FOR_EVIDENCE_VERIFICATION")
+        self.evidence_reviews.review(
+            principal.workspace_id,
+            principal.actor_id,
+            document_id,
+            state,
+            note,
+        )
+
     def analyze_event(self, principal: Principal, event_id: str, supplier_id: str) -> dict:
-        """Recompute a registry-gated analysis from persisted tenant source truth."""
+        """Recompute analysis from persisted truth and independently reviewed evidence."""
         event = self.storage.get_recovery_event(principal.workspace_id, event_id)
         if event is None:
             raise KeyError("RECOVERY_EVENT_NOT_FOUND")
         exposures = self.storage.list_exposure_lines(principal.workspace_id, event_id)
         entitlements = self.storage.list_entitlement_bases(principal.workspace_id, event_id)
         documents = self.storage.list_evidence_documents(principal.workspace_id)
+        verified_ids = self.evidence_reviews.verified_document_ids(principal.workspace_id)
         raw = analyze_claim(event, exposures, entitlements)
         return apply_registered_evidence_gate(
             raw,
             documents,
             workspace_id=principal.workspace_id,
             supplier_id=supplier_id,
+            verified_document_ids=verified_ids,
+            require_verification=True,
         )
 
     def build_claim_package(self, principal: Principal, event_id: str, supplier_id: str) -> dict:
@@ -91,12 +123,6 @@ class TenantService:
         *,
         selected_exposure_ids: Iterable[str] | None = None,
     ) -> ClaimCase:
-        """Derive and persist a claim from tenant-owned persisted source truth.
-
-        The caller can choose which already-claimable exposure lines to include,
-        but cannot provide case ID, amount, currency, analysis fingerprint, or a
-        precomputed analysis object.
-        """
         if principal.role not in {"ADMIN", "ANALYST"}:
             raise PermissionError("ROLE_NOT_AUTHORIZED_FOR_CASE_CREATE")
         gated = self.analyze_event(principal, event_id, supplier_id)
@@ -110,20 +136,6 @@ class TenantService:
 
     def get_case(self, principal: Principal, case_id: str) -> ClaimCase | None:
         return self.storage.get_claim_case(principal.workspace_id, case_id)
-
-    def store_evidence_document(
-        self, principal: Principal, document: EvidenceDocument
-    ) -> None:
-        if document.workspace_id != principal.workspace_id:
-            raise PermissionError("CROSS_TENANT_DOCUMENT_REJECTED")
-        self.storage.put_evidence_document(
-            principal.workspace_id, principal.actor_id, document
-        )
-
-    def get_evidence_document(
-        self, principal: Principal, document_id: str
-    ) -> EvidenceDocument | None:
-        return self.storage.get_evidence_document(principal.workspace_id, document_id)
 
     def advance_case(
         self,
