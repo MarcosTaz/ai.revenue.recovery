@@ -36,6 +36,17 @@ class RecoveryRadarGateway:
     def store_entitlement_basis(self, token: str, basis: EntitlementBasis) -> None:
         self.tenant.store_entitlement_basis(self.auth.authenticate(token), basis)
 
+    def review_entitlement_basis(
+        self,
+        token: str,
+        entitlement_id: str,
+        state: ReviewState,
+        note: str = "",
+    ) -> None:
+        self.tenant.review_entitlement_basis(
+            self.auth.authenticate(token), entitlement_id, state, note
+        )
+
     def store_evidence_document(self, token: str, document: EvidenceDocument) -> None:
         self.tenant.store_evidence_document(self.auth.authenticate(token), document)
 
