@@ -17,7 +17,10 @@ def build_claim_package(analysis: dict) -> dict:
     gate_applied = analysis.get("registered_evidence_gate") == "APPLIED"
     gate_issues = sorted({item for line in lines for item in line.get("registered_evidence_issues", [])})
     missing_actions = build_missing_evidence_actions(analysis)
-    if missing or analysis["requires_review_amount"] != "0.00":
+    mixed_currency = bool(analysis.get("mixed_currency"))
+    if mixed_currency:
+        review_status = "MULTI_CURRENCY_SPLIT_REQUIRED"
+    elif missing or analysis["requires_review_amount"] != "0.00":
         review_status = "REQUIRES_HUMAN_REVIEW"
     elif not gate_applied:
         review_status = "REGISTERED_EVIDENCE_GATE_REQUIRED"
@@ -121,6 +124,9 @@ def build_claim_package(analysis: dict) -> dict:
         for category, currencies in exposure_by_category.items()
     }
 
+    totals_by_currency = analysis.get("totals_by_currency", {})
+    draft_status = "MULTI_CURRENCY_SPLIT_REQUIRED" if mixed_currency else "DRAFT_NOT_SUBMITTED"
+
     return {
         "executive_summary": {
             "event_id": analysis["event"]["event_id"],
@@ -128,6 +134,8 @@ def build_claim_package(analysis: dict) -> dict:
             "net_exposure_total": analysis["net_exposure_total"],
             "claimable_total": analysis["claimable_total"],
             "requires_review_amount": analysis["requires_review_amount"],
+            "totals_by_currency": totals_by_currency,
+            "mixed_currency": mixed_currency,
             "paid_total": analysis["paid_total"],
             "review_status": review_status,
         },
@@ -168,11 +176,14 @@ def build_claim_package(analysis: dict) -> dict:
         "recoverability": {
             "claimable_total": analysis["claimable_total"],
             "requires_review_amount": analysis["requires_review_amount"],
+            "totals_by_currency": totals_by_currency,
+            "mixed_currency": mixed_currency,
             "states": analysis.get("counts", {}),
         },
         "draft_claim_package": {
-            "status": "DRAFT_NOT_SUBMITTED",
+            "status": draft_status,
             "claimable_total": analysis["claimable_total"],
+            "totals_by_currency": totals_by_currency,
             "lines": draft_claim_lines,
         },
         "assumptions": [],
