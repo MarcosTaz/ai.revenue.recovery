@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from .auth import Principal
 from .evidence import EvidenceDocument
+from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 from .storage import Storage
 from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, record_payment
 
@@ -12,8 +13,9 @@ class TenantService:
     """Business boundary scoped by an already-authenticated principal.
 
     Reviewer credentials can participate in evidence/review states but cannot
-    submit, negotiate, settle, or record payment. Commercial disposition remains
-    an ADMIN/ANALYST responsibility at this prototype boundary.
+    create source economics, submit, negotiate, settle, or record payment.
+    Commercial disposition remains an ADMIN/ANALYST responsibility at this
+    prototype boundary.
     """
 
     _REVIEWER_ALLOWED_TRANSITIONS = {
@@ -26,6 +28,32 @@ class TenantService:
 
     def __init__(self, storage: Storage):
         self.storage = storage
+
+    @staticmethod
+    def _require_source_write(principal: Principal) -> None:
+        if principal.role not in {"ADMIN", "ANALYST"}:
+            raise PermissionError("ROLE_NOT_AUTHORIZED_FOR_SOURCE_WRITE")
+
+    def store_recovery_event(self, principal: Principal, event: RecoveryEvent) -> None:
+        self._require_source_write(principal)
+        self.storage.put_recovery_event(principal.workspace_id, principal.actor_id, event)
+
+    def get_recovery_event(self, principal: Principal, event_id: str) -> RecoveryEvent | None:
+        return self.storage.get_recovery_event(principal.workspace_id, event_id)
+
+    def store_exposure_line(self, principal: Principal, line: ExposureLine) -> None:
+        self._require_source_write(principal)
+        self.storage.put_exposure_line(principal.workspace_id, principal.actor_id, line)
+
+    def get_exposure_line(self, principal: Principal, exposure_id: str) -> ExposureLine | None:
+        return self.storage.get_exposure_line(principal.workspace_id, exposure_id)
+
+    def store_entitlement_basis(self, principal: Principal, basis: EntitlementBasis) -> None:
+        self._require_source_write(principal)
+        self.storage.put_entitlement_basis(principal.workspace_id, principal.actor_id, basis)
+
+    def get_entitlement_basis(self, principal: Principal, entitlement_id: str) -> EntitlementBasis | None:
+        return self.storage.get_entitlement_basis(principal.workspace_id, entitlement_id)
 
     def create_case(self, principal: Principal, case: ClaimCase) -> None:
         if principal.role not in {"ADMIN", "ANALYST"}:
