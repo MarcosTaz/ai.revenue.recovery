@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from .missing_evidence import build_missing_evidence_actions
+
 MONEY = Decimal("0.01")
 
 
@@ -14,6 +16,7 @@ def build_claim_package(analysis: dict) -> dict:
     missing = sorted({item for line in lines for item in line.get("missing_evidence", [])})
     gate_applied = analysis.get("registered_evidence_gate") == "APPLIED"
     gate_issues = sorted({item for line in lines for item in line.get("registered_evidence_issues", [])})
+    missing_actions = build_missing_evidence_actions(analysis)
     if missing or analysis["requires_review_amount"] != "0.00":
         review_status = "REQUIRES_HUMAN_REVIEW"
     elif not gate_applied:
@@ -80,6 +83,7 @@ def build_claim_package(analysis: dict) -> dict:
                 "lineage": lineage,
                 "registered_evidence_gate": line.get("registered_evidence_gate"),
                 "registered_evidence_issues": line.get("registered_evidence_issues", []),
+                "entitlement_review_state": line.get("entitlement_review_state"),
             }
         )
         if (
@@ -94,6 +98,7 @@ def build_claim_package(analysis: dict) -> dict:
                     "reason": line.get("reason"),
                     "missing_evidence": line.get("missing_evidence", []),
                     "registered_evidence_issues": line.get("registered_evidence_issues", []),
+                    "entitlement_review_state": line.get("entitlement_review_state"),
                 }
             )
         if line.get("state") == "CLAIMABLE" and amount is not None:
@@ -134,6 +139,7 @@ def build_claim_package(analysis: dict) -> dict:
                 "exposure_id": item.get("exposure_id"),
                 "contractual_basis_ref": item["lineage"].get("contractual_basis_ref"),
                 "supporting_document_ref": item["lineage"].get("supporting_document_ref"),
+                "entitlement_review_state": item.get("entitlement_review_state"),
                 "state": next(
                     (
                         line.get("state")
@@ -157,6 +163,7 @@ def build_claim_package(analysis: dict) -> dict:
         "evidence": evidence,
         "missing_evidence": missing,
         "registered_evidence_issues": gate_issues,
+        "missing_evidence_actions": missing_actions,
         "uncertainty": uncertainty,
         "recoverability": {
             "claimable_total": analysis["claimable_total"],
