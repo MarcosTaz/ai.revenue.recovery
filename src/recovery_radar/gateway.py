@@ -42,6 +42,16 @@ class RecoveryRadarGateway:
     def store_evidence_document(self, token: str, document: EvidenceDocument) -> None:
         self.tenant.store_evidence_document(self.auth.authenticate(token), document)
 
+    def analyze_event(self, token: str, event_id: str, supplier_id: str) -> dict:
+        return self.tenant.analyze_event(
+            self.auth.authenticate(token), event_id, supplier_id
+        )
+
+    def build_claim_package(self, token: str, event_id: str, supplier_id: str) -> dict:
+        return self.tenant.build_claim_package(
+            self.auth.authenticate(token), event_id, supplier_id
+        )
+
     def create_case(
         self,
         token: str,
