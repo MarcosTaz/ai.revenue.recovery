@@ -2,41 +2,51 @@
 
 Evidence-first system for constructing and defending supplier recovery claims after customer program cancellation or severe volume reduction.
 
-## Current product truth — v0.2
+## Current product truth — v0.3
 
-Source was established on the isolated branch `recovery-radar/program-cancellation-claims`; `main` originally contained only `.gitkeep`.
+Source is isolated on `recovery-radar/program-cancellation-claims`; `main` originally contained only `.gitkeep` and remains untouched.
 
 Implemented:
 
 - deterministic cancellation / volume-reduction event model;
-- stranded exposure categories including raw material, E&O, WIP, finished goods, tooling, NRE, supplier commitments and dedicated capacity;
-- mitigation and prior-reimbursement deductions;
-- explicit separation of exposure, entitlement, claimability, settlement and payment;
-- ownership fail-closed checks;
-- duplicate economic-loss protection;
-- missing-evidence detection;
-- contractual/support states including conflicting and unsupported outcomes;
-- partial support with defensible recovery caps;
-- high-risk/legal interpretation routed to human review;
-- auditable claim package projection;
-- settlement workflow where `SETTLED != PAID`;
-- multiple evidenced partial payments with overpayment/duplicate/currency controls;
-- tenant-scoped SQLite claim persistence and audit trail;
-- business service scoped by an already-authenticated `Principal` rather than caller-supplied workspace IDs;
-- reviewer authority limited to evidence/review states; reviewer cannot submit, negotiate, settle or record payment;
-- backup/restore economic-digest verification;
+- stranded exposure categories: raw material, E&O, WIP, finished goods, tooling, NRE, supplier commitments and dedicated capacity;
+- mitigation and prior-reimbursement deduction;
+- exposure != entitlement != claimability != settlement != payment;
+- ownership fail-closed checks and duplicate economic-loss protection;
+- missing-evidence detection and explicit contractual support states;
+- partial support with defensible caps and legal/high-risk human-review routing;
 - independent arithmetic and claim-line ground-truth scoring;
-- Alpha Components, zero-recovery, partial-recovery and RedTeam Industrial synthetic cases.
+- Alpha Components, zero-recovery, partial-recovery and RedTeam Industrial fixtures;
+- settlement/payment workflow where `SETTLED != PAID`;
+- multiple evidenced payments with duplicate/currency/overpayment controls;
+- tenant-scoped SQLite claim and evidence-metadata persistence with audit events;
+- backup/restore economic-digest verification;
+- service methods scoped by a pre-authenticated `Principal`, not caller-selected tenant IDs;
+- reviewer cannot create, submit, negotiate, settle or record payment;
+- SHA-256 evidence-document registry with duplicate/version conflict controls;
+- wrong tenant/supplier/customer/program and unconfirmed signature surfaced for review;
+- extracted document text explicitly treated as untrusted data;
+- documentary fact disagreements fail closed to `CONFLICTING` when precedence is not modeled;
+- **registered evidence claimability gate**: nonempty source-reference strings are not enough to make a claim package ready. Required event, cost/inventory, contract/support, mitigation and reimbursement sources must be registered and correctly scoped.
 
-Current exact tested semantics include a RedTeam portfolio with customer-owned tooling, missing entitlement, missing mitigation evidence, duplicate economic losses, negative quantity, partial support and already-reimbursed amounts. Synthetic oracle results have zero false claims, missed claims, overclaims, underclaims and state mismatches for the covered fixture. This proves deterministic behavior only; it is not evidence that a real OEM will accept or pay a claim.
+### Claimability boundary
 
-## Important boundaries
+The economic engine can produce a candidate `CLAIMABLE` / `REQUIRES_REVIEW` state from supplied records, but a customer-facing claim package is not ready until `apply_registered_evidence_gate()` has verified the required source records against the evidence registry. Missing or wrong-scope registered evidence downgrades the affected line to `POTENTIAL_ENTITLEMENT`.
 
-- `CLAIMABLE` is not a legal conclusion.
-- `REQUIRES_REVIEW` is not claim approval.
+This explicitly prevents an arbitrary URI string such as `contract://...` from being treated as sufficient proof by the package workflow.
+
+### Other boundaries
+
+- `CLAIMABLE` is an economic/evidence workflow state, not a legal conclusion.
+- `REQUIRES_REVIEW` is not customer approval.
 - `SETTLED` is not `PAID`.
 - claim value never becomes recovered cash without evidenced payment records.
-- the current `Principal` object assumes authentication has already occurred outside this module; real authentication/session infrastructure is **not implemented**.
-- persistence currently covers claim workflow/payment state, not the complete event/exposure/document graph.
+- `Principal` assumes authentication already occurred outside this module; production authentication/session infrastructure is **not implemented**.
+- raw document bytes are not persisted by the registry; current persistence stores identity metadata and content hashes.
+- full event/exposure/entitlement persistence and source-document parsing are not yet implemented.
 
-Still required for PILOT_READY includes real auth/session verification, broader tenant attack surface, event/exposure/evidence persistence, document ingestion/conflict attacks, complete synthetic supplier factory, backup-corruption/migration/DB-lock failure tests, scale/export acceptance, and no known P0/P1 at exact-head CI.
+## Current verification
+
+Exact commit `dec1f0893592900ac0d3b04c66250b19b6d61dcd` passed GitHub Actions with **46 tests** on Python 3.13.15 before this README update.
+
+Synthetic correctness is not commercial proof and does not establish collectibility or willingness to pay.
