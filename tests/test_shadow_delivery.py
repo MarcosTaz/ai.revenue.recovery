@@ -46,6 +46,9 @@ def _seed_alpha(gateway, analyst_token, reviewer_token, *, include_contract=True
         gateway.store_exposure_line(analyst_token, line)
     for basis in entitlements:
         gateway.store_entitlement_basis(analyst_token, basis)
+        gateway.review_entitlement_basis(
+            reviewer_token, basis.entitlement_id, "VERIFIED", "shadow entitlement reviewed"
+        )
     documents = [
         _document("D-NOTICE", "document://alpha/customer-notice", "CUSTOMER_NOTICE"),
         _document("D-INV", "inventory://alpha/A1", "INVENTORY_RECORD"),
@@ -87,6 +90,7 @@ def test_shadow_customer_save_leave_return_preserves_case_delivery_auth_and_revi
     assert before["draft_claim_package"]["status"] == "DRAFT_NOT_SUBMITTED"
     assert before["draft_claim_package"]["claimable_total"] == "800.00"
     assert any(item["entity_type"] == "EVIDENCE_REVIEW" for item in before["audit_trail"])
+    assert any(item["entity_type"] == "ENTITLEMENT_REVIEW" for item in before["audit_trail"])
     assert case.claim_amount == Decimal("800.00")
     assert case.event_id == event.event_id
     assert case.analysis_fingerprint
@@ -112,6 +116,7 @@ def test_shadow_customer_save_leave_return_preserves_case_delivery_auth_and_revi
         assert after["audit_event_count"] == len(after["audit_trail"])
         assert all(item["entity_id"] for item in after["audit_trail"])
         assert returned.tenant.evidence_reviews.current_state("SHADOW", "D-CONTRACT") == "VERIFIED"
+        assert returned.tenant.entitlement_reviews.current_state("SHADOW", "ENT-A1") == "VERIFIED"
     finally:
         second.close()
 
