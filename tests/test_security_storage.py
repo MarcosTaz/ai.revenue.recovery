@@ -15,7 +15,7 @@ def p(workspace, actor, role="ADMIN"):
     return Principal(workspace, actor, role)
 
 
-def seed_sources(service, principal, supplier_id, *, amount="100"):
+def seed_sources(service, principal, supplier_id, *, amount="100", verify=True):
     event = RecoveryEvent(
         "EV-1",
         "OEM-1",
@@ -56,6 +56,7 @@ def seed_sources(service, principal, supplier_id, *, amount="100"):
         ("D-CONTRACT", "CONTRACT", "contract://termination", True),
         ("D-PO", "PURCHASE_ORDER", "po://PO-1", None),
     )
+    reviewer = p(principal.workspace_id, f"reviewer-{principal.workspace_id}", "REVIEWER")
     for document_id, evidence_type, source_ref, signed in docs:
         service.store_evidence_document(
             principal,
@@ -73,6 +74,8 @@ def seed_sources(service, principal, supplier_id, *, amount="100"):
                 signed=signed,
             ),
         )
+        if verify:
+            service.review_evidence_document(reviewer, document_id, "VERIFIED", "fixture reviewed")
 
 
 def seed_claimable_case(service, principal, supplier_id, *, amount="100"):
@@ -105,6 +108,22 @@ def test_cross_tenant_event_reference_cannot_create_foreign_claim(tmp_path):
         seed_sources(service, p("B", "bob"), "SUP-B")
         with pytest.raises(KeyError, match="RECOVERY_EVENT_NOT_FOUND"):
             service.create_case(p("A", "alice"), "EV-1", "SUP-A")
+    finally:
+        store.close()
+
+
+def test_only_reviewer_can_verify_evidence(tmp_path):
+    store = Storage(tmp_path / "rr.db")
+    try:
+        store.create_workspace("A", "Supplier A")
+        service = TenantService(store)
+        admin = p("A", "admin")
+        seed_sources(service, admin, "SUP-A", verify=False)
+        with pytest.raises(PermissionError, match="REVIEWER_REQUIRED"):
+            service.review_evidence_document(admin, "D-CONTRACT", "VERIFIED")
+        reviewer = p("A", "reviewer", "REVIEWER")
+        service.review_evidence_document(reviewer, "D-CONTRACT", "VERIFIED", "checked")
+        assert service.evidence_reviews.current_state("A", "D-CONTRACT") == "VERIFIED"
     finally:
         store.close()
 
@@ -150,7 +169,7 @@ def test_reviewer_can_review_but_cannot_create_submit_settle_or_record_payment(t
         store.close()
 
 
-def test_backup_restore_preserves_claim_payment_truth(tmp_path):
+def test_backup_restore_preserves_claim_payment_and_evidence_review_truth(tmp_path):
     path = tmp_path / "rr.db"
     backup = tmp_path / "backup.db"
     store = Storage(path)
@@ -177,6 +196,7 @@ def test_backup_restore_preserves_claim_payment_truth(tmp_path):
     store.close()
     restored = Storage(backup)
     try:
+        restored_service = TenantService(restored)
         assert restored.economic_digest("A") == before
         recovered = restored.get_claim_case("A", case.case_id)
         assert recovered.state == "PAYMENT_PENDING"
@@ -184,5 +204,6 @@ def test_backup_restore_preserves_claim_payment_truth(tmp_path):
         assert recovered.paid_amount == Decimal("50")
         assert recovered.event_id == "EV-1"
         assert recovered.selected_exposure_ids == ("EXP-1",)
+        assert restored_service.evidence_reviews.current_state("A", "D-CONTRACT") == "VERIFIED"
     finally:
         restored.close()
