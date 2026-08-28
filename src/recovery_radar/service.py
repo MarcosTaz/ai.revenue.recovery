@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 from typing import Iterable
 
@@ -12,12 +13,12 @@ from .evidence import EvidenceDocument
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 from .package import build_claim_package
 from .storage import Storage
-from .verification import EvidenceReviewStore, ReviewState
+from .verification import EvidenceReviewStore, EntitlementReviewStore, ReviewState
 from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, record_payment
 
 
 class TenantService:
-    """Tenant-scoped business boundary with independent evidence review."""
+    """Tenant-scoped business boundary with independent evidence/entitlement review."""
 
     _REVIEWER_ALLOWED_TRANSITIONS = {
         "ANALYSIS",
@@ -30,11 +31,17 @@ class TenantService:
     def __init__(self, storage: Storage):
         self.storage = storage
         self.evidence_reviews = EvidenceReviewStore(storage)
+        self.entitlement_reviews = EntitlementReviewStore(storage)
 
     @staticmethod
     def _require_source_write(principal: Principal) -> None:
         if principal.role not in {"ADMIN", "ANALYST"}:
             raise PermissionError("ROLE_NOT_AUTHORIZED_FOR_SOURCE_WRITE")
+
+    @staticmethod
+    def _require_reviewer(principal: Principal) -> None:
+        if principal.role != "REVIEWER":
+            raise PermissionError("REVIEWER_REQUIRED_FOR_INDEPENDENT_VERIFICATION")
 
     def store_recovery_event(self, principal: Principal, event: RecoveryEvent) -> None:
         self._require_source_write(principal)
@@ -57,6 +64,22 @@ class TenantService:
     def get_entitlement_basis(self, principal: Principal, entitlement_id: str) -> EntitlementBasis | None:
         return self.storage.get_entitlement_basis(principal.workspace_id, entitlement_id)
 
+    def review_entitlement_basis(
+        self,
+        principal: Principal,
+        entitlement_id: str,
+        state: ReviewState,
+        note: str = "",
+    ) -> None:
+        self._require_reviewer(principal)
+        self.entitlement_reviews.review(
+            principal.workspace_id,
+            principal.actor_id,
+            entitlement_id,
+            state,
+            note,
+        )
+
     def store_evidence_document(
         self, principal: Principal, document: EvidenceDocument
     ) -> None:
@@ -78,8 +101,7 @@ class TenantService:
         state: ReviewState,
         note: str = "",
     ) -> None:
-        if principal.role != "REVIEWER":
-            raise PermissionError("REVIEWER_REQUIRED_FOR_EVIDENCE_VERIFICATION")
+        self._require_reviewer(principal)
         self.evidence_reviews.review(
             principal.workspace_id,
             principal.actor_id,
@@ -89,23 +111,49 @@ class TenantService:
         )
 
     def analyze_event(self, principal: Principal, event_id: str, supplier_id: str) -> dict:
-        """Recompute analysis from persisted truth and independently reviewed evidence."""
+        """Recompute from persisted truth plus independent reviewer attestations."""
         event = self.storage.get_recovery_event(principal.workspace_id, event_id)
         if event is None:
             raise KeyError("RECOVERY_EVENT_NOT_FOUND")
         exposures = self.storage.list_exposure_lines(principal.workspace_id, event_id)
-        entitlements = self.storage.list_entitlement_bases(principal.workspace_id, event_id)
+        stored_entitlements = self.storage.list_entitlement_bases(principal.workspace_id, event_id)
+        verified_entitlement_ids = self.entitlement_reviews.verified_entitlement_ids(
+            principal.workspace_id
+        )
+        entitlement_review_states = {
+            basis.entitlement_id: self.entitlement_reviews.current_state(
+                principal.workspace_id, basis.entitlement_id
+            )
+            for basis in stored_entitlements
+        }
+        entitlements = [
+            basis
+            if basis.entitlement_id in verified_entitlement_ids
+            else replace(basis, support_state="UNKNOWN", legal_review_required=True)
+            for basis in stored_entitlements
+        ]
         documents = self.storage.list_evidence_documents(principal.workspace_id)
-        verified_ids = self.evidence_reviews.verified_document_ids(principal.workspace_id)
+        verified_document_ids = self.evidence_reviews.verified_document_ids(
+            principal.workspace_id
+        )
         raw = analyze_claim(event, exposures, entitlements)
-        return apply_registered_evidence_gate(
+        gated = apply_registered_evidence_gate(
             raw,
             documents,
             workspace_id=principal.workspace_id,
             supplier_id=supplier_id,
-            verified_document_ids=verified_ids,
+            verified_document_ids=verified_document_ids,
             require_verification=True,
         )
+        for line in gated["claim_lines"]:
+            entitlement_id = line.get("lineage", {}).get("entitlement_id")
+            line["entitlement_review_state"] = (
+                entitlement_review_states.get(entitlement_id)
+                if entitlement_id
+                else None
+            )
+        gated["independent_entitlement_verification_required"] = True
+        return gated
 
     def build_claim_package(self, principal: Principal, event_id: str, supplier_id: str) -> dict:
         package = build_claim_package(self.analyze_event(principal, event_id, supplier_id))
