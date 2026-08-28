@@ -21,13 +21,14 @@ def apply_registered_evidence_gate(
     *,
     workspace_id: str,
     supplier_id: str,
+    verified_document_ids: set[str] | None = None,
+    require_verification: bool = False,
 ) -> dict:
-    """Require registered, correctly scoped evidence before claimability.
+    """Require registered, scoped, and optionally reviewer-verified evidence.
 
-    The economic engine may identify an otherwise supportable amount using source
-    references. This gate prevents those references from becoming a claim-ready
-    amount unless each required source is present in the registered evidence set
-    and passes identity/scope checks.
+    Registration proves that a concrete content hash/source identity is present.
+    When `require_verification` is true, registration alone is insufficient: the
+    current evidence review state must independently mark the document VERIFIED.
     """
     output = deepcopy(analysis)
     by_source: dict[str, EvidenceDocument] = {}
@@ -38,6 +39,7 @@ def apply_registered_evidence_gate(
         else:
             by_source[document.source_ref] = document
 
+    verified_document_ids = verified_document_ids or set()
     event = output["event"]
     for line in output["claim_lines"]:
         if line["state"] not in {"CLAIMABLE", "REQUIRES_REVIEW"}:
@@ -74,6 +76,8 @@ def apply_registered_evidence_gate(
                     f"EVIDENCE_SCOPE:{reference}:{reason}"
                     for reason in assessment.reasons
                 )
+            if require_verification and document.document_id not in verified_document_ids:
+                reasons.append(f"EVIDENCE_NOT_VERIFIED:{reference}")
 
         if reasons:
             line["pre_gate_state"] = line["state"]
@@ -106,4 +110,5 @@ def apply_registered_evidence_gate(
         for state in sorted({line["state"] for line in output["claim_lines"]})
     }
     output["registered_evidence_gate"] = "APPLIED"
+    output["independent_evidence_verification_required"] = require_verification
     return output
