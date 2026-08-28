@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Iterable
 
+from .audit import tenant_audit_trail
 from .auth import Principal
 from .case_factory import case_from_gated_analysis
 from .claimability import apply_registered_evidence_gate
@@ -76,7 +77,9 @@ class TenantService:
 
     def build_claim_package(self, principal: Principal, event_id: str, supplier_id: str) -> dict:
         package = build_claim_package(self.analyze_event(principal, event_id, supplier_id))
-        package["audit_event_count"] = self.storage.audit_count(principal.workspace_id)
+        trail = tenant_audit_trail(self.storage, principal.workspace_id)
+        package["audit_trail"] = trail
+        package["audit_event_count"] = len(trail)
         package["workspace_id"] = principal.workspace_id
         return package
 
