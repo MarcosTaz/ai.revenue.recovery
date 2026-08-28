@@ -6,9 +6,11 @@ def build_claim_package(analysis: dict) -> dict:
     missing = sorted({item for line in lines for item in line.get("missing_evidence", [])})
     gate_applied = analysis.get("registered_evidence_gate") == "APPLIED"
     gate_issues = sorted({item for line in lines for item in line.get("registered_evidence_issues", [])})
-    if not gate_applied:
+    if missing or analysis["requires_review_amount"] != "0.00":
+        review_status = "REQUIRES_HUMAN_REVIEW"
+    elif not gate_applied:
         review_status = "REGISTERED_EVIDENCE_GATE_REQUIRED"
-    elif gate_issues or analysis["requires_review_amount"] != "0.00" or missing:
+    elif gate_issues:
         review_status = "REQUIRES_HUMAN_REVIEW"
     else:
         review_status = "ECONOMIC_PACKAGE_READY_FOR_REVIEW"
