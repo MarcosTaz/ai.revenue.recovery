@@ -32,6 +32,10 @@ def seed_alpha(gateway, analyst_token, reviewer_token=None):
         gateway.store_exposure_line(analyst_token, line)
     for basis in entitlements:
         gateway.store_entitlement_basis(analyst_token, basis)
+        if reviewer_token is not None:
+            gateway.review_entitlement_basis(
+                reviewer_token, basis.entitlement_id, "VERIFIED", "synthetic entitlement reviewed"
+            )
     for item in (
         doc("D-N", "document://alpha/customer-notice", "CUSTOMER_NOTICE"),
         doc("D-I", "inventory://alpha/A1", "INVENTORY_RECORD"),
@@ -42,7 +46,7 @@ def seed_alpha(gateway, analyst_token, reviewer_token=None):
         gateway.store_evidence_document(analyst_token, item)
         if reviewer_token is not None:
             gateway.review_evidence_document(
-                reviewer_token, item.document_id, "VERIFIED", "synthetic reviewed"
+                reviewer_token, item.document_id, "VERIFIED", "synthetic document reviewed"
             )
 
 
@@ -79,7 +83,7 @@ def test_invalid_token_fails_before_business_read(tmp_path):
         store.close()
 
 
-def test_analyst_cannot_self_verify_uploaded_evidence(tmp_path):
+def test_analyst_cannot_self_verify_uploaded_evidence_or_entitlement(tmp_path):
     store = Storage(tmp_path / "gateway.db")
     try:
         store.create_workspace("A", "Supplier A")
@@ -89,13 +93,16 @@ def test_analyst_cannot_self_verify_uploaded_evidence(tmp_path):
         seed_alpha(gateway, analyst)
         with pytest.raises(PermissionError, match="REVIEWER_REQUIRED"):
             gateway.review_evidence_document(analyst, "D-C", "VERIFIED")
+        with pytest.raises(PermissionError, match="REVIEWER_REQUIRED"):
+            gateway.review_entitlement_basis(analyst, "ENT-A1", "VERIFIED")
         analysis = gateway.analyze_event(analyst, "EV-ALPHA-1", "SUP-A")
         assert analysis["claimable_total"] == "0.00"
+        assert analysis["claim_lines"][0]["reason"] == "ENTITLEMENT_UNKNOWN"
     finally:
         store.close()
 
 
-def test_reviewer_token_can_verify_but_cannot_create_source_economics_or_claim(tmp_path):
+def test_reviewer_token_verifies_but_cannot_create_source_economics_or_claim(tmp_path):
     store = Storage(tmp_path / "gateway.db")
     try:
         store.create_workspace("A", "Supplier A")
