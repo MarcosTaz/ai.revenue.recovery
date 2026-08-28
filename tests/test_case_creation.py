@@ -15,6 +15,10 @@ def principal():
     return Principal("A", "analyst", "ANALYST")
 
 
+def reviewer():
+    return Principal("A", "reviewer", "REVIEWER")
+
+
 def document(document_id, source_ref, evidence_type, *, customer, program, supplier="SUP-A", signed=None):
     return EvidenceDocument.from_bytes(
         document_id=document_id,
@@ -31,7 +35,7 @@ def document(document_id, source_ref, evidence_type, *, customer, program, suppl
     )
 
 
-def seed_alpha(service, *, with_documents=True):
+def seed_alpha(service, *, with_documents=True, verify_documents=True):
     event, exposures, entitlements, _ = alpha_components_fixture()
     p = principal()
     service.store_recovery_event(p, event)
@@ -48,6 +52,8 @@ def seed_alpha(service, *, with_documents=True):
             document("D-M", "mitigation://alpha/resale", "MITIGATION_RECORD", customer="OEM-A", program="PRG-A"),
         ):
             service.store_evidence_document(p, doc)
+            if verify_documents:
+                service.review_evidence_document(reviewer(), doc.document_id, "VERIFIED", "synthetic fixture reviewed")
     return event
 
 
@@ -86,6 +92,24 @@ def test_missing_registered_evidence_cannot_be_promoted_into_claim_case(tmp_path
         store.create_workspace("A", "Supplier A")
         service = TenantService(store)
         seed_alpha(service, with_documents=False)
+        with pytest.raises(ValueError, match="NO_CLAIMABLE_REGISTERED_EVIDENCE_LINES"):
+            service.create_case(principal(), "EV-ALPHA-1", "SUP-A")
+    finally:
+        store.close()
+
+
+def test_registered_but_unverified_evidence_cannot_be_promoted_into_claim_case(tmp_path):
+    store = Storage(tmp_path / "rr.db")
+    try:
+        store.create_workspace("A", "Supplier A")
+        service = TenantService(store)
+        seed_alpha(service, verify_documents=False)
+        analysis = service.analyze_event(principal(), "EV-ALPHA-1", "SUP-A")
+        assert analysis["claimable_total"] == "0.00"
+        assert any(
+            issue.startswith("EVIDENCE_NOT_VERIFIED:")
+            for issue in analysis["claim_lines"][0]["registered_evidence_issues"]
+        )
         with pytest.raises(ValueError, match="NO_CLAIMABLE_REGISTERED_EVIDENCE_LINES"):
             service.create_case(principal(), "EV-ALPHA-1", "SUP-A")
     finally:
@@ -140,6 +164,9 @@ def test_complete_evidence_does_not_auto_promote_legal_review_line_to_claim(tmp_
             document("P-A", "approval://partial/cap", "TOOLING_APPROVAL", customer="OEM-P", program="PRG-P", supplier="SUP-P", signed=True),
         ):
             service.store_evidence_document(p, doc)
+            service.review_evidence_document(reviewer(), doc.document_id, "VERIFIED", "synthetic fixture reviewed")
+        analysis = service.analyze_event(p, event.event_id, "SUP-P")
+        assert analysis["requires_review_amount"] == "420000.00"
         with pytest.raises(ValueError, match="NO_CLAIMABLE_REGISTERED_EVIDENCE_LINES"):
             service.create_case(p, event.event_id, "SUP-P")
     finally:
