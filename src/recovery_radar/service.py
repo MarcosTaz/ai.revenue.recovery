@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Iterable
 
 from .auth import Principal
+from .case_factory import case_from_gated_analysis
+from .claimability import apply_registered_evidence_gate
+from .engine import analyze_claim
 from .evidence import EvidenceDocument
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 from .storage import Storage
@@ -10,12 +14,11 @@ from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, rec
 
 
 class TenantService:
-    """Business boundary scoped by an already-authenticated principal.
+    """Tenant-scoped business boundary.
 
-    Reviewer credentials can participate in evidence/review states but cannot
-    create source economics, submit, negotiate, settle, or record payment.
-    Commercial disposition remains an ADMIN/ANALYST responsibility at this
-    prototype boundary.
+    Claim amounts are never accepted from callers. A claim case is derived from
+    persisted source records, recomputed by the engine, passed through the
+    registered-evidence gate, and only then persisted with analysis provenance.
     """
 
     _REVIEWER_ALLOWED_TRANSITIONS = {
@@ -55,14 +58,42 @@ class TenantService:
     def get_entitlement_basis(self, principal: Principal, entitlement_id: str) -> EntitlementBasis | None:
         return self.storage.get_entitlement_basis(principal.workspace_id, entitlement_id)
 
-    def create_case(self, principal: Principal, case: ClaimCase) -> None:
+    def create_case(
+        self,
+        principal: Principal,
+        event_id: str,
+        supplier_id: str,
+        *,
+        selected_exposure_ids: Iterable[str] | None = None,
+    ) -> ClaimCase:
+        """Derive and persist a claim from tenant-owned persisted source truth.
+
+        The caller can choose which already-claimable exposure lines to include,
+        but cannot provide case ID, amount, currency, analysis fingerprint, or a
+        precomputed analysis object.
+        """
         if principal.role not in {"ADMIN", "ANALYST"}:
             raise PermissionError("ROLE_NOT_AUTHORIZED_FOR_CASE_CREATE")
-        if case.workspace_id != principal.workspace_id:
-            raise PermissionError("CROSS_TENANT_CASE_REJECTED")
-        if case.state != "DETECTED" or case.settled_amount != 0 or case.payments:
-            raise ValueError("CASE_MUST_START_DETECTED")
+        event = self.storage.get_recovery_event(principal.workspace_id, event_id)
+        if event is None:
+            raise KeyError("RECOVERY_EVENT_NOT_FOUND")
+        exposures = self.storage.list_exposure_lines(principal.workspace_id, event_id)
+        entitlements = self.storage.list_entitlement_bases(principal.workspace_id, event_id)
+        documents = self.storage.list_evidence_documents(principal.workspace_id)
+        analysis = analyze_claim(event, exposures, entitlements)
+        gated = apply_registered_evidence_gate(
+            analysis,
+            documents,
+            workspace_id=principal.workspace_id,
+            supplier_id=supplier_id,
+        )
+        case = case_from_gated_analysis(
+            principal.workspace_id,
+            gated,
+            selected_exposure_ids=selected_exposure_ids,
+        )
         self.storage.put_claim_case(principal.workspace_id, principal.actor_id, case)
+        return case
 
     def get_case(self, principal: Principal, case_id: str) -> ClaimCase | None:
         return self.storage.get_claim_case(principal.workspace_id, case_id)
@@ -79,9 +110,7 @@ class TenantService:
     def get_evidence_document(
         self, principal: Principal, document_id: str
     ) -> EvidenceDocument | None:
-        return self.storage.get_evidence_document(
-            principal.workspace_id, document_id
-        )
+        return self.storage.get_evidence_document(principal.workspace_id, document_id)
 
     def advance_case(
         self,
