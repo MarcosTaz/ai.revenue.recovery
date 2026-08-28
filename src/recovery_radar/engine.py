@@ -1,20 +1,35 @@
 from __future__ import annotations
 
 from collections import Counter
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, localcontext
 from typing import Iterable
 
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 
 MONEY = Decimal("0.01")
-
-
-def _money(value: Decimal) -> Decimal:
-    return value.quantize(MONEY, rounding=ROUND_HALF_UP)
+MAX_SUPPORTED_ADJUSTED_EXPONENT = 100
 
 
 def _is_finite(value: Decimal) -> bool:
     return isinstance(value, Decimal) and value.is_finite()
+
+
+def _is_supported_decimal(value: Decimal) -> bool:
+    if not _is_finite(value):
+        return False
+    if value == 0:
+        return True
+    return value.copy_abs().adjusted() <= MAX_SUPPORTED_ADJUSTED_EXPONENT
+
+
+def _money(value: Decimal) -> Decimal:
+    if not _is_supported_decimal(value):
+        raise ValueError("ECONOMIC_INPUT_OUT_OF_SUPPORTED_RANGE")
+    digits = len(value.as_tuple().digits)
+    integer_places = max(value.adjusted() + 1, 1)
+    with localcontext() as context:
+        context.prec = max(28, digits + integer_places + 4)
+        return value.quantize(MONEY, rounding=ROUND_HALF_UP)
 
 
 def _missing_evidence(line: ExposureLine, basis: EntitlementBasis | None) -> list[str]:
@@ -97,11 +112,16 @@ def _analyze_line(
     )
     if any(not _is_finite(value) for value in numeric_inputs):
         return _unknown_line(event, line, basis, "NON_FINITE_ECONOMIC_INPUT")
+    if any(not _is_supported_decimal(value) for value in numeric_inputs):
+        return _unknown_line(event, line, basis, "ECONOMIC_INPUT_OUT_OF_SUPPORTED_RANGE")
     if not line.currency or not line.currency.strip():
         return _unknown_line(event, line, basis, "CURRENCY_REQUIRED")
     if line.quantity < 0 or line.unit_cost < 0 or line.mitigation_amount < 0 or line.already_reimbursed_amount < 0:
         return _unknown_line(event, line, basis, "INVALID_NEGATIVE_ECONOMIC_INPUT")
-    gross = _money(line.gross_exposure)
+    gross_raw = line.gross_exposure
+    if not _is_supported_decimal(gross_raw):
+        return _unknown_line(event, line, basis, "ECONOMIC_INPUT_OUT_OF_SUPPORTED_RANGE")
+    gross = _money(gross_raw)
     if line.mitigation_amount > gross:
         return {
             "category": line.category,
@@ -159,6 +179,8 @@ def _analyze_line(
     if basis.recoverable_cap is not None:
         if not _is_finite(basis.recoverable_cap):
             return {**base, "state": "UNKNOWN", "reason": "NON_FINITE_RECOVERABLE_CAP", "claimable_amount": None}
+        if not _is_supported_decimal(basis.recoverable_cap):
+            return {**base, "state": "UNKNOWN", "reason": "RECOVERABLE_CAP_OUT_OF_SUPPORTED_RANGE", "claimable_amount": None}
         if basis.recoverable_cap < 0:
             return {**base, "state": "UNKNOWN", "reason": "INVALID_NEGATIVE_RECOVERABLE_CAP", "claimable_amount": None}
         claimable = min(net_exposure, _money(basis.recoverable_cap))
@@ -228,7 +250,7 @@ def analyze_claim(event: RecoveryEvent, exposures: Iterable[ExposureLine], entit
     exposures = tuple(exposures)
     entitlements = tuple(entitlements)
     invalid_event = any(
-        not _is_finite(value) or value < 0
+        not _is_supported_decimal(value) or value < 0
         for value in (event.expected_volume, event.revised_volume)
     )
 
