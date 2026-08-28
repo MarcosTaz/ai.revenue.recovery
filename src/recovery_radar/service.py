@@ -8,7 +8,20 @@ from .workflow import ClaimCase, PaymentRecord, WorkflowState, advance_case, rec
 
 
 class TenantService:
-    """Business boundary scoped by an already-authenticated principal."""
+    """Business boundary scoped by an already-authenticated principal.
+
+    Reviewer credentials can participate in evidence/review states but cannot
+    submit, negotiate, settle, or record payment. Commercial disposition remains
+    an ADMIN/ANALYST responsibility at this prototype boundary.
+    """
+
+    _REVIEWER_ALLOWED_TRANSITIONS = {
+        "ANALYSIS",
+        "EVIDENCE_COLLECTION",
+        "REVIEW",
+        "CLAIM_READY",
+        "REJECTED",
+    }
 
     def __init__(self, storage: Storage):
         self.storage = storage
@@ -34,6 +47,11 @@ class TenantService:
         settled_amount: Decimal | None = None,
         settlement_evidence_ref: str | None = None,
     ) -> ClaimCase:
+        if (
+            principal.role == "REVIEWER"
+            and new_state not in self._REVIEWER_ALLOWED_TRANSITIONS
+        ):
+            raise PermissionError("ROLE_NOT_AUTHORIZED_FOR_COMMERCIAL_DISPOSITION")
         current = self.storage.get_claim_case(principal.workspace_id, case_id)
         if current is None:
             raise KeyError("CLAIM_CASE_NOT_FOUND")
