@@ -8,6 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from .evidence import EvidenceDocument
+from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 from .workflow import ClaimCase, PaymentRecord
 
 
@@ -28,6 +29,30 @@ class Storage:
             CREATE TABLE IF NOT EXISTS workspaces(
               workspace_id TEXT PRIMARY KEY,
               name TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS recovery_events(
+              workspace_id TEXT NOT NULL,
+              event_id TEXT NOT NULL,
+              payload TEXT NOT NULL,
+              PRIMARY KEY(workspace_id, event_id),
+              FOREIGN KEY(workspace_id) REFERENCES workspaces(workspace_id)
+            );
+            CREATE TABLE IF NOT EXISTS exposure_lines(
+              workspace_id TEXT NOT NULL,
+              exposure_id TEXT NOT NULL,
+              event_id TEXT NOT NULL,
+              payload TEXT NOT NULL,
+              PRIMARY KEY(workspace_id, exposure_id),
+              FOREIGN KEY(workspace_id, event_id) REFERENCES recovery_events(workspace_id, event_id)
+            );
+            CREATE TABLE IF NOT EXISTS entitlement_bases(
+              workspace_id TEXT NOT NULL,
+              entitlement_id TEXT NOT NULL,
+              event_id TEXT NOT NULL,
+              economic_loss_id TEXT NOT NULL,
+              payload TEXT NOT NULL,
+              PRIMARY KEY(workspace_id, entitlement_id),
+              FOREIGN KEY(workspace_id, event_id) REFERENCES recovery_events(workspace_id, event_id)
             );
             CREATE TABLE IF NOT EXISTS claim_cases(
               workspace_id TEXT NOT NULL,
@@ -77,6 +102,34 @@ class Storage:
             raise KeyError("WORKSPACE_NOT_FOUND")
 
     @staticmethod
+    def _serialize_event(event: RecoveryEvent) -> dict:
+        return {
+            **asdict(event),
+            "event_date": event.event_date.isoformat(),
+            "expected_volume": str(event.expected_volume),
+            "revised_volume": str(event.revised_volume),
+        }
+
+    @staticmethod
+    def _serialize_exposure(line: ExposureLine) -> dict:
+        return {
+            **asdict(line),
+            "quantity": str(line.quantity),
+            "unit_cost": str(line.unit_cost),
+            "mitigation_amount": str(line.mitigation_amount),
+            "already_reimbursed_amount": str(line.already_reimbursed_amount),
+        }
+
+    @staticmethod
+    def _serialize_entitlement(basis: EntitlementBasis) -> dict:
+        return {
+            **asdict(basis),
+            "recoverable_cap": str(basis.recoverable_cap)
+            if basis.recoverable_cap is not None
+            else None,
+        }
+
+    @staticmethod
     def _serialize_case(case: ClaimCase) -> dict:
         return {
             **asdict(case),
@@ -118,6 +171,140 @@ class Storage:
             ),
         )
 
+    def _insert_immutable(
+        self,
+        *,
+        table: str,
+        workspace_id: str,
+        id_column: str,
+        entity_id: str,
+        payload: dict,
+        actor_id: str,
+        entity_type: str,
+        extra_columns: tuple[str, ...] = (),
+        extra_values: tuple[str, ...] = (),
+    ) -> None:
+        self._workspace_exists(workspace_id)
+        raw = json.dumps(payload, sort_keys=True)
+        existing = self.conn.execute(
+            f"SELECT payload FROM {table} WHERE workspace_id=? AND {id_column}=?",
+            (workspace_id, entity_id),
+        ).fetchone()
+        if existing is not None:
+            if existing["payload"] == raw:
+                return
+            raise ValueError(f"{entity_type}_ID_CONFLICT")
+        columns = ("workspace_id", id_column, *extra_columns, "payload")
+        placeholders = ",".join("?" for _ in columns)
+        self.conn.execute(
+            f"INSERT INTO {table}({','.join(columns)}) VALUES ({placeholders})",
+            (workspace_id, entity_id, *extra_values, raw),
+        )
+        self._audit(workspace_id, actor_id, entity_type, entity_id, "CREATE", payload)
+        self.conn.commit()
+
+    def put_recovery_event(
+        self, workspace_id: str, actor_id: str, event: RecoveryEvent
+    ) -> None:
+        self._insert_immutable(
+            table="recovery_events",
+            workspace_id=workspace_id,
+            id_column="event_id",
+            entity_id=event.event_id,
+            payload=self._serialize_event(event),
+            actor_id=actor_id,
+            entity_type="RECOVERY_EVENT",
+        )
+
+    def get_recovery_event(
+        self, workspace_id: str, event_id: str
+    ) -> RecoveryEvent | None:
+        self._workspace_exists(workspace_id)
+        row = self.conn.execute(
+            "SELECT payload FROM recovery_events WHERE workspace_id=? AND event_id=?",
+            (workspace_id, event_id),
+        ).fetchone()
+        if row is None:
+            return None
+        p = json.loads(row["payload"])
+        return RecoveryEvent(
+            p["event_id"], p["customer_id"], p["program_id"], p["part_id"],
+            p["event_type"], date.fromisoformat(p["event_date"]),
+            Decimal(p["expected_volume"]), Decimal(p["revised_volume"]),
+            p["source_ref"], p["evidence_ref"]
+        )
+
+    def put_exposure_line(
+        self, workspace_id: str, actor_id: str, line: ExposureLine
+    ) -> None:
+        if self.get_recovery_event(workspace_id, line.event_id) is None:
+            raise KeyError("PARENT_EVENT_NOT_FOUND")
+        self._insert_immutable(
+            table="exposure_lines",
+            workspace_id=workspace_id,
+            id_column="exposure_id",
+            entity_id=line.exposure_id,
+            payload=self._serialize_exposure(line),
+            actor_id=actor_id,
+            entity_type="EXPOSURE_LINE",
+            extra_columns=("event_id",),
+            extra_values=(line.event_id,),
+        )
+
+    def get_exposure_line(
+        self, workspace_id: str, exposure_id: str
+    ) -> ExposureLine | None:
+        self._workspace_exists(workspace_id)
+        row = self.conn.execute(
+            "SELECT payload FROM exposure_lines WHERE workspace_id=? AND exposure_id=?",
+            (workspace_id, exposure_id),
+        ).fetchone()
+        if row is None:
+            return None
+        p = json.loads(row["payload"])
+        return ExposureLine(
+            p["exposure_id"], p["event_id"], p["economic_loss_id"], p["category"],
+            Decimal(p["quantity"]), Decimal(p["unit_cost"]), p["currency"],
+            p["inventory_or_cost_ref"], p["ownership"], Decimal(p["mitigation_amount"]),
+            p["mitigation_evidence_ref"], Decimal(p["already_reimbursed_amount"]),
+            p["reimbursement_evidence_ref"]
+        )
+
+    def put_entitlement_basis(
+        self, workspace_id: str, actor_id: str, basis: EntitlementBasis
+    ) -> None:
+        if self.get_recovery_event(workspace_id, basis.event_id) is None:
+            raise KeyError("PARENT_EVENT_NOT_FOUND")
+        self._insert_immutable(
+            table="entitlement_bases",
+            workspace_id=workspace_id,
+            id_column="entitlement_id",
+            entity_id=basis.entitlement_id,
+            payload=self._serialize_entitlement(basis),
+            actor_id=actor_id,
+            entity_type="ENTITLEMENT_BASIS",
+            extra_columns=("event_id", "economic_loss_id"),
+            extra_values=(basis.event_id, basis.economic_loss_id),
+        )
+
+    def get_entitlement_basis(
+        self, workspace_id: str, entitlement_id: str
+    ) -> EntitlementBasis | None:
+        self._workspace_exists(workspace_id)
+        row = self.conn.execute(
+            "SELECT payload FROM entitlement_bases WHERE workspace_id=? AND entitlement_id=?",
+            (workspace_id, entitlement_id),
+        ).fetchone()
+        if row is None:
+            return None
+        p = json.loads(row["payload"])
+        return EntitlementBasis(
+            p["entitlement_id"], p["event_id"], p["economic_loss_id"], p["support_state"],
+            p["contractual_basis_ref"], p["supporting_document_ref"],
+            Decimal(p["recoverable_cap"]) if p["recoverable_cap"] is not None else None,
+            p["legal_review_required"]
+        )
+
     def put_claim_case(self, workspace_id: str, actor_id: str, case: ClaimCase) -> None:
         self._workspace_exists(workspace_id)
         if case.workspace_id != workspace_id:
@@ -150,14 +337,9 @@ class Storage:
             for item in payload["payments"]
         )
         return ClaimCase(
-            payload["case_id"],
-            payload["workspace_id"],
-            Decimal(payload["claim_amount"]),
-            payload["currency"],
-            payload["state"],
-            Decimal(payload["settled_amount"]),
-            payload["settlement_evidence_ref"],
-            payments,
+            payload["case_id"], payload["workspace_id"], Decimal(payload["claim_amount"]),
+            payload["currency"], payload["state"], Decimal(payload["settled_amount"]),
+            payload["settlement_evidence_ref"], payments,
         )
 
     def put_evidence_document(
@@ -186,14 +368,7 @@ class Storage:
             "INSERT INTO evidence_documents(workspace_id,document_id,content_sha256,payload) VALUES (?,?,?,?)",
             (workspace_id, document.document_id, document.content_sha256, raw),
         )
-        self._audit(
-            workspace_id,
-            actor_id,
-            "EVIDENCE_DOCUMENT",
-            document.document_id,
-            "CREATE",
-            payload,
-        )
+        self._audit(workspace_id, actor_id, "EVIDENCE_DOCUMENT", document.document_id, "CREATE", payload)
         self.conn.commit()
 
     def get_evidence_document(
@@ -206,21 +381,13 @@ class Storage:
         ).fetchone()
         if row is None:
             return None
-        payload = json.loads(row["payload"])
+        p = json.loads(row["payload"])
         return EvidenceDocument(
-            document_id=payload["document_id"],
-            workspace_id=payload["workspace_id"],
-            supplier_id=payload["supplier_id"],
-            customer_id=payload["customer_id"],
-            program_id=payload["program_id"],
-            evidence_type=payload["evidence_type"],
-            source_ref=payload["source_ref"],
-            version_id=payload["version_id"],
-            document_date=date.fromisoformat(payload["document_date"])
-            if payload["document_date"]
-            else None,
-            content_sha256=payload["content_sha256"],
-            signed=payload["signed"],
+            document_id=p["document_id"], workspace_id=p["workspace_id"],
+            supplier_id=p["supplier_id"], customer_id=p["customer_id"],
+            program_id=p["program_id"], evidence_type=p["evidence_type"], source_ref=p["source_ref"],
+            version_id=p["version_id"], document_date=date.fromisoformat(p["document_date"]) if p["document_date"] else None,
+            content_sha256=p["content_sha256"], signed=p["signed"],
         )
 
     def audit_count(self, workspace_id: str) -> int:
@@ -241,22 +408,21 @@ class Storage:
         import hashlib
 
         self._workspace_exists(workspace_id)
-        snapshot = {
-            "claim_cases": [
+        snapshot = {}
+        for table, order_by in (
+            ("recovery_events", "event_id"),
+            ("exposure_lines", "exposure_id"),
+            ("entitlement_bases", "entitlement_id"),
+            ("claim_cases", "case_id"),
+            ("evidence_documents", "document_id"),
+        ):
+            snapshot[table] = [
                 row["payload"]
                 for row in self.conn.execute(
-                    "SELECT payload FROM claim_cases WHERE workspace_id=? ORDER BY case_id",
+                    f"SELECT payload FROM {table} WHERE workspace_id=? ORDER BY {order_by}",
                     (workspace_id,),
                 ).fetchall()
-            ],
-            "evidence_documents": [
-                row["payload"]
-                for row in self.conn.execute(
-                    "SELECT payload FROM evidence_documents WHERE workspace_id=? ORDER BY document_id",
-                    (workspace_id,),
-                ).fetchall()
-            ],
-        }
+            ]
         return hashlib.sha256(
             json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
