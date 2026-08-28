@@ -40,6 +40,9 @@ class ClaimCase:
     settled_amount: Decimal = Decimal("0")
     settlement_evidence_ref: str | None = None
     payments: tuple[PaymentRecord, ...] = ()
+    event_id: str = ""
+    analysis_fingerprint: str = ""
+    selected_exposure_ids: tuple[str, ...] = ()
 
     @property
     def paid_amount(self) -> Decimal:
