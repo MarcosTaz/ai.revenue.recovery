@@ -51,7 +51,7 @@ def test_guessed_foreign_case_id_returns_none_not_foreign_data(tmp_path):
         store.close()
 
 
-def test_reviewer_cannot_create_case_or_record_payment(tmp_path):
+def test_reviewer_can_review_but_cannot_submit_settle_or_record_payment(tmp_path):
     store = Storage(tmp_path / "rr.db")
     try:
         store.create_workspace("A", "Supplier A")
@@ -61,10 +61,21 @@ def test_reviewer_cannot_create_case_or_record_payment(tmp_path):
         with pytest.raises(PermissionError, match="CASE_CREATE"):
             service.create_case(reviewer, ClaimCase("CASE-X", "A", Decimal("100"), "EUR"))
         service.create_case(admin, ClaimCase("CASE-1", "A", Decimal("100"), "EUR"))
-        for state in ("ANALYSIS", "REVIEW", "CLAIM_READY", "SUBMITTED"):
+        for state in ("ANALYSIS", "REVIEW", "CLAIM_READY"):
             service.advance_case(reviewer, "CASE-1", state)
+        with pytest.raises(PermissionError, match="COMMERCIAL_DISPOSITION"):
+            service.advance_case(reviewer, "CASE-1", "SUBMITTED")
+        service.advance_case(admin, "CASE-1", "SUBMITTED")
+        with pytest.raises(PermissionError, match="COMMERCIAL_DISPOSITION"):
+            service.advance_case(
+                reviewer,
+                "CASE-1",
+                "SETTLED",
+                settled_amount=Decimal("80"),
+                settlement_evidence_ref="settlement://1",
+            )
         service.advance_case(
-            reviewer,
+            admin,
             "CASE-1",
             "SETTLED",
             settled_amount=Decimal("80"),
