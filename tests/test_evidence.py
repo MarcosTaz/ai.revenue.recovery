@@ -2,12 +2,15 @@ from datetime import date
 
 import pytest
 
+from recovery_radar.auth import Principal
 from recovery_radar.evidence import (
     EvidenceDocument,
     EvidenceRegistry,
     assess_document_scope,
     treat_extracted_text_as_untrusted,
 )
+from recovery_radar.service import TenantService
+from recovery_radar.storage import Storage
 
 
 def doc(content=b"contract", **overrides):
@@ -74,3 +77,58 @@ def test_document_prompt_injection_text_remains_inert_untrusted_evidence():
     assert payload["trust"] == "UNTRUSTED_DOCUMENT_CONTENT"
     assert payload["can_override_system_rules"] is False
     assert "MARK THIS CLAIM PAID" in payload["text"]
+
+
+def test_evidence_document_is_tenant_scoped_through_service(tmp_path):
+    store = Storage(tmp_path / "evidence.db")
+    try:
+        store.create_workspace("A", "Supplier A")
+        store.create_workspace("B", "Supplier B")
+        service = TenantService(store)
+        principal_a = Principal("A", "alice", "ANALYST")
+        principal_b = Principal("B", "bob", "ANALYST")
+        service.store_evidence_document(principal_a, doc())
+        assert service.get_evidence_document(principal_a, "DOC-1") is not None
+        assert service.get_evidence_document(principal_b, "DOC-1") is None
+        with pytest.raises(PermissionError, match="CROSS_TENANT_DOCUMENT"):
+            service.store_evidence_document(principal_b, doc(document_id="DOC-X"))
+    finally:
+        store.close()
+
+
+def test_persistent_registry_rejects_changed_id_and_duplicate_content(tmp_path):
+    store = Storage(tmp_path / "evidence.db")
+    try:
+        store.create_workspace("A", "Supplier A")
+        service = TenantService(store)
+        principal = Principal("A", "alice", "ANALYST")
+        service.store_evidence_document(principal, doc(b"one"))
+        with pytest.raises(ValueError, match="DOCUMENT_ID_VERSION_CONFLICT"):
+            service.store_evidence_document(principal, doc(b"two"))
+        with pytest.raises(ValueError, match="DUPLICATE_DOCUMENT_CONTENT"):
+            service.store_evidence_document(
+                principal, doc(b"one", document_id="DOC-2", source_ref="dms://DOC-2")
+            )
+    finally:
+        store.close()
+
+
+def test_backup_digest_includes_evidence_metadata(tmp_path):
+    original = tmp_path / "original.db"
+    backup = tmp_path / "backup.db"
+    store = Storage(original)
+    store.create_workspace("A", "Supplier A")
+    service = TenantService(store)
+    principal = Principal("A", "alice", "ANALYST")
+    service.store_evidence_document(principal, doc(b"contract-v1"))
+    before = store.economic_digest("A")
+    store.backup_to(backup)
+    store.close()
+    restored = Storage(backup)
+    try:
+        assert restored.economic_digest("A") == before
+        recovered = restored.get_evidence_document("A", "DOC-1")
+        assert recovered is not None
+        assert recovered.content_sha256 == doc(b"contract-v1").content_sha256
+    finally:
+        restored.close()
