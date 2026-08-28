@@ -39,13 +39,13 @@ def _document(document_id, source_ref, evidence_type, *, signed=None):
     )
 
 
-def _seed_alpha(gateway, token, *, include_contract=True):
+def _seed_alpha(gateway, analyst_token, reviewer_token, *, include_contract=True):
     event, exposures, entitlements, _ = alpha_components_fixture()
-    gateway.store_recovery_event(token, event)
+    gateway.store_recovery_event(analyst_token, event)
     for line in exposures:
-        gateway.store_exposure_line(token, line)
+        gateway.store_exposure_line(analyst_token, line)
     for basis in entitlements:
-        gateway.store_entitlement_basis(token, basis)
+        gateway.store_entitlement_basis(analyst_token, basis)
     documents = [
         _document("D-NOTICE", "document://alpha/customer-notice", "CUSTOMER_NOTICE"),
         _document("D-INV", "inventory://alpha/A1", "INVENTORY_RECORD"),
@@ -62,18 +62,22 @@ def _seed_alpha(gateway, token, *, include_contract=True):
             )
         )
     for document in documents:
-        gateway.store_evidence_document(token, document)
+        gateway.store_evidence_document(analyst_token, document)
+        gateway.review_evidence_document(
+            reviewer_token, document.document_id, "VERIFIED", "shadow dossier reviewed"
+        )
     return event
 
 
-def test_shadow_customer_save_leave_return_preserves_case_and_delivery_truth(tmp_path):
+def test_shadow_customer_save_leave_return_preserves_case_delivery_auth_and_reviews(tmp_path):
     database = tmp_path / "shadow.db"
     first = Storage(database)
     first.create_workspace("SHADOW", "Alpha Components Shadow")
     gateway = RecoveryRadarGateway(first)
     admin_token = gateway.bootstrap_workspace_admin("SHADOW", "owner")
     analyst_token = gateway.issue_key(admin_token, "analyst", "ANALYST")
-    event = _seed_alpha(gateway, analyst_token)
+    reviewer_token = gateway.issue_key(admin_token, "reviewer", "REVIEWER")
+    event = _seed_alpha(gateway, analyst_token, reviewer_token)
 
     before = gateway.build_claim_package(analyst_token, event.event_id, "SUP-ALPHA")
     case = gateway.create_case(analyst_token, event.event_id, "SUP-ALPHA")
@@ -82,6 +86,7 @@ def test_shadow_customer_save_leave_return_preserves_case_and_delivery_truth(tmp
     assert before["executive_summary"]["claimable_total"] == "800.00"
     assert before["draft_claim_package"]["status"] == "DRAFT_NOT_SUBMITTED"
     assert before["draft_claim_package"]["claimable_total"] == "800.00"
+    assert any(item["entity_type"] == "EVIDENCE_REVIEW" for item in before["audit_trail"])
     assert case.claim_amount == Decimal("800.00")
     assert case.event_id == event.event_id
     assert case.analysis_fingerprint
@@ -92,6 +97,7 @@ def test_shadow_customer_save_leave_return_preserves_case_and_delivery_truth(tmp
         returned = RecoveryRadarGateway(second)
         authenticated = returned.auth.authenticate(analyst_token)
         assert authenticated.workspace_id == "SHADOW"
+        assert returned.auth.authenticate(reviewer_token).role == "REVIEWER"
         recovered_case = returned.get_case(analyst_token, case.case_id)
         after = returned.build_claim_package(
             analyst_token, event.event_id, "SUP-ALPHA"
@@ -105,6 +111,7 @@ def test_shadow_customer_save_leave_return_preserves_case_and_delivery_truth(tmp
         assert after["audit_trail"]
         assert after["audit_event_count"] == len(after["audit_trail"])
         assert all(item["entity_id"] for item in after["audit_trail"])
+        assert returned.tenant.evidence_reviews.current_state("SHADOW", "D-CONTRACT") == "VERIFIED"
     finally:
         second.close()
 
@@ -116,7 +123,10 @@ def test_shadow_customer_incomplete_evidence_stays_explicitly_non_claim_ready(tm
         gateway = RecoveryRadarGateway(store)
         admin_token = gateway.bootstrap_workspace_admin("SHADOW", "owner")
         analyst_token = gateway.issue_key(admin_token, "analyst", "ANALYST")
-        event = _seed_alpha(gateway, analyst_token, include_contract=False)
+        reviewer_token = gateway.issue_key(admin_token, "reviewer", "REVIEWER")
+        event = _seed_alpha(
+            gateway, analyst_token, reviewer_token, include_contract=False
+        )
         package = gateway.build_claim_package(
             analyst_token, event.event_id, "SUP-ALPHA"
         )
