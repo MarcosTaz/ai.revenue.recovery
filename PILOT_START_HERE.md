@@ -6,15 +6,16 @@ This is the shortest supported path. Do not invent a parallel process.
 
 ## 1. Qualify one closed historical case
 
-Use `PILOT_ACQUISITION.md`.
+Use `PILOT_ACQUISITION.md`, `PILOT_ACCOUNT_SHORTLIST.md` and `PILOT_ROUTING_MATRIX.md`.
 
-Best current order:
+Current **T2 measurement-quality** order:
 
-1. Dauch / former AAM — closed e-Beam cancellation claim;
-2. Magna — closed North American EV cancellation/reduction recovery case;
-3. Dana — closed customer-cancelled / severe-volume-decline EV program.
+1. Dauch / former AAM — closed e-Beam cancellation claim with a known public settlement event;
+2. Dee Zee / BrightDrop — strong supplier/program/industrialization link **only if** an authorized internal historical outcome exists;
+3. Magna — one specifically closed North American EV cancellation/reduction recovery case;
+4. Dana — one closed customer-cancelled / severe-volume-decline EV case, especially useful for zero/partial-recovery falsification.
 
-Do not infer supplier exposure from an OEM cancellation alone.
+Do not confuse case fit with routing fit. Do not infer supplier exposure from an OEM cancellation alone.
 
 ## 2. Commercial test
 
@@ -28,13 +29,19 @@ This is not validated WTP. A free pilot is learning-only.
 
 External messages are drafted in `PILOT_OUTREACH_DRAFTS.md` but remain **NOT SENT / OWNER AUTHORIZATION REQUIRED**.
 
-## 3. Request only the minimum authorized data
+## 3. Record human authorization before confidential processing
 
-Use `PILOT_DATA_REQUEST.md`.
+Use `PILOT_AUTHORIZATION_RECORD.md` and the participant's actual controlled approval process.
+
+The application cannot prove that an approver had authority. Any authorization reference later stored in a scorecard remains `RECORDED_NOT_INDEPENDENTLY_VERIFIED`.
+
+## 4. Request only the minimum authorized data
+
+Use `PILOT_DATA_REQUEST.md` and `PILOT_DATA_HANDLING.md`.
 
 No ERP write access, no live customer communication, no unrelated customer/program data.
 
-## 4. Normalize the case
+## 5. Normalize the case
 
 Copy:
 
@@ -44,15 +51,30 @@ Keep stable aliases consistent. Preserve source currencies. Missing evidence sta
 
 The template is tested against the current parser.
 
-## 5. Run the assisted historical pilot
+## 6. Freeze the source scope before analysis/comparison
+
+With an authenticated workspace token:
+
+```text
+recovery-radar scope-manifest \
+  --db pilot.db \
+  --bundle bundle.json \
+  --output source-scope.json
+```
+
+Preserve both the returned `source_scope_sha256` and the exported artifact SHA-256. The manifest binds normalized economic inputs and concrete evidence-file hashes without embedding raw evidence bytes.
+
+A scope hash proves identity, **not authorization or correctness**. See `PILOT_PROVENANCE.md`.
+
+## 7. Run the assisted historical pilot
 
 Follow `PILOT_RUNBOOK.md` exactly:
 
-`bootstrap → issue distinct analyst/reviewer identities → import-bundle → independent evidence review → independent entitlement review → package → export → optional internal case`.
+`bootstrap → issue distinct analyst/reviewer identities → source-scope freeze → import-bundle → independent evidence review → independent entitlement review → package → export → optional internal case`.
 
 Stop on unresolved mixed currency, ownership, duplicate economics, evidence ambiguity, contract-version ambiguity, unsupported mitigation/prior reimbursement, or integrity/schema failure.
 
-## 6. Prepare independent historical ground truth
+## 8. Prepare independent historical ground truth
 
 Copy:
 
@@ -62,11 +84,16 @@ It intentionally starts with:
 
 - `case_origin = UNKNOWN`;
 - `ground_truth_complete = false`;
-- line disposition = `UNKNOWN`.
+- `provenance.authorization_reference = null`;
+- `provenance.source_scope_sha256 = null`;
+- `provenance.ground_truth_method = UNKNOWN`;
+- no pre-populated line.
 
-Change these only when independently supported. A caller-selected real-case label is not proof of authorization.
+Change these only when externally supported. A caller-selected real-case label or authorization reference is not proof of authorization.
 
-## 7. Produce the T2 measurement artifact
+Use `GROUND_TRUTH_PROTOCOL.md` to distinguish `BLIND`, `ASSISTED` and `UNKNOWN` ground-truth preparation.
+
+## 9. Produce the T2 measurement artifact
 
 Run:
 
@@ -81,7 +108,7 @@ recovery-radar score-historical \
 
 Preserve the SHA-256 manifest.
 
-The scorecard measures FP/FN, state/currency/value error and supplied operational metrics. It cannot promote T2, WTP, customer acceptance, settlement or recovered cash.
+The scorecard measures FP/FN, state/currency/value error and supplied operational metrics. It records provenance metadata as non-authoritative and cannot promote T2, WTP, customer acceptance, settlement or recovered cash.
 
 ## Terminal decision
 
