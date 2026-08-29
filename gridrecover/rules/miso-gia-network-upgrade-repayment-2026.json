@@ -4,7 +4,7 @@
   "jurisdiction": "US_FEDERAL_FERC",
   "transmission_provider": "MISO",
   "tariff_component": "Attachment X Appendix 6 Generator Interconnection Agreement",
-  "tariff_records": ["108.0.0", "110.0.0"],
+  "accepted_tariff_record": "110.0.0",
   "effective_date": "2026-02-04",
   "ferc_docket": "ER26-677-000",
   "ferc_acceptance_accession": "20260203-3023",
@@ -26,9 +26,9 @@
   ],
   "forbidden_shortcuts": [
     "do_not_use_total_network_upgrade_cost_as_repayable_amount_without_attachment_ff_basis",
-    "do_not_assume_tax_related_payment_is_repayable_without repayable-portion support",
-    "do_not_calculate_interest without exact payment dates, suspension periods and applicable methodology",
-    "do_not_apply this 2026 tariff record to a project governed by a different effective GIA/tariff version"
+    "do_not_assume_tax_related_payment_is_repayable_without_repayable_portion_support",
+    "do_not_calculate_interest_without_exact_payment_dates_suspension_periods_and_applicable_methodology",
+    "do_not_apply_this_2026_tariff_record_to_a_project_governed_by_a_different_effective_gia_or_tariff_version"
   ],
   "finding_policy": "NO_MISO_REPAYMENT_FINDING_UNLESS_REPAYABLE_PORTION_AND_PROJECT_GIA_ARE_SOURCE_BOUND"
 }
