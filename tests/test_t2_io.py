@@ -6,7 +6,14 @@ import pytest
 
 from recovery_radar.engine import analyze_claim
 from recovery_radar.synthetic import alpha_components_fixture
-from recovery_radar.t2_io import FORMAT, GroundTruthInputError, load_ground_truth, score_from_input
+from recovery_radar.t2_io import (
+    FORMAT,
+    SCORECARD_FORMAT,
+    GroundTruthInputError,
+    export_scorecard_atomic,
+    load_ground_truth,
+    score_from_input,
+)
 
 
 def _analysis():
@@ -64,6 +71,22 @@ def test_final_scorecard_hash_covers_case_origin_and_validation_metadata(tmp_pat
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     assert claimed == hashlib.sha256(canonical).hexdigest()
     assert len(result["source_scorecard_sha256"]) == 64
+
+
+def test_scorecard_export_is_atomic_deterministic_and_manifest_bound(tmp_path):
+    source = load_ground_truth(_write(tmp_path, _payload()))
+    scorecard = score_from_input(_analysis(), source)
+    destination = tmp_path / "out" / "scorecard.json"
+    first = export_scorecard_atomic(scorecard, destination)
+    first_bytes = destination.read_bytes()
+    second = export_scorecard_atomic(scorecard, destination)
+    second_bytes = destination.read_bytes()
+    assert first_bytes == second_bytes
+    assert first["sha256"] == second["sha256"] == hashlib.sha256(first_bytes).hexdigest()
+    assert first["scorecard_sha256"] == scorecard["scorecard_sha256"]
+    envelope = json.loads(first_bytes.decode("utf-8"))
+    assert envelope["format"] == SCORECARD_FORMAT
+    assert envelope["scorecard"]["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
 
 
 def test_real_case_origin_is_measurement_input_not_terminal_promotion(tmp_path):
