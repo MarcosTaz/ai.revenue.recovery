@@ -76,11 +76,67 @@ FAR_52_216_7_BILLING_RATE_ADJUSTMENT = RegulatoryRule(
     review_state=RuleReviewState.VERIFIED_TEXT,
 )
 
+FAR_52_232_20_NOTICE = RegulatoryRule(
+    rule_id="FAR_52_232_20_B_LIMITATION_OF_COST_NOTICE",
+    source="https://www.acquisition.gov/far/52.232-20",
+    section="52.232-20(b)",
+    source_version="FAC 2026-01; clause Limitation of Cost (Apr 1984)",
+    effective_date=date(1984, 4, 1),
+    required_clauses=frozenset({"52.232-20"}),
+    test="For an evidenced Limitation of Cost clause, test the contract-specific notice window and threshold against incurred plus forecast costs and preserve written-notice evidence.",
+    exclusions="The clause permits the notice window and threshold to be varied. Do not infer the contract-specific values from the current FAR text; use the signed contract clause. A notice condition is not a reimbursement entitlement.",
+    required_evidence=frozenset({"contract", "clause_text", "estimated_cost", "costs_incurred", "forecast_costs", "notice_terms"}),
+    review_state=RuleReviewState.VERIFIED_TEXT,
+)
+
+FAR_52_232_20_EXCESS_LIMIT = RegulatoryRule(
+    rule_id="FAR_52_232_20_D_LIMITATION_OF_COST_EXCESS",
+    source="https://www.acquisition.gov/far/52.232-20",
+    section="52.232-20(d)-(g)",
+    source_version="FAC 2026-01; clause Limitation of Cost (Apr 1984)",
+    effective_date=date(1984, 4, 1),
+    required_clauses=frozenset({"52.232-20"}),
+    test="Costs above the evidenced estimated-cost limit are not automatically reimbursable; written Contracting Officer action increasing the estimated cost is material and change orders do not alone authorize excess cost unless they increase the estimated cost.",
+    exclusions="Do not convert excess incurred cost, a change order, informal communication, or forecast variance into a receivable. Contract-specific exceptions and historic clause versions require review.",
+    required_evidence=frozenset({"contract", "clause_text", "estimated_cost", "costs_incurred", "contracting_officer_written_action", "modifications"}),
+    review_state=RuleReviewState.VERIFIED_TEXT,
+)
+
+FAR_52_232_22_NOTICE = RegulatoryRule(
+    rule_id="FAR_52_232_22_C_LIMITATION_OF_FUNDS_NOTICE",
+    source="https://www.acquisition.gov/far/52.232-22",
+    section="52.232-22(c)-(d)",
+    source_version="FAC 2026-01; clause Limitation of Funds (Apr 1984)",
+    effective_date=date(1984, 4, 1),
+    required_clauses=frozenset({"52.232-22"}),
+    test="For an evidenced Limitation of Funds clause, compare incurred plus forecast costs with the contract-specific percentage of funds actually allotted and preserve required written notices.",
+    exclusions="The clause permits the notice window and threshold to vary. Do not assume estimated total cost equals funds allotted. A notice condition is not an entitlement to additional funding.",
+    required_evidence=frozenset({"contract", "clause_text", "allotted_funds", "costs_incurred", "forecast_costs", "notice_terms"}),
+    review_state=RuleReviewState.VERIFIED_TEXT,
+)
+
+FAR_52_232_22_EXCESS_LIMIT = RegulatoryRule(
+    rule_id="FAR_52_232_22_F_LIMITATION_OF_FUNDS_EXCESS",
+    source="https://www.acquisition.gov/far/52.232-22",
+    section="52.232-22(f)-(j)",
+    source_version="FAC 2026-01; clause Limitation of Funds (Apr 1984)",
+    effective_date=date(1984, 4, 1),
+    required_clauses=frozenset({"52.232-22"}),
+    test="Costs above the amount actually allotted are not automatically reimbursable; written Contracting Officer action increasing the allotment is material and change orders alone do not authorize excess cost unless they increase the allotment.",
+    exclusions="Do not infer additional funding from estimated cost, informal communications, performance continuation, or an unsupported modification. Contract-specific exceptions and historic clause versions require review.",
+    required_evidence=frozenset({"contract", "clause_text", "allotted_funds", "costs_incurred", "contracting_officer_written_action", "modifications"}),
+    review_state=RuleReviewState.VERIFIED_TEXT,
+)
+
 RULES = {
     rule.rule_id: rule
     for rule in (
         FAR_52_216_7_UPDATE_BILLINGS,
         FAR_52_216_7_COMPLETION_VOUCHER,
         FAR_52_216_7_BILLING_RATE_ADJUSTMENT,
+        FAR_52_232_20_NOTICE,
+        FAR_52_232_20_EXCESS_LIMIT,
+        FAR_52_232_22_NOTICE,
+        FAR_52_232_22_EXCESS_LIMIT,
     )
 }
