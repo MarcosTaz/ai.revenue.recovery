@@ -1,8 +1,8 @@
 {
   "name": "gridrecover-core",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "scripts": {
-    "test": "node test/gridrecover-core.test.js && node test/project-model.test.js && node test/cluster-withdrawal.test.js && node test/synthetic-case-pack.test.js && node test/dossier.test.js && node test/case-store.test.js && node test/audit-log.test.js && node test/pilot-admission.test.js && node test/web-api.test.js && node test/encrypted-snapshot.test.js && node test/state-manager.test.js"
+    "test": "node test/gridrecover-core.test.js && node test/project-model.test.js && node test/cluster-withdrawal.test.js && node test/synthetic-case-pack.test.js && node test/dossier.test.js && node test/case-store.test.js && node test/audit-log.test.js && node test/pilot-admission.test.js && node test/web-api.test.js && node test/encrypted-snapshot.test.js && node test/state-manager.test.js && node test/document-ingest.test.js"
   }
 }
