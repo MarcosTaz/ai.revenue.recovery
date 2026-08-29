@@ -77,6 +77,16 @@ class IndirectTrueUpTests(unittest.TestCase):
         self.assertEqual(result.state, FindingState.NO_VARIANCE)
         self.assertEqual(result.variance, D("0.00"))
 
+    def test_negative_numeric_input_never_creates_recovery(self):
+        result = compute_indirect_true_up(self.base_case(allocation_base=D("-100")))
+        self.assertEqual(result.state, FindingState.REQUIRES_REVIEW)
+        self.assertIsNone(result.variance)
+
+    def test_nonfinite_numeric_input_never_creates_recovery(self):
+        result = compute_indirect_true_up(self.base_case(final_rate=D("NaN")))
+        self.assertEqual(result.state, FindingState.REQUIRES_REVIEW)
+        self.assertIsNone(result.billed_indirect)
+
 
 if __name__ == "__main__":
     unittest.main()
