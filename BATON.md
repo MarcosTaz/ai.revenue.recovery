@@ -4,6 +4,7 @@ MISSION: customer program cancellation / severe volume reduction → stranded ex
 
 REPOSITORY: `MarcosTaz/ai.revenue.recovery`
 BRANCH: `recovery-radar/program-cancellation-claims`
+VERSION: `v0.2.1`
 BASE MAIN: `e9bce10a907b3c79b8702199e2cd78803a64c6d6`
 MAIN SOURCE TRUTH AT RECOVERY: repository contained only `.gitkeep`; no prior Recovery Radar implementation was present in GitHub source.
 
@@ -11,8 +12,9 @@ BUSINESS_STATE: `SIGNAL / HIGH COMPETITIVE COLLISION / WTP UNKNOWN / COMMERCIAL 
 
 TERMINAL_STATE: `T1 — PILOT CAPABLE`, restricted to `CONTROLLED_ASSISTED_HISTORICAL_PILOT`.
 NEXT_TERMINAL: `T2 — REAL-CASE VALIDATED`.
+T2_MEASUREMENT_INFRA: `READY_LOCAL / REAL_CASE_NOT_RUN`.
 
-T1 does not mean production SaaS, legal autonomy, external claim submission, buyer acceptance, willingness to pay, settlement or recovered cash.
+T1 does not mean production SaaS, legal autonomy, external claim submission, buyer acceptance, willingness to pay, settlement or recovered cash. T2 cannot be promoted by a synthetic fixture, caller-selected case label, scorecard field or free-text WTP note.
 
 SURVIVING WEDGE: **supplier-side cancellation-claim pre-audit** for customer program cancellation / severe volume reduction, especially stranded E&O / raw material / WIP / finished goods / tooling / NRE / supplier commitments. Do not broaden into generic AP recovery, warranty recovery or generic planning evidence.
 
@@ -49,12 +51,22 @@ DONE:
 - strict `RECOVERY_RADAR_PILOT_BUNDLE_V1` loader with size/type/enum/path controls and content hashes derived from concrete evidence bytes;
 - atomic pilot-bundle ingestion: event/exposure/entitlement/evidence/audit commit together or roll back together;
 - exact bundle retry idempotency;
-- assisted-pilot CLI: bootstrap, issue-key, import-bundle, review-evidence, review-entitlement, package, export, create-case;
+- assisted-pilot CLI: bootstrap, issue-key, import-bundle, review-evidence, review-entitlement, package, export, create-case, score-historical;
 - deterministic correctness acceptance for 2,000 claim lines;
-- controlled historical-pilot protocol in `PILOT_RUNBOOK.md`.
+- controlled historical-pilot protocol in `PILOT_RUNBOOK.md`;
+- strict `RECOVERY_RADAR_GROUND_TRUTH_V1` parser with explicit completeness/case-origin and typed economic/operational fields;
+- T2 scorecard measures FP/FN, state/currency mismatches and monetary error by currency;
+- scorecard WTP remains `UNKNOWN_EXTERNAL`; a supplied WTP reference is only `RECORDED_NOT_INDEPENDENTLY_VERIFIED`;
+- synthetic scorecard is `NON_REAL_CASE_MEASUREMENT_ONLY` and cannot promote T2;
+- real-case label is only `REAL_CASE_MEASUREMENT_INPUT`, not proof of authorization or terminal validation;
+- final scorecard metadata is SHA-256 bound and atomically/fsync exported as `RECOVERY_RADAR_T2_SCORECARD_V1`;
+- authenticated CLI→persisted analysis→ground truth→scorecard-file path tested end-to-end.
 
 PRODUCT_TRUTH:
 A nonempty evidence-reference string is never proof. For the T1 assisted-pilot application, required evidence must be registered, correctly scoped and currently VERIFIED by an independent reviewer. Related entitlement interpretations must also be independently VERIFIED. Gate failure keeps/returns the line to a non-claimable/review state. `CLAIMABLE` remains an internal economic/evidence workflow conclusion, not legal certainty, settlement or cash. `PAID` requires evidenced payments reconciling to settlement.
+
+T2_TRUTH:
+The application can construct a reproducible measurement artifact but cannot decide that a real case validates the product. T2 requires Factory review of authorized real/historical case evidence and absence of unresolved material truth-integrity failures. WTP, customer acceptance and recovered cash remain separate external facts.
 
 CONTRACT_VERSION_TRUTH:
 The system does not infer that a later contract or amendment automatically supersedes an earlier one. Competing records for the same source identity fail closed as ambiguous until a human commercial/legal reviewer resolves applicability outside the deterministic engine.
@@ -66,13 +78,13 @@ PERSISTENCE_TRUTH:
 Source graph, reviews, workflow, audit and evidence metadata/hash persist. Raw evidence bytes remain outside the registry. Pilot bundle ingestion is atomic and retry-safe. Backups are verified. Schema compatibility fails closed; no automatic data-transform migration is claimed.
 
 LAST EXACT GREEN:
-`61cdbbc81a37cef07333c7080b074f3f3a22b732` — GitHub Actions SUCCESS; **131 passed in 31.49s** on Python 3.13.15.
+`134f8e90604ff28d2fa97da32d88a98e580e85db` — GitHub Actions SUCCESS; **147 passed in 31.36s** on Python 3.13.15.
 
 CURRENT_HEAD_STATE:
-Documentation/runbook/BATON commits after `61cdbbc...` are `NOT_FULLY_VERIFIED` until exact-current-head GitHub Actions completes. Do not call the newest branch HEAD GREEN before that observation.
+Version/documentation/BATON reconciliation after `134f8e90...` is `NOT_FULLY_VERIFIED` until exact-current-head GitHub Actions completes. Any regression becomes ACTIVE immediately.
 
 P0/P1:
-No known unresolved P0/P1 in the covered local assisted-pilot surface at the last exact GREEN. This does not establish absence across production hosting/IAM or unknown real supplier data. Any material failure discovered by the historical pilot becomes ACTIVE immediately.
+No known unresolved P0/P1 in the covered local assisted-pilot + T2-measurement surface at the last exact GREEN. This does not establish absence across production hosting/IAM or unknown real supplier data. Any material failure discovered by a historical pilot becomes ACTIVE immediately.
 
 COMPETITION / KILL TEST:
 - SupplyWhy materially collides with automotive supplier claim recovery around demand changes, inventory/cost exposure and evidence/recovery review.
@@ -83,13 +95,15 @@ COMPETITION / KILL TEST:
 This kills generic “supplier claim evidence” positioning but leaves the narrower supplier-side **pre-audit before OEM scrutiny** hypothesis alive. Commercial differentiation/WTP remains unproven.
 
 ACTIVE:
-1. obtain exact-current-head CI GREEN after README/PILOT_READINESS/PILOT_RUNBOOK/BATON reconciliation;
-2. if GREEN, execute T2 preparation: one controlled real/historical authorized supplier case protocol, ground-truth comparison sheet and measurement capture;
-3. any current-head regression becomes ACTIVE repair before T2 work.
+1. obtain exact-current-head CI GREEN for v0.2.1 code/version/docs/BATON;
+2. if GREEN, continue safe public pilot-acquisition preparation and real-case eligibility design without sending outreach;
+3. any current-head regression becomes ACTIVE repair before acquisition work.
 
 NEXT:
-- T2 historical/real-case ground-truth runner and measurement artifact;
-- record analyst preparation time, reviewer time, false positives/negatives, duplicate prevention, reviewer corrections and missing-evidence usefulness;
+- shortlist public cancellation/reduction triggers where a supplier-side historical pre-audit pilot could be relevant;
+- prepare non-sent pilot qualification material and exact data-request checklist;
+- when authorized real data exists, run `import-bundle → review → package/export → score-historical`;
+- record analyst preparation time, reviewer time, false positives/negatives, reviewer corrections and missing-evidence usefulness;
 - compare modeled claimability to known submitted/accepted/settled/paid outcome when authorized outcome data exists;
 - decide whether real-data failures require P0/P1 repair or wedge adjustment;
 - only after real-case operational evidence, test willingness to pay / paid pilot.
@@ -100,7 +114,7 @@ WAIT:
 - negotiation or settlement action;
 - production deployment / secrets / provider configuration;
 - spending;
-- WTP or paid-pilot evidence;
+- independently verified WTP or paid-pilot evidence;
 - merge to `main` without explicit authorization.
 
 REAL_WORLD_TRUTH:
@@ -111,4 +125,4 @@ RECOVERY_RADAR_REVENUE_RECEIVED = €0
 WTP = UNKNOWN
 
 RESUME_AT:
-`EXACT CURRENT HEAD CI → REPAIR IF RED → T2 HISTORICAL CASE MEASUREMENT INFRA → WAIT ONLY FOR AUTHORIZED REAL CASE DATA`.
+`EXACT CURRENT HEAD CI → REPAIR IF RED → PUBLIC PILOT-ACQUISITION PREP → REAL CASE WHEN AUTHORIZED`.
