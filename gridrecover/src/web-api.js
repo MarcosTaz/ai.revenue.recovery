@@ -8,14 +8,15 @@ const { evaluatePilotAdmission } = require('./pilot-admission');
 const { evaluateNetworkUpgradeRepayment } = require('./gridrecover-core');
 const { evaluateClusterWithdrawalCapital } = require('./cluster-withdrawal');
 const { buildRecoveryDossier } = require('./dossier');
+const { ingestDocumentBytes } = require('./document-ingest');
 
 function json(res, status, body) {
   const payload = JSON.stringify(body);
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(payload) });
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(payload), 'cache-control': 'no-store' });
   res.end(payload);
 }
 
-async function readJson(req, limit = 1024 * 1024) {
+async function readBytes(req, limit) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
@@ -23,8 +24,13 @@ async function readJson(req, limit = 1024 * 1024) {
     if (size > limit) throw new Error('PAYLOAD_TOO_LARGE');
     chunks.push(chunk);
   }
-  if (!chunks.length) return {};
-  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+  return Buffer.concat(chunks);
+}
+
+async function readJson(req, limit = 1024 * 1024) {
+  const bytes = await readBytes(req, limit);
+  if (!bytes.length) return {};
+  try { return JSON.parse(bytes.toString('utf8')); }
   catch { throw new Error('INVALID_JSON'); }
 }
 
@@ -32,7 +38,7 @@ function tokenActorId(token) {
   return `token-sha256:${crypto.createHash('sha256').update(token, 'utf8').digest('hex').slice(0, 24)}`;
 }
 
-function createApi({ tokenToCustomer = {}, store = new CaseStore(), audit = new AuditLog(), now = () => new Date().toISOString() } = {}) {
+function createApi({ tokenToCustomer = {}, store = new CaseStore(), audit = new AuditLog(), vault = null, now = () => new Date().toISOString() } = {}) {
   function actor(req) {
     const auth = req.headers.authorization || '';
     const match = /^Bearer\s+(.+)$/.exec(auth);
@@ -44,7 +50,7 @@ function createApi({ tokenToCustomer = {}, store = new CaseStore(), audit = new 
     try {
       const url = new URL(req.url, 'http://localhost');
       if (req.method === 'GET' && url.pathname === '/health') {
-        return json(res, 200, { ok: true, service: 'gridrecover', production_ready: false });
+        return json(res, 200, { ok: true, service: 'gridrecover', production_ready: false, document_vault: Boolean(vault) });
       }
 
       const a = actor(req);
@@ -64,6 +70,43 @@ function createApi({ tokenToCustomer = {}, store = new CaseStore(), audit = new 
         const created = store.createCase(a, record);
         audit.append({ customer_id: a.customer_id, case_id: created.case_id, actor_id: a.actor_id, action: 'CASE_CREATED', at: now(), detail: { project_id: created.project_id || null } });
         return json(res, 201, created);
+      }
+
+      const documentUploadMatch = /^\/api\/cases\/([^/]+)\/documents$/.exec(url.pathname);
+      if (req.method === 'POST' && documentUploadMatch) {
+        if (!vault) return json(res, 503, { error: 'DOCUMENT_VAULT_UNAVAILABLE' });
+        const caseId = decodeURIComponent(documentUploadMatch[1]);
+        try { store.getCase(a, caseId); }
+        catch (e) { if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' }); throw e; }
+
+        const documentId = String(req.headers['x-document-id'] || '');
+        const documentType = String(req.headers['x-document-type'] || '');
+        const fileExtension = String(req.headers['x-file-extension'] || '').toLowerCase();
+        const bytes = await readBytes(req, 25 * 1024 * 1024);
+        const ingested = ingestDocumentBytes({ bytes, fileExtension, documentId, documentType });
+        const saved = vault.put({ customerId: a.customer_id, documentId, documentType, bytes });
+        if (saved.source_sha256 !== ingested.source_sha256) {
+          try { vault.delete({ customerId: a.customer_id, documentId }); } catch {}
+          throw new Error('VAULT_INGEST_HASH_MISMATCH');
+        }
+        try {
+          store.appendEvidence(a, caseId, {
+            document_id: documentId,
+            document_type: documentType,
+            source_sha256: ingested.source_sha256,
+            sha256: ingested.source_sha256,
+            byte_length: ingested.byte_length,
+            file_extension: fileExtension,
+            extraction_method: ingested.extraction_method,
+            locator_count: ingested.locators.length,
+            locators: ingested.locators
+          });
+        } catch (error) {
+          try { vault.delete({ customerId: a.customer_id, documentId }); } catch {}
+          throw error;
+        }
+        audit.append({ customer_id: a.customer_id, case_id: caseId, actor_id: a.actor_id, action: 'DOCUMENT_INGESTED', at: now(), detail: { document_id: documentId, document_type: documentType, source_sha256: ingested.source_sha256, byte_length: ingested.byte_length } });
+        return json(res, 201, { document_id: documentId, document_type: documentType, source_sha256: ingested.source_sha256, byte_length: ingested.byte_length, extraction_method: ingested.extraction_method, locator_count: ingested.locators.length });
       }
 
       const caseMatch = /^\/api\/cases\/([^/]+)$/.exec(url.pathname);
@@ -102,8 +145,10 @@ function createApi({ tokenToCustomer = {}, store = new CaseStore(), audit = new 
 
       return json(res, 404, { error: 'NOT_FOUND' });
     } catch (e) {
-      if (e.message === 'PAYLOAD_TOO_LARGE') return json(res, 413, { error: e.message });
+      if (e.message === 'PAYLOAD_TOO_LARGE' || e.message === 'DOCUMENT_TOO_LARGE') return json(res, 413, { error: e.message });
       if (e.message === 'INVALID_JSON') return json(res, 400, { error: e.message });
+      if (/^(DOCUMENT_|PDF_|CUSTOMER_ID_|DOCUMENT_ID_|DOCUMENT_TYPE_)/.test(e.message)) return json(res, 400, { error: e.message });
+      if (e.message === 'EVIDENCE_ID_EXISTS' || e.message === 'DOCUMENT_ID_EXISTS') return json(res, 409, { error: e.message });
       return json(res, 500, { error: 'INTERNAL_ERROR' });
     }
   };
@@ -114,4 +159,4 @@ function startServer(options = {}, port = 0) {
   return new Promise(resolve => server.listen(port, '127.0.0.1', () => resolve(server)));
 }
 
-module.exports = { createApi, startServer, readJson, tokenActorId };
+module.exports = { createApi, startServer, readJson, readBytes, tokenActorId };
