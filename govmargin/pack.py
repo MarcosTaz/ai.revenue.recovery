@@ -44,14 +44,24 @@ def build_recovery_pack(
     organization_id: str,
     findings: Iterable[EconomicFinding],
     reviews: Iterable[HumanReview],
+    required_approvals: int = 1,
 ) -> RecoveryPack:
+    if required_approvals < 1:
+        raise ValueError("required_approvals must be at least 1")
     findings = list(findings)
     reviews = list(reviews)
-    review_by_finding: Dict[str, HumanReview] = {}
+    known_findings = {finding.finding_id for finding in findings}
+
+    reviews_by_finding: Dict[str, List[HumanReview]] = {}
+    reviewer_keys = set()
     for review in reviews:
-        if review.finding_id in review_by_finding:
-            raise ValueError(f"Multiple terminal reviews for finding {review.finding_id}")
-        review_by_finding[review.finding_id] = review
+        if review.finding_id not in known_findings:
+            raise ValueError(f"Review references unknown finding {review.finding_id}")
+        reviewer_key = (review.finding_id, review.reviewer_id)
+        if reviewer_key in reviewer_keys:
+            raise ValueError(f"Duplicate reviewer {review.reviewer_id} for finding {review.finding_id}")
+        reviewer_keys.add(reviewer_key)
+        reviews_by_finding.setdefault(review.finding_id, []).append(review)
 
     approved: List[dict] = []
     payables: List[dict] = []
@@ -59,9 +69,17 @@ def build_recovery_pack(
 
     for finding in findings:
         item = _jsonable_finding(finding)
-        review = review_by_finding.get(finding.finding_id)
+        finding_reviews = reviews_by_finding.get(finding.finding_id, [])
         if finding.state == FindingState.RECOVERY_CANDIDATE:
-            if review is not None and review.decision == ReviewDecision.APPROVED:
+            has_blocking_review = any(
+                review.decision in {ReviewDecision.REJECTED, ReviewDecision.NEEDS_MORE_EVIDENCE}
+                for review in finding_reviews
+            )
+            approval_count = sum(
+                review.decision == ReviewDecision.APPROVED
+                for review in finding_reviews
+            )
+            if not has_blocking_review and approval_count >= required_approvals:
                 approved.append(item)
             else:
                 unresolved.append(item)
