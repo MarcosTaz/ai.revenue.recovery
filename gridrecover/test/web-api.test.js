@@ -4,7 +4,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { startServer, tokenActorId } = require('../src/web-api');
+const { startServer, tokenActorId, resolveCustomerForToken } = require('../src/web-api');
 const { DocumentVault } = require('../src/document-vault');
 
 const secretToken = 'super-secret-bearer-value';
@@ -12,6 +12,10 @@ const actorId = tokenActorId(secretToken);
 assert.match(actorId, /^token-sha256:[a-f0-9]{24}$/);
 assert.equal(actorId.includes(secretToken), false);
 assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
+assert.equal(resolveCustomerForToken({}, 'toString'), null);
+assert.equal(resolveCustomerForToken({}, 'constructor'), null);
+assert.equal(resolveCustomerForToken({ ownToken: 'CUSTOMER-X' }, 'ownToken'), 'CUSTOMER-X');
+assert.equal(resolveCustomerForToken({ ownToken: '' }, 'ownToken'), null);
 
 (async () => {
   const vaultDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gridrecover-api-vault-'));
@@ -34,6 +38,9 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
     r = await req('/api/cases', { method: 'POST', body: JSON.stringify({ case_id: 'C1', project_id: 'P1' }) }, null);
     assert.equal(r.status, 401);
 
+    r = await req('/api/cases', { method: 'POST', body: JSON.stringify({ case_id: 'PROTO', project_id: 'PX' }) }, 'toString');
+    assert.equal(r.status, 401);
+
     r = await req('/api/cases', { method: 'POST', body: JSON.stringify({ case_id: 'C1', project_id: 'P1' }) });
     assert.equal(r.status, 201);
     assert.equal((await r.json()).customer_id, 'A');
@@ -43,6 +50,15 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
 
     r = await req('/api/cases/C1', { method: 'GET' }, 'tokenB');
     assert.equal(r.status, 404);
+
+    r = await req('/api/cases', { method: 'POST', body: JSON.stringify({ case_id: 'C1', project_id: 'P1-B' }) }, 'tokenB');
+    assert.equal(r.status, 201);
+    assert.equal((await r.json()).customer_id, 'B');
+    r = await req('/api/cases/C1', { method: 'GET' }, 'tokenB');
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).project_id, 'P1-B');
+    r = await req('/api/cases/C1', { method: 'GET' }, 'tokenA');
+    assert.equal((await r.json()).project_id, 'P1');
 
     const docBytes = Buffer.from('Article 11.4.1\nMISO repayment source test\n', 'utf8');
     r = await req('/api/cases/C1/documents', {
@@ -65,7 +81,13 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
       method: 'POST', body: docBytes,
       headers: { 'content-type': 'application/octet-stream', 'x-document-id': 'B-DOC', 'x-document-type': 'EXECUTED_LGIA', 'x-file-extension': '.txt' }
     }, 'tokenB');
-    assert.equal(r.status, 404);
+    assert.equal(r.status, 201);
+    const bUpload = await r.json();
+    assert.equal(bUpload.document_id, 'B-DOC');
+    r = await req('/api/cases/C1', { method: 'GET' }, 'tokenB');
+    const bCase = await r.json();
+    assert.equal(bCase.evidence.length, 1);
+    assert.equal(bCase.evidence[0].document_id, 'B-DOC');
 
     r = await req('/api/cases/C1/documents', {
       method: 'POST', body: docBytes,
@@ -93,7 +115,8 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
     assert.equal(evaluation.verified_repayable_base, 700);
 
     r = await req('/api/evaluate/network-upgrade', { method: 'POST', body: JSON.stringify({ case_id: 'C1', input: networkInput }) }, 'tokenB');
-    assert.equal(r.status, 404);
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).candidate_amount, 400);
 
     r = await req('/api/dossiers', { method: 'POST', body: JSON.stringify({
       case_id: 'C1',
@@ -116,7 +139,7 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
     assert.equal(r.status, 200);
     assert.equal((await r.json()).customer_id, 'A');
 
-    console.log('GRIDRECOVER web API + document upload: 23/23 PASS');
+    console.log('GRIDRECOVER web API + document upload: 34/34 PASS');
   } finally {
     await new Promise(resolve => server.close(resolve));
     fs.rmSync(vaultDir, { recursive: true, force: true });
