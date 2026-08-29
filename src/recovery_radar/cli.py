@@ -10,7 +10,11 @@ from typing import Any, Sequence
 
 from .gateway import RecoveryRadarGateway
 from .pilot_bundle import ingest_pilot_bundle, load_pilot_bundle
-from .scope_manifest import build_source_scope_manifest, export_source_scope_atomic
+from .scope_manifest import (
+    build_source_scope_manifest,
+    build_source_scope_manifest_from_records,
+    export_source_scope_atomic,
+)
 from .storage import Storage
 from .t2_io import export_scorecard_atomic, load_ground_truth, score_from_input
 
@@ -121,6 +125,33 @@ def _open(db: str) -> tuple[Storage, RecoveryRadarGateway]:
         raise
 
 
+def _current_persisted_scope(
+    storage: Storage,
+    workspace_id: str,
+    event_id: str,
+    supplier_id: str,
+) -> dict:
+    event = storage.get_recovery_event(workspace_id, event_id)
+    if event is None:
+        raise KeyError("RECOVERY_EVENT_NOT_FOUND")
+    exposures = storage.list_exposure_lines(workspace_id, event_id)
+    entitlements = storage.list_entitlement_bases(workspace_id, event_id)
+    evidence_documents = [
+        document
+        for document in storage.list_evidence_documents(workspace_id)
+        if document.supplier_id == supplier_id
+        and document.customer_id == event.customer_id
+        and document.program_id == event.program_id
+    ]
+    return build_source_scope_manifest_from_records(
+        supplier_id=supplier_id,
+        event=event,
+        exposures=exposures,
+        entitlements=entitlements,
+        evidence_documents=evidence_documents,
+    )
+
+
 def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
     args = _parser().parse_args(argv)
 
@@ -215,7 +246,28 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         if args.command == "score-historical":
             analysis = gateway.analyze_event(token, args.event_id, args.supplier_id)
             ground_truth = load_ground_truth(args.ground_truth)
+            expected_scope = ground_truth["provenance"].get("source_scope_sha256")
+            current_scope = _current_persisted_scope(
+                storage, principal.workspace_id, args.event_id, args.supplier_id
+            )
+            if expected_scope and expected_scope != current_scope["source_scope_sha256"]:
+                raise ValueError("SOURCE_SCOPE_SHA256_MISMATCH")
             scorecard = score_from_input(analysis, ground_truth)
+            scorecard["provenance"]["persisted_source_scope_sha256"] = current_scope[
+                "source_scope_sha256"
+            ]
+            scorecard["provenance"]["persisted_source_scope_status"] = (
+                "MATCHED_RECORDED_SCOPE"
+                if expected_scope
+                else "CURRENT_SCOPE_COMPUTED_NO_REFERENCE_TO_COMPARE"
+            )
+            unsigned = dict(scorecard)
+            unsigned.pop("scorecard_sha256", None)
+            import hashlib
+            canonical = json.dumps(
+                unsigned, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+            scorecard["scorecard_sha256"] = hashlib.sha256(canonical).hexdigest()
             manifest = export_scorecard_atomic(scorecard, args.output)
             return {
                 "command": "score-historical",
