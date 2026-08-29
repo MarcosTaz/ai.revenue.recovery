@@ -17,8 +17,27 @@ assert.equal(log.listForCustomer('B').length, 1);
 assert.throws(() => log.append({ customer_id: 'A' }), /AUDIT_EVENT_INCOMPLETE/);
 assert.throws(() => log.append({ customer_id: 'A', case_id: 'C1', actor_id: 'u1', action: 'X', at: 'not-a-date' }), /AUDIT_TIMESTAMP_INVALID/);
 
+const state = log.exportState();
+assert.equal(state.version, 1);
+assert.equal(state.events.length, 3);
+const restarted = AuditLog.fromState(state);
+assert.equal(restarted.verify(), true);
+assert.equal(restarted.listForCustomer('A').length, 2);
+const e4 = restarted.append({ customer_id: 'A', case_id: 'C1', actor_id: 'u4', action: 'DOSSIER_GENERATED', at: '2026-08-29T20:03:00Z', detail: { status: 'SUPPORTED_CANDIDATE' } });
+assert.equal(e4.previous_hash, e3.event_hash);
+assert.equal(restarted.verify(), true);
+
+const tamperedState = log.exportState();
+tamperedState.events[1].action = 'TAMPERED';
+assert.throws(() => AuditLog.fromState(tamperedState), /AUDIT_CHAIN_INVALID/);
+assert.throws(() => AuditLog.fromState({ version: 2, events: [] }), /AUDIT_STATE_INVALID/);
+
+state.events[0].action = 'MUTATED_AFTER_RESTORE';
+assert.equal(restarted.verify(), true);
+assert.equal(restarted.listForCustomer('A')[0].action, 'CASE_CREATED');
+
 const original = log.events[1];
 log.events[1] = { ...original, action: 'TAMPERED' };
 assert.equal(log.verify(), false);
 
-console.log('GRIDRECOVER audit log: 9/9 PASS');
+console.log('GRIDRECOVER audit log security/restart: 17/17 PASS');
