@@ -152,6 +152,7 @@ def score_from_input(analysis: dict, source: dict) -> dict:
     )
     result["source_scorecard_sha256"] = result.pop("scorecard_sha256")
     result["case_origin"] = source["case_origin"]
+    result["case_origin_status"] = "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
     result["validation_classification"] = (
         "REAL_CASE_MEASUREMENT_INPUT"
         if source["case_origin"] == "REAL_AUTHORIZED_HISTORICAL_CASE"
