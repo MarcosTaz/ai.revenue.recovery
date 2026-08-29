@@ -1,0 +1,24 @@
+name: GRIDRECOVER CI
+
+on:
+  push:
+    branches:
+      - 'gridrecover/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate rule JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgia-network-upgrade-repayment.json','utf8'))"
+      - name: Run GRIDRECOVER core regressions
+        run: cd gridrecover && npm test
