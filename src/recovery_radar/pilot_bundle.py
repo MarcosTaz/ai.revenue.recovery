@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
+from .bundle_ingest import ingest_bundle_atomic
 from .evidence import EvidenceDocument
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 
@@ -318,20 +319,5 @@ def load_pilot_bundle(path: str | Path, *, workspace_id: str) -> PilotBundle:
 
 
 def ingest_pilot_bundle(gateway, token: str, bundle: PilotBundle) -> dict[str, Any]:
-    """Persist normalized source truth. Verification remains a separate human act."""
-    gateway.store_recovery_event(token, bundle.event)
-    for exposure in bundle.exposures:
-        gateway.store_exposure_line(token, exposure)
-    for entitlement in bundle.entitlements:
-        gateway.store_entitlement_basis(token, entitlement)
-    for document in bundle.evidence_documents:
-        gateway.store_evidence_document(token, document)
-    return {
-        "format": bundle.format,
-        "supplier_id": bundle.supplier_id,
-        "event_id": bundle.event.event_id,
-        "exposure_count": len(bundle.exposures),
-        "entitlement_count": len(bundle.entitlements),
-        "evidence_document_count": len(bundle.evidence_documents),
-        "verification_state": "REVIEW_REQUIRED",
-    }
+    """Atomically persist normalized source truth; verification remains separate."""
+    return ingest_bundle_atomic(gateway, token, bundle)
