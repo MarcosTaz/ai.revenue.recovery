@@ -1,7 +1,11 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { startServer, tokenActorId } = require('../src/web-api');
+const { DocumentVault } = require('../src/document-vault');
 
 const secretToken = 'super-secret-bearer-value';
 const actorId = tokenActorId(secretToken);
@@ -10,10 +14,12 @@ assert.equal(actorId.includes(secretToken), false);
 assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
 
 (async () => {
-  const server = await startServer({ tokenToCustomer: { tokenA: 'A', tokenB: 'B' }, now: () => '2026-08-29T20:00:00Z' });
+  const vaultDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gridrecover-api-vault-'));
+  const vault = new DocumentVault({ rootDir: vaultDir, masterKey: '66'.repeat(32) });
+  const server = await startServer({ tokenToCustomer: { tokenA: 'A', tokenB: 'B' }, vault, now: () => '2026-08-29T20:00:00Z' });
   const port = server.address().port;
   const base = `http://127.0.0.1:${port}`;
-  const req = (path, options = {}, token = 'tokenA') => fetch(base + path, {
+  const req = (route, options = {}, token = 'tokenA') => fetch(base + route, {
     ...options,
     headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) }
   });
@@ -21,7 +27,9 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
   try {
     let r = await fetch(base + '/health');
     assert.equal(r.status, 200);
-    assert.equal((await r.json()).production_ready, false);
+    const health = await r.json();
+    assert.equal(health.production_ready, false);
+    assert.equal(health.document_vault, true);
 
     r = await req('/api/cases', { method: 'POST', body: JSON.stringify({ case_id: 'C1', project_id: 'P1' }) }, null);
     assert.equal(r.status, 401);
@@ -35,6 +43,41 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
 
     r = await req('/api/cases/C1', { method: 'GET' }, 'tokenB');
     assert.equal(r.status, 404);
+
+    const docBytes = Buffer.from('Article 11.4.1\nMISO repayment source test\n', 'utf8');
+    r = await req('/api/cases/C1/documents', {
+      method: 'POST', body: docBytes,
+      headers: { 'content-type': 'application/octet-stream', 'x-document-id': 'LGIA-UPLOAD-1', 'x-document-type': 'EXECUTED_LGIA', 'x-file-extension': '.txt' }
+    });
+    assert.equal(r.status, 201);
+    const upload = await r.json();
+    assert.equal(upload.document_id, 'LGIA-UPLOAD-1');
+    assert.equal(upload.extraction_method, 'utf8-direct');
+    assert(upload.locator_count >= 2);
+
+    r = await req('/api/cases/C1', { method: 'GET' });
+    const afterUpload = await r.json();
+    assert.equal(afterUpload.evidence.length, 1);
+    assert.equal(afterUpload.evidence[0].source_sha256, upload.source_sha256);
+    assert.equal(afterUpload.evidence[0].locators[0].source_sha256, upload.source_sha256);
+
+    r = await req('/api/cases/C1/documents', {
+      method: 'POST', body: docBytes,
+      headers: { 'content-type': 'application/octet-stream', 'x-document-id': 'B-DOC', 'x-document-type': 'EXECUTED_LGIA', 'x-file-extension': '.txt' }
+    }, 'tokenB');
+    assert.equal(r.status, 404);
+
+    r = await req('/api/cases/C1/documents', {
+      method: 'POST', body: docBytes,
+      headers: { 'content-type': 'application/octet-stream', 'x-document-id': 'LGIA-UPLOAD-1', 'x-document-type': 'EXECUTED_LGIA', 'x-file-extension': '.txt' }
+    });
+    assert.equal(r.status, 409);
+
+    r = await req('/api/cases/C1/documents', {
+      method: 'POST', body: Buffer.from('not a pdf'),
+      headers: { 'content-type': 'application/pdf', 'x-document-id': 'BAD-PDF', 'x-document-type': 'EXECUTED_LGIA', 'x-file-extension': '.pdf' }
+    });
+    assert.equal(r.status, 400);
 
     const networkInput = {
       jurisdiction: 'US_FEDERAL_FERC', project_scope: 'LARGE_GENERATOR_GT_20MW',
@@ -73,8 +116,9 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
     assert.equal(r.status, 200);
     assert.equal((await r.json()).customer_id, 'A');
 
-    console.log('GRIDRECOVER web API: 14/14 PASS');
+    console.log('GRIDRECOVER web API + document upload: 23/23 PASS');
   } finally {
     await new Promise(resolve => server.close(resolve));
+    fs.rmSync(vaultDir, { recursive: true, force: true });
   }
 })().catch(err => { console.error(err); process.exit(1); });
