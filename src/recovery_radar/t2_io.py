@@ -100,6 +100,13 @@ def load_ground_truth(path: str | Path) -> dict:
         ),
         "ground_truth_method": ground_truth_method,
     }
+    if origin == "REAL_AUTHORIZED_HISTORICAL_CASE":
+        if not parsed_provenance["authorization_reference"]:
+            raise GroundTruthInputError(
+                "REAL_CASE_REQUIRES_AUTHORIZATION_REFERENCE"
+            )
+        if not parsed_provenance["source_scope_sha256"]:
+            raise GroundTruthInputError("REAL_CASE_REQUIRES_SOURCE_SCOPE_SHA256")
 
     raw_lines = data.get("lines")
     if not isinstance(raw_lines, list) or len(raw_lines) > 10_000:
