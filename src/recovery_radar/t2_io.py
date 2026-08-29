@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import tempfile
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from .t2_validation import GroundTruthLine, PilotOperationalMetrics, score_historical_case
 
 FORMAT = "RECOVERY_RADAR_GROUND_TRUTH_V1"
+SCORECARD_FORMAT = "RECOVERY_RADAR_T2_SCORECARD_V1"
 MAX_BYTES = 5 * 1024 * 1024
 _CASE_ORIGINS = {"REAL_AUTHORIZED_HISTORICAL_CASE", "SYNTHETIC", "UNKNOWN"}
 
@@ -122,3 +125,43 @@ def score_from_input(analysis: dict, source: dict) -> dict:
     canonical = json.dumps(result, sort_keys=True, separators=(",", ":")).encode("utf-8")
     result["scorecard_sha256"] = hashlib.sha256(canonical).hexdigest()
     return result
+
+
+def canonical_scorecard_bytes(scorecard: dict) -> bytes:
+    envelope = {"format": SCORECARD_FORMAT, "scorecard": scorecard}
+    return (
+        json.dumps(envelope, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        + "\n"
+    ).encode("utf-8")
+
+
+def export_scorecard_atomic(scorecard: dict, destination: str | Path) -> dict:
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    content = canonical_scorecard_bytes(scorecard)
+    expected = hashlib.sha256(content).hexdigest()
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=".tmp", dir=str(destination.parent)
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, destination)
+        persisted = destination.read_bytes()
+        actual = hashlib.sha256(persisted).hexdigest()
+        if persisted != content or actual != expected:
+            destination.unlink(missing_ok=True)
+            raise RuntimeError("T2_SCORECARD_EXPORT_VERIFICATION_FAILED")
+        return {
+            "format": SCORECARD_FORMAT,
+            "sha256": actual,
+            "scorecard_sha256": scorecard["scorecard_sha256"],
+            "byte_length": len(persisted),
+            "path": str(destination),
+        }
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
