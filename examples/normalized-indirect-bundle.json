@@ -1,0 +1,26 @@
+{
+  "organization_id": "synthetic-org",
+  "contract_id": "SYN-CPFF-001",
+  "period": "FY2025",
+  "finding_id": "SYN-F-001",
+  "allocation_base": "1000000",
+  "final_rate": "0.25",
+  "billed_indirect": "200000",
+  "rate_state": "SETTLED_FINAL",
+  "contract_terms": "SUPPORTED",
+  "base_allowability": "SUPPORTED",
+  "base_allocability": "SUPPORTED",
+  "indirect_ceiling_amount": null,
+  "remaining_funding": "100000",
+  "rule_ids": ["FAR_52_216_7_D2V_UPDATE_BILLINGS", "FAR_52_216_7_E_BILLING_RATE_ADJUSTMENT"],
+  "evidence": [
+    {
+      "evidence_id": "rate-agreement",
+      "source_type": "rate_agreement",
+      "source_locator": "synthetic://rate-agreement",
+      "sha256": "06275d9f93b99e28b013420a6ad3de9bdefd0381734c4386f57a2a30045e79ba",
+      "observed_at": "2026-08-29T02:30:00+00:00"
+    }
+  ],
+  "assumptions": []
+}
