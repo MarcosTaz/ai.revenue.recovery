@@ -18,6 +18,7 @@ function valid(overrides = {}) {
     },
     economics: {
       network_upgrade_amount_paid: 1000000,
+      repayable_network_upgrade_amount: 1000000,
       amounts_already_refunded: 100000,
       repayments_received: 250000,
       currency: 'USD'
@@ -25,7 +26,10 @@ function valid(overrides = {}) {
     evidence: {
       payment_source_hash: 'sha256:payment',
       payment_matches_project: true,
-      payment_is_network_upgrade: true
+      payment_is_network_upgrade: true,
+      repayable_basis_source_hash: 'sha256:repayable-basis',
+      repayable_basis_locator: 'Attachment FF / project allocation',
+      repayable_basis_verified: true
     }
   };
   return Object.assign(base, overrides);
@@ -35,6 +39,40 @@ function valid(overrides = {}) {
   const r = evaluateNetworkUpgradeRepayment(valid());
   assert.equal(r.status, FINDING.SUPPORTED_CANDIDATE);
   assert.equal(r.candidate_amount, 650000);
+  assert.equal(r.verified_repayable_base, 1000000);
+}
+
+{
+  const i = valid();
+  i.economics.repayable_network_upgrade_amount = 600000;
+  const r = evaluateNetworkUpgradeRepayment(i);
+  assert.equal(r.status, FINDING.SUPPORTED_CANDIDATE);
+  assert.equal(r.candidate_amount, 250000);
+  assert.equal(r.verified_total_network_upgrade_paid, 1000000);
+}
+
+{
+  const i = valid();
+  delete i.economics.repayable_network_upgrade_amount;
+  const r = evaluateNetworkUpgradeRepayment(i);
+  assert.equal(r.status, FINDING.UNKNOWN);
+  assert(r.reasons.includes('REPAYABLE_NETWORK_UPGRADE_AMOUNT_INVALID'));
+}
+
+{
+  const i = valid();
+  i.evidence.repayable_basis_verified = false;
+  const r = evaluateNetworkUpgradeRepayment(i);
+  assert.equal(r.status, FINDING.UNKNOWN);
+  assert(r.reasons.includes('REPAYABLE_BASIS_NOT_VERIFIED'));
+}
+
+{
+  const i = valid();
+  i.economics.repayable_network_upgrade_amount = 1100000;
+  const r = evaluateNetworkUpgradeRepayment(i);
+  assert.equal(r.status, FINDING.NEEDS_REVIEW);
+  assert(r.reasons.includes('REPAYABLE_AMOUNT_EXCEEDS_VERIFIED_PAYMENT'));
 }
 
 {
@@ -112,4 +150,4 @@ function valid(overrides = {}) {
   assert(r.reasons.includes('NETWORK_UPGRADE_PAYMENT_INVALID'));
 }
 
-console.log('GRIDRECOVER core: 10/10 PASS');
+console.log('GRIDRECOVER core: 14/14 PASS');
