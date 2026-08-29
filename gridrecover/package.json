@@ -1,0 +1,8 @@
+{
+  "name": "gridrecover-core",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node test/gridrecover-core.test.js"
+  }
+}
