@@ -5,6 +5,7 @@ from govmargin.rules import (
     ContractContext,
     FAR_52_216_7_BILLING_RATE_ADJUSTMENT,
     FAR_52_216_7_COMPLETION_VOUCHER,
+    FAR_52_216_7_FINAL_PAYMENT,
     FAR_52_232_20_EXCESS_LIMIT,
     FAR_52_232_20_NOTICE,
     FAR_52_232_22_EXCESS_LIMIT,
@@ -17,16 +18,29 @@ class RegulatoryRuleTests(unittest.TestCase):
     def test_clause_gates_applicability(self):
         context = ContractContext(frozenset({"52.216-7"}), date(2025, 1, 1))
         self.assertTrue(FAR_52_216_7_COMPLETION_VOUCHER.applies_to(context))
+        self.assertTrue(FAR_52_216_7_FINAL_PAYMENT.applies_to(context))
 
     def test_missing_clause_fails_closed(self):
         context = ContractContext(frozenset(), date(2025, 1, 1))
         self.assertFalse(FAR_52_216_7_BILLING_RATE_ADJUSTMENT.applies_to(context))
+        self.assertFalse(FAR_52_216_7_FINAL_PAYMENT.applies_to(context))
         self.assertFalse(FAR_52_232_20_NOTICE.applies_to(context))
         self.assertFalse(FAR_52_232_22_NOTICE.applies_to(context))
 
     def test_pre_version_contract_does_not_auto_apply_current_rule(self):
         context = ContractContext(frozenset({"52.216-7"}), date(2010, 1, 1))
         self.assertFalse(FAR_52_216_7_COMPLETION_VOUCHER.applies_to(context))
+        self.assertFalse(FAR_52_216_7_FINAL_PAYMENT.applies_to(context))
+
+    def test_final_payment_rule_requires_approval_and_compliance_evidence(self):
+        required = FAR_52_216_7_FINAL_PAYMENT.required_evidence
+        self.assertIn("approved_completion_voucher", required)
+        self.assertIn("allowable_cost_support", required)
+        self.assertIn("cumulative_payments", required)
+        self.assertIn("contract_compliance_state", required)
+        text = f"{FAR_52_216_7_FINAL_PAYMENT.test} {FAR_52_216_7_FINAL_PAYMENT.exclusions}".lower()
+        self.assertIn("not", text)
+        self.assertIn("automatic", text)
 
     def test_limitation_of_cost_rules_require_exact_clause(self):
         supported = ContractContext(frozenset({"52.232-20"}), date(2025, 1, 1))
