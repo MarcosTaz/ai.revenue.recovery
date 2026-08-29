@@ -15,7 +15,8 @@ T1 scope is intentionally assisted:
 → `PACKAGE`
 → `DETERMINISTIC EXPORT`
 → `OPTIONAL INTERNAL CASE`
-→ `COMPARE WITH HUMAN / KNOWN OUTCOME`.
+→ `EXPLICIT GROUND TRUTH`
+→ `DETERMINISTIC SCORECARD`.
 
 No external submission, negotiation, settlement instruction or customer/OEM communication is part of this runbook.
 
@@ -41,6 +42,8 @@ Do not import:
 - credentials/secrets embedded in evidence files unless explicitly required and authorized;
 - live customer communication for automated sending;
 - information that the operator cannot lawfully process for the pilot.
+
+A `case_origin` field inside a later ground-truth file is a measurement label only. It is not proof that authorization exists.
 
 ## Local setup
 
@@ -224,30 +227,92 @@ recovery-radar create-case \
 
 This creates an internal workflow case. It does not submit anything externally.
 
-## 12. T2 measurement sheet
+## 12. Prepare explicit T2 ground truth
 
-For the historical case, record independently of Recovery Radar:
+Use a separate file with format:
 
-- number/value of exposure lines in human ground truth;
-- number/value correctly identified by Recovery Radar;
-- false positives;
-- false negatives/missed exposures;
-- duplicate/overclaim prevented;
-- reviewer changes to evidence state;
-- reviewer changes to entitlement state;
-- missing-evidence actions judged useful/not useful;
-- analyst preparation minutes;
-- reviewer minutes;
-- total time to auditable package;
-- known historical submitted/accepted/settled/paid amount, if authorized and available;
-- reasons for differences between modeled claimability and known outcome;
-- whether the operator would repeat the workflow;
-- WTP only if a real decision-maker explicitly provides it.
+```text
+RECOVERY_RADAR_GROUND_TRUTH_V1
+```
 
-Never convert absent outcome/WTP data into a modeled success claim.
+Minimal shape:
+
+```json
+{
+  "format": "RECOVERY_RADAR_GROUND_TRUTH_V1",
+  "case_origin": "REAL_AUTHORIZED_HISTORICAL_CASE",
+  "ground_truth_complete": true,
+  "lines": [
+    {
+      "economic_loss_id": "LOSS-001",
+      "disposition": "CLAIMABLE",
+      "currency": "EUR",
+      "expected_amount": "1000.00",
+      "note": "Human historical ground truth"
+    }
+  ],
+  "operational_metrics": {
+    "analyst_preparation_minutes": "30",
+    "reviewer_minutes": "15",
+    "total_time_to_package_minutes": "60",
+    "reviewer_evidence_corrections": 1,
+    "reviewer_entitlement_corrections": 0,
+    "missing_evidence_actions_useful": 2,
+    "missing_evidence_actions_not_useful": 0,
+    "repeat_use_signal": "UNKNOWN",
+    "wtp_evidence_reference": null
+  }
+}
+```
+
+Ground-truth rules:
+
+- `ground_truth_complete=true` only when the human truth set is sufficiently exhaustive for unexpected modeled positives to count as false positives;
+- dispositions are `CLAIMABLE`, `REQUIRES_REVIEW`, `NON_CLAIMABLE`, or `UNKNOWN`;
+- keep source currency; do not combine currencies;
+- `UNKNOWN` truth never becomes success evidence;
+- WTP is not inferred from repeat-use, usefulness, value recovered or a free-text claim;
+- `wtp_evidence_reference`, when present, is stored only as `RECORDED_NOT_INDEPENDENTLY_VERIFIED`; it cannot make WTP evidenced.
+
+## 13. Produce deterministic T2 scorecard
+
+Set `RECOVERY_RADAR_TOKEN` to an authorized token that can read the pilot workspace, then run:
+
+```text
+recovery-radar score-historical \
+  --db pilot.db \
+  --event-id EV-001 \
+  --supplier-id SUP-001 \
+  --ground-truth ground-truth.json \
+  --output t2-scorecard.json
+```
+
+The command recomputes the current gated analysis from persisted truth, compares it with the explicit ground truth and writes a `RECOVERY_RADAR_T2_SCORECARD_V1` envelope atomically.
+
+The scorecard records:
+
+- false-positive IDs/count;
+- false-negative IDs/count;
+- state mismatches;
+- currency mismatches;
+- signed and absolute amount error by currency;
+- unknown/missing/unexpected loss IDs;
+- operational metrics supplied in the ground-truth file;
+- a source scorecard hash plus a final SHA-256 covering case-origin/classification metadata;
+- `terminal_promotion=NOT_INFERRED_FROM_SCORECARD`.
+
+Synthetic input is classified `NON_REAL_CASE_MEASUREMENT_ONLY`. Even `REAL_AUTHORIZED_HISTORICAL_CASE` is only `REAL_CASE_MEASUREMENT_INPUT`; the application does not decide that T2 has been reached.
+
+## 14. Compare with known historical outcome where available
+
+Separately record any authorized historical submitted/accepted/settled/paid amount and reasons for differences between modeled claimability and the known outcome.
+
+Do not reinterpret a settlement compromise as proof that every modeled entitlement was legally correct. Do not reinterpret a modeled claim as recovered cash.
 
 ## T2 decision
 
 Promote to `T2 — REAL-CASE VALIDATED` only when the historical/real case produces enough evidence to judge correctness and operational usefulness without unresolved material false-positive/false-negative or truth-integrity failures.
 
 If a material defect is found, stop terminal promotion, classify it P0/P1/P2, repair, rerun the synthetic/adversarial suite, then rerun the affected historical test.
+
+No scorecard field, synthetic fixture, free-text WTP note or caller-selected `case_origin` may promote T2 automatically.
