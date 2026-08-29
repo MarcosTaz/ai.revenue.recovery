@@ -12,11 +12,12 @@ Required controls:
 - imports reject rows belonging to another organization;
 - resource access asserts organization equality;
 - duplicate/ambiguous active memberships fail closed;
-- no portfolio aggregation across organizations unless data is deliberately anonymized and the aggregation process is separately approved.
+- no portfolio aggregation across organizations unless data is deliberately anonymized and separately approved.
 
 Current state:
 - tenant-scoped CSV ingestion implemented;
 - domain authorization roles/actions implemented;
+- immutable tenant-store reference contract implemented and tested for cross-tenant lookup failure / overwrite rejection;
 - production identity provider/session/database row-level controls **not yet implemented**.
 
 ### False government receivable
@@ -27,6 +28,7 @@ Required controls:
 - recovery candidates require evidence lineage and rule lineage;
 - provisional/proposed final rates cannot create a verified final-rate candidate;
 - ceilings/funding/prior billings are explicit gates;
+- FAR 52.232-20 / 52.232-22 notice and excess-limit conditions never become automatic receivables;
 - payables/overbilling remain visible and are never netted away;
 - unreviewed recovery candidates remain `DRAFT`;
 - qualified legal/accounting questions remain review-gated.
@@ -37,7 +39,7 @@ Treat every uploaded document as untrusted data.
 
 Required controls before production upload:
 - content-type and file-size allowlist;
-- malware scanning where supported by the storage pipeline;
+- malware/security scanning in the storage pipeline;
 - cryptographic content hash at ingestion;
 - immutable original evidence object;
 - parser output stored separately from the original;
@@ -46,7 +48,12 @@ Required controls before production upload:
 - no automatic external links, macros, scripts or embedded executables;
 - parsing failure produces `UNKNOWN`, not inferred contract terms.
 
-Current state: hashes/evidence references exist; raw secure document storage/scanning pipeline is **not implemented**.
+Current state:
+- evidence hashes/references exist;
+- `govmargin/evidence_intake.py` implements a fail-closed metadata/hash/size/content-type/scan-status admission gate;
+- macro-enabled spreadsheet content types are not allowlisted;
+- unscanned files are ineligible for storage/parsing in the reference gate;
+- **no actual malware scanner, immutable object store or parser isolation service is connected yet**.
 
 ### Evidence tampering / lineage loss
 
@@ -58,7 +65,11 @@ Required controls:
 - no silent replacement of rate agreements, invoices or contract versions;
 - every revised calculation points to the evidence/rule versions used.
 
-Current state: evidence refs and immutable review records exist; production append-only audit persistence is **not implemented**.
+Current state:
+- evidence refs and immutable review records exist;
+- `govmargin/audit.py` provides a SHA-256 hash-chained append-only audit primitive with tamper/reorder/duplicate detection tests;
+- `govmargin/audit_trace.py` can build an operation-level trace with evidence lineage;
+- **production append-only persistence is not implemented**.
 
 ### Authorization / reviewer conflict
 
@@ -72,7 +83,7 @@ Separation target:
 - analyst may import/run calculations but may not approve findings;
 - reviewer may review but may not import/alter source financial data;
 - viewer is read-only;
-- production approval should record reviewer identity, role, rationale and timestamp.
+- production approval records reviewer identity, role, rationale and timestamp.
 
 For high-value or legally sensitive findings, add configurable dual review before external action.
 
@@ -120,11 +131,13 @@ Do not call GovMargin production-safe until all are verified:
 2. server-side tenant authorization on every protected operation;
 3. encrypted persistent storage appropriate for sensitive customer data;
 4. secure raw-document upload/scanning pipeline;
-5. append-only or equivalently tamper-evident audit history;
+5. persistent append-only or equivalently tamper-evident audit history;
 6. secret management;
 7. backup/recovery and deletion controls;
 8. dependency/security scanning;
 9. production error/log redaction;
 10. adversarial cross-tenant and malicious-document tests.
 
-Until then the current application is a **synthetic/pre-pilot engineering surface**, not a production customer-data system.
+Connected Vercel account inspection currently shows no dedicated GovMargin project. Do not deploy into unrelated existing projects.
+
+Until these gates pass, the application is a **synthetic/pre-pilot engineering surface**, not a production customer-data system.
