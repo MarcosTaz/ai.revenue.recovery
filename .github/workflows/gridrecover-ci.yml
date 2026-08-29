@@ -12,12 +12,14 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install PDF extraction dependency
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - name: Validate rule JSON
         run: |
           node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgia-network-upgrade-repayment.json','utf8'))"
