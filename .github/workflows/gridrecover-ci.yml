@@ -26,3 +26,5 @@ jobs:
         run: cd gridrecover && npm test
       - name: Run GRIDRECOVER provenance model regressions
         run: node gridrecover/test/project-model.test.js
+      - name: Run GRIDRECOVER cluster-withdrawal regressions
+        run: node gridrecover/test/cluster-withdrawal.test.js
