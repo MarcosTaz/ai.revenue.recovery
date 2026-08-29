@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { computeIndirectTrueUp } from "../lib/true-up.mjs";
 import { evaluateFundingSafeguard } from "../lib/funding.mjs";
+import { buildSyntheticReviewPack } from "../lib/review-pack.mjs";
 
 type Result = {
   state: string;
@@ -18,6 +19,13 @@ type FundingResult = {
   thresholdAmount?: number;
   automaticRecoveryAllowed: boolean;
   explanation: string;
+};
+
+type ReviewPack = {
+  status: string;
+  approvedRecoveryCandidates: unknown[];
+  payableExposures: unknown[];
+  unresolved: unknown[];
 };
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
@@ -41,6 +49,10 @@ export function TrueUpCalculator() {
   const [allocability, setAllocability] = useState(true);
   const [result, setResult] = useState<Result | null>(null);
   const [fundingResult, setFundingResult] = useState<FundingResult | null>(null);
+  const [reviewerId, setReviewerId] = useState("synthetic-reviewer");
+  const [reviewDecision, setReviewDecision] = useState("NEEDS_MORE_EVIDENCE");
+  const [reviewRationale, setReviewRationale] = useState("");
+  const [reviewPack, setReviewPack] = useState<ReviewPack | null>(null);
 
   const stateClass = useMemo(() => {
     if (!result) return "status-neutral";
@@ -52,19 +64,20 @@ export function TrueUpCalculator() {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    setResult(
-      computeIndirectTrueUp({
-        allocationBase: Number(allocationBase),
-        finalRate: Number(finalRatePct) / 100,
-        billedIndirect: Number(billedIndirect),
-        contractTermsVerified: termsVerified,
-        finalRateSettled: settled,
-        allowabilitySupported: allowability,
-        allocabilitySupported: allocability,
-        indirectCeilingAmount: ceiling === "" ? null : Number(ceiling),
-        remainingFunding: funding === "" ? null : Number(funding),
-      }) as Result,
-    );
+    setReviewPack(null);
+    setReviewRationale("");
+    const nextResult = computeIndirectTrueUp({
+      allocationBase: Number(allocationBase),
+      finalRate: Number(finalRatePct) / 100,
+      billedIndirect: Number(billedIndirect),
+      contractTermsVerified: termsVerified,
+      finalRateSettled: settled,
+      allowabilitySupported: allowability,
+      allocabilitySupported: allocability,
+      indirectCeilingAmount: ceiling === "" ? null : Number(ceiling),
+      remainingFunding: funding === "" ? null : Number(funding),
+    }) as Result;
+    setResult(nextResult);
     setFundingResult(
       evaluateFundingSafeguard({
         clause: fundingClause,
@@ -75,6 +88,28 @@ export function TrueUpCalculator() {
         noticeThresholdPercent: Number(noticeThresholdPct) / 100,
         noticeWindowDays: Number(noticeWindowDays),
       }) as FundingResult,
+    );
+  }
+
+  function buildReviewPack() {
+    if (!result) return;
+    const review = reviewRationale.trim()
+      ? {
+          decision: reviewDecision,
+          reviewerId: reviewerId.trim(),
+          rationale: reviewRationale.trim(),
+        }
+      : undefined;
+    setReviewPack(
+      buildSyntheticReviewPack({
+        organizationId: "synthetic-org",
+        finding: {
+          findingId: "synthetic-finding",
+          state: result.state,
+          variance: result.variance,
+        },
+        review,
+      }) as ReviewPack,
     );
   }
 
@@ -191,6 +226,45 @@ export function TrueUpCalculator() {
             <strong>{fundingResult.automaticRecoveryAllowed ? "YES" : "NO"}</strong>
           </div>
           <p>{fundingResult.explanation}</p>
+        </div>
+      )}
+
+      {result && (
+        <div className="review-workflow">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Human review simulation</p>
+              <h2>Promote evidence, not arithmetic</h2>
+            </div>
+          </div>
+          <div className="calculator-grid">
+            <label>
+              Synthetic reviewer ID
+              <input value={reviewerId} onChange={(e) => setReviewerId(e.target.value)} />
+            </label>
+            <label>
+              Review decision
+              <select value={reviewDecision} onChange={(e) => setReviewDecision(e.target.value)}>
+                <option value="NEEDS_MORE_EVIDENCE">Needs more evidence</option>
+                <option value="APPROVED">Approved for client finance review</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </label>
+            <label>
+              Review rationale
+              <input value={reviewRationale} onChange={(e) => setReviewRationale(e.target.value)} placeholder="Required to record a review" />
+            </label>
+            <button className="primary-button" type="button" onClick={buildReviewPack}>Build synthetic review pack</button>
+          </div>
+          {reviewPack && (
+            <div className="result status-review" aria-live="polite">
+              <div><span>Pack status</span><strong>{reviewPack.status.replaceAll("_", " ")}</strong></div>
+              <div><span>Approved recoveries</span><strong>{reviewPack.approvedRecoveryCandidates.length}</strong></div>
+              <div><span>Payable exposures</span><strong>{reviewPack.payableExposures.length}</strong></div>
+              <div><span>Unresolved</span><strong>{reviewPack.unresolved.length}</strong></div>
+              <p>Client-facing recovery status changes only after an explicit synthetic review; payable exposure remains separate.</p>
+            </div>
+          )}
         </div>
       )}
     </section>
