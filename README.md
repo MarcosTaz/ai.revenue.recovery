@@ -2,7 +2,7 @@
 
 Evidence-first supplier-side cancellation-claim pre-audit for customer program cancellation or severe volume reduction.
 
-## Current product truth — v0.2.0
+## Current product truth — v0.2.1
 
 Source is isolated on `recovery-radar/program-cancellation-claims`; `main` remains untouched.
 
@@ -41,7 +41,11 @@ Implemented and tested:
 - application-schema compatibility gate that refuses unknown newer schemas and requires explicit migration for older versions;
 - strict pilot-bundle loader with size limits, enum/type validation, path-escape/symlink controls and evidence hashes derived from concrete file bytes;
 - atomic, retry-safe pilot-bundle ingestion: event/exposure/entitlement/evidence/audit commit together or roll back together;
-- assisted-pilot CLI: `bootstrap`, `issue-key`, `import-bundle`, `review-evidence`, `review-entitlement`, `package`, `export`, `create-case`;
+- assisted-pilot CLI: `bootstrap`, `issue-key`, `import-bundle`, `review-evidence`, `review-entitlement`, `package`, `export`, `create-case`, `score-historical`;
+- strict historical-ground-truth input adapter with explicit case origin, completeness flag, FP/FN/state/currency/value measurement and operational metrics;
+- WTP truth boundary: a text/reference can be recorded, but cannot self-promote WTP beyond `UNKNOWN_EXTERNAL`;
+- historical scorecard output with final-artifact SHA-256 binding, deterministic JSON envelope and atomic/fsync export;
+- synthetic scorecards are explicitly `NON_REAL_CASE_MEASUREMENT_ONLY` and can never auto-promote T2;
 - deterministic correctness acceptance with 2,000 claim lines;
 - broad synthetic/adversarial portfolio covering full, partial and zero recovery, prior compensation, mitigation, WIP/FG, NRE, supplier commitments, missing evidence, unsupported/expired representations, documentary conflict, duplicate economics, mixed currency and failure recovery.
 
@@ -67,17 +71,25 @@ Recovery Radar does not add EUR + USD (or any other mixed currencies) into one s
 
 The supported T1 path is:
 
-`workspace bootstrap → distinct analyst/reviewer identities → normalized historical bundle import → independent evidence + entitlement review → evidence-gated analysis → package → deterministic export → internal claim case`.
+`workspace bootstrap → distinct analyst/reviewer identities → normalized historical bundle import → independent evidence + entitlement review → evidence-gated analysis → package → deterministic export → optional internal claim case → explicit historical ground truth → deterministic scorecard`.
 
 External claim submission, OEM/supplier communication, negotiation, settlement action, production hosting and production IAM are outside the T1 assisted-pilot boundary.
 
 See `PILOT_RUNBOOK.md` for the controlled historical-pilot protocol.
 
+### T2 measurement boundary
+
+`score-historical` compares the current gated analysis to an explicit `RECOVERY_RADAR_GROUND_TRUTH_V1` file and writes a deterministic `RECOVERY_RADAR_T2_SCORECARD_V1` artifact.
+
+The scorecard measures false positives, false negatives, state mismatches, currency mismatches, amount error by currency and supplied operational metrics. `case_origin=REAL_AUTHORIZED_HISTORICAL_CASE` only labels the measurement input; it is **not proof of authorization and does not auto-promote T2**. `terminal_promotion` is always `NOT_INFERRED_FROM_SCORECARD`.
+
+Synthetic or self-declared evidence cannot establish customer acceptance, recovered cash or willingness to pay.
+
 ## Current verification
 
-Exact commit `61cdbbc81a37cef07333c7080b074f3f3a22b732` passed GitHub Actions with **131 tests** on Python 3.13.15 before this documentation reconciliation.
+Exact commit `134f8e90604ff28d2fa97da32d88a98e580e85db` passed GitHub Actions with **147 tests** on Python 3.13.15 before the v0.2.1 version/documentation reconciliation.
 
-The documentation commit that contains this README must obtain its own exact-head CI success before it is called the newest GREEN HEAD.
+The current documentation/version HEAD must obtain its own exact-head CI success before it is called the newest GREEN HEAD.
 
 ## Business truth
 
