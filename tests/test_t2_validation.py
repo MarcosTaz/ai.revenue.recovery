@@ -37,7 +37,8 @@ def test_exact_ground_truth_scores_zero_fp_fn_and_zero_value_error():
     assert result["false_negative_count"] == 0
     assert result["state_mismatches"] == []
     assert result["amount_errors"] == []
-    assert result["commercial_truth"]["wtp"] == "UNKNOWN"
+    assert result["commercial_truth"]["wtp"] == "UNKNOWN_EXTERNAL"
+    assert result["commercial_truth"]["wtp_reference_status"] == "NOT_RECORDED"
     assert result["commercial_truth"]["recovered_cash"] == "NOT_INFERRED_FROM_THIS_SCORECARD"
     assert len(result["scorecard_sha256"]) == 64
 
@@ -96,7 +97,7 @@ def test_unknown_ground_truth_never_becomes_success_evidence():
     assert result["false_negative_count"] == 0
 
 
-def test_wtp_is_only_evidenced_when_explicit_evidence_text_is_supplied():
+def test_wtp_reference_cannot_self_promote_to_evidenced_commercial_truth():
     result = score_historical_case(
         _alpha_analysis(),
         [GroundTruthLine("LOSS-A1", "CLAIMABLE", "EUR", Decimal("800"))],
@@ -105,7 +106,14 @@ def test_wtp_is_only_evidenced_when_explicit_evidence_text_is_supplied():
             wtp_evidence="Decision maker explicitly accepted paid-pilot price in recorded pilot evidence"
         ),
     )
-    assert result["commercial_truth"]["wtp"] == "EVIDENCED"
+    assert result["commercial_truth"]["wtp"] == "UNKNOWN_EXTERNAL"
+    assert result["commercial_truth"]["wtp_reference_status"] == "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
+    assert result["operational_metrics"]["wtp_evidence_reference"].startswith("Decision maker")
+
+
+def test_wtp_reference_rejects_blank_self_assertion():
+    with pytest.raises(ValueError, match="WTP_EVIDENCE_REFERENCE_INVALID"):
+        PilotOperationalMetrics(wtp_evidence="   ")
 
 
 def test_ground_truth_validation_rejects_invalid_money_and_duplicates():
