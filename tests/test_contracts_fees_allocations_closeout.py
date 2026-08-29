@@ -3,7 +3,13 @@ from decimal import Decimal
 import unittest
 
 from govmargin.allocations import IndirectLayer, compute_multi_pool
-from govmargin.closeout import FinalVoucherInput, ReleaseState, reconcile_final_voucher
+from govmargin.closeout import (
+    FinalPaymentInput,
+    FinalVoucherInput,
+    ReleaseState,
+    reconcile_final_payment,
+    reconcile_final_voucher,
+)
 from govmargin.contracts import ContractEconomicState, Modification, TaskOrder, constrain_order_candidate, state_at
 from govmargin.engine import FindingState, RateState
 from govmargin.fees import FeeInput, FeeMethod, compute_fee_variance
@@ -88,6 +94,59 @@ class CloseoutTests(unittest.TestCase):
     def test_incomplete_evidence_is_unknown(self):
         result = reconcile_final_voucher(FinalVoucherInput("C", D("1000"), D("800"), True, True, ReleaseState.NOT_SIGNED, None, False))
         self.assertEqual(result["state"], FindingState.UNKNOWN)
+
+    def test_approved_voucher_underpayment_is_recovery_candidate_without_release_blocker(self):
+        result = reconcile_final_payment(FinalPaymentInput(
+            "C", D("1000"), D("850"), D("50"), True, True, True, True,
+            ReleaseState.NOT_SIGNED, True,
+        ))
+        self.assertEqual(result["expected_net_payment"], D("950.00"))
+        self.assertEqual(result["variance"], D("100.00"))
+        self.assertEqual(result["state"], FindingState.RECOVERY_CANDIDATE)
+
+    def test_approved_voucher_overpayment_is_payable_candidate(self):
+        result = reconcile_final_payment(FinalPaymentInput(
+            "C", D("1000"), D("980"), D("50"), True, True, True, True,
+            ReleaseState.NOT_SIGNED, True,
+        ))
+        self.assertEqual(result["variance"], D("-30.00"))
+        self.assertEqual(result["state"], FindingState.PAYABLE_CANDIDATE)
+
+    def test_unknown_offsets_fail_closed_instead_of_inflating_recovery(self):
+        result = reconcile_final_payment(FinalPaymentInput(
+            "C", D("1000"), D("850"), None, True, True, True, True,
+            ReleaseState.NOT_SIGNED, True,
+        ))
+        self.assertEqual(result["state"], FindingState.UNKNOWN)
+        self.assertIsNone(result["variance"])
+
+    def test_unapproved_voucher_or_missing_compliance_never_creates_candidate(self):
+        unapproved = reconcile_final_payment(FinalPaymentInput(
+            "C", D("1000"), D("850"), D("0"), False, True, True, True,
+            ReleaseState.NOT_SIGNED, True,
+        ))
+        self.assertEqual(unapproved["state"], FindingState.REQUIRES_REVIEW)
+
+        noncompliant = reconcile_final_payment(FinalPaymentInput(
+            "C", D("1000"), D("850"), D("0"), True, False, True, True,
+            ReleaseState.NOT_SIGNED, True,
+        ))
+        self.assertEqual(noncompliant["state"], FindingState.REQUIRES_REVIEW)
+
+    def test_release_state_blocks_final_payment_action_classification(self):
+        result = reconcile_final_payment(FinalPaymentInput(
+            "C", D("1000"), D("800"), D("0"), True, True, True, True,
+            ReleaseState.SIGNED_WITH_RESERVATION, True,
+        ))
+        self.assertEqual(result["variance"], D("200.00"))
+        self.assertEqual(result["state"], FindingState.REQUIRES_REVIEW)
+
+    def test_offsets_exceeding_approved_voucher_requires_review(self):
+        result = reconcile_final_payment(FinalPaymentInput(
+            "C", D("100"), D("0"), D("150"), True, True, True, True,
+            ReleaseState.NOT_SIGNED, True,
+        ))
+        self.assertEqual(result["state"], FindingState.REQUIRES_REVIEW)
 
 
 if __name__ == "__main__":
