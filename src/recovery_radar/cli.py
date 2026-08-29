@@ -11,7 +11,7 @@ from typing import Any, Sequence
 from .gateway import RecoveryRadarGateway
 from .pilot_bundle import ingest_pilot_bundle, load_pilot_bundle
 from .storage import Storage
-from .t2_io import load_ground_truth, score_from_input
+from .t2_io import export_scorecard_atomic, load_ground_truth, score_from_input
 
 TOKEN_ENV = "RECOVERY_RADAR_TOKEN"
 
@@ -98,6 +98,7 @@ def _parser() -> argparse.ArgumentParser:
     score.add_argument("--event-id", required=True)
     score.add_argument("--supplier-id", required=True)
     score.add_argument("--ground-truth", required=True)
+    score.add_argument("--output", required=True)
 
     return parser
 
@@ -196,7 +197,13 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
             analysis = gateway.analyze_event(token, args.event_id, args.supplier_id)
             ground_truth = load_ground_truth(args.ground_truth)
             scorecard = score_from_input(analysis, ground_truth)
-            return {"command": "score-historical", "scorecard": scorecard}
+            manifest = export_scorecard_atomic(scorecard, args.output)
+            return {
+                "command": "score-historical",
+                "manifest": manifest,
+                "validation_classification": scorecard["validation_classification"],
+                "terminal_promotion": scorecard["terminal_promotion"],
+            }
 
         raise RuntimeError("UNREACHABLE_COMMAND")
     finally:
