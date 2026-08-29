@@ -8,6 +8,7 @@ from .auth import AuthService, Role
 from .evidence import EvidenceDocument
 from .export import export_claim_package_atomic
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
+from .schema import validate_application_schema
 from .service import TenantService
 from .verification import ReviewState
 from .workflow import ClaimCase, PaymentRecord, WorkflowState
@@ -19,6 +20,7 @@ class RecoveryRadarGateway:
     def __init__(self, storage):
         self.auth = AuthService(storage)
         self.tenant = TenantService(storage)
+        self.schema = validate_application_schema(storage)
 
     def bootstrap_workspace_admin(self, workspace_id: str, actor_id: str) -> str:
         return self.auth.bootstrap_workspace_admin(workspace_id, actor_id)
