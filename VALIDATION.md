@@ -15,6 +15,9 @@ The economic mechanism is real and source-proven. The broad thesis is not yet en
 5. FAR 33.206 generally requires contractor claims to be submitted within six years after accrual; FAR 33.207 requires contractor certification for claims over $100,000.
 6. FAR 3.4's contingent-fee restriction is expressly scoped to soliciting or obtaining Government contracts. This does not by itself validate a recovery contingency fee; state professional-practice, claims-representation and ethics rules still require qualified review.
 7. The False Claims Act creates material downside for knowingly false payment requests and knowingly avoiding repayment obligations, reinforcing symmetric underbilling/overbilling treatment.
+8. FAR 16.307 limits the applicability of FAR 52.216-7: it applies to cost-reimbursement contracts and, for noncommercial T&M contracts, only in conjunction with FAR 52.232-7 for the actual-cost materials portion. FAR 52.216-7 does **not** apply to labor-hour contracts. This correction narrows the initial wedge and prevents a false final-indirect-rate theory from being applied to T&M/LH labor.
+9. FAR 31.201-2 makes allowability depend on reasonableness, allocability, applicable CAS/GAAP treatment, contract terms and Part 31 limitations. FAR 31.201-3 and 31.201-4 separately define reasonableness and allocability. A booked cost therefore cannot be promoted to billable entitlement merely because it was incurred.
+10. FAR 52.232-20 and 52.232-22 create distinct cost/funding limitations for relevant cost-reimbursement contracts; these limitations must be contract-applicability checked before asserting additional reimbursement.
 
 ## Problem evidence
 
@@ -46,7 +49,8 @@ No strong product was found in this validation slice that clearly combines histo
 Prioritize contractors with:
 
 - roughly $5M–$50M federal-contract revenue;
-- multiple cost-reimbursement / CPFF / T&M / labor-hour or other flexibly priced contracts;
+- multiple cost-reimbursement / CPFF contracts with FAR 52.216-7 exposure and settled-final-rate or closeout history;
+- optionally T&M exposure, but only through the contractually applicable 52.232-7 / actual-cost-material paths rather than by importing the cost-reimbursement true-up theory into labor billing;
 - at least two fiscal years with final-rate, final-voucher or closeout exposure;
 - enough complexity to create reconciliation risk but without a large specialized GovCon finance team;
 - one trigger: ERP/accounting migration, CFO/controller turnover, acquisition, unresolved final indirect rates, aged closeouts, or large unbilled balances.
@@ -55,11 +59,12 @@ Buyer: CFO / Controller / GovCon Finance Lead. Secondary: PE operating or dilige
 
 ## Contract-type ranking
 
-1. Cost-reimbursement / CPFF with FAR 52.216-7 and settled final rates.
-2. T&M / labor-hour contracts where indirect expense / ODC treatment is contractually applicable and cumulative billing can be reconstructed.
-3. Flexibly priced contracts requiring indirect-cost settlement.
-4. Fixed-price incentive / redeterminable contracts only after the first engine is proven.
-5. Ordinary firm-fixed-price is not an initial indirect-rate recovery wedge.
+1. **Cost-reimbursement / CPFF** contracts containing FAR 52.216-7, with settled final rates and reconstructable cumulative billings.
+2. **T&M actual-cost materials portion** where FAR 52.216-7 applies in conjunction with FAR 52.232-7 and the contract evidence supports the specific material/indirect treatment.
+3. **T&M labor billing** under FAR 52.232-7 as a separate labor-rate/category/hours reconciliation module; do not use the 52.216-7 final-indirect-rate engine for labor.
+4. **Labor-hour contracts** only after a dedicated 52.232-7 labor engine exists; 52.216-7 does not apply.
+5. Other flexibly priced / incentive / redeterminable contracts only after their own clause-specific engines are proven.
+6. Ordinary firm-fixed-price is not an initial indirect-rate recovery wedge.
 
 ## Gate state
 
@@ -69,9 +74,10 @@ Buyer: CFO / Controller / GovCon Finance Lead. Secondary: PE operating or dilige
 - Gate 4 Recovery-first wedge survives: **PROVISIONAL PASS**.
 - Gate 5 ICP selected: **PASS for pilot discovery**.
 - Gate 6 Legal/regulatory boundary defensible: **PASS WITH QUALIFIED-REVIEW REQUIREMENTS**.
-- Gate 7 Rule engine: **IN PROGRESS**.
-- Gate 8 Calculation engine: **IN PROGRESS**.
-- Gates 9–10: **NOT YET PASSED**.
+- Gate 7 Rule engine: **IN PROGRESS** — source-linked/effective-dated core exists; broader clause universe remains open.
+- Gate 8 Calculation engine: **PASS FOR INITIAL SETTLED-INDIRECT-RATE WEDGE / broader engine IN PROGRESS**.
+- Gate 9 Synthetic contractor portfolio: **LOCAL PASS A–Z; CURRENT-HEAD CI VERIFICATION REQUIRED**.
+- Gate 10 Pilot-ready: **IN PROGRESS / NOT PASSED** — assisted normalized audit, evidence lineage, tenant-scoped import and human review exist; production auth/storage/raw-document workflow, deployment and real-contractor validation remain open.
 
 ## Source registry
 
@@ -82,6 +88,13 @@ Buyer: CFO / Controller / GovCon Finance Lead. Secondary: PE operating or dilige
 - https://www.acquisition.gov/far/33.206
 - https://www.acquisition.gov/far/33.207
 - https://www.acquisition.gov/far/subpart-3.4
+- https://www.acquisition.gov/far/16.307
+- https://www.acquisition.gov/far/52.232-7
+- https://www.acquisition.gov/far/31.201-2
+- https://www.acquisition.gov/far/31.201-3
+- https://www.acquisition.gov/far/31.201-4
+- https://www.acquisition.gov/far/52.232-20
+- https://www.acquisition.gov/far/52.232-22
 - https://www.dcaa.mil/Checklists-Tools/ICE-Model/
 - https://www.dcaa.mil/Business-Apps/Contractor-Submission-Portal/
 - https://help.deltek.com/Products/Costpoint/8.2/GA/ICSReps.html
