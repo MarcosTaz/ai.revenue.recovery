@@ -1,6 +1,6 @@
 {
   "format": "RECOVERY_RADAR_GROUND_TRUTH_V1",
-  "case_origin": "REAL_AUTHORIZED_HISTORICAL_CASE",
+  "case_origin": "UNKNOWN",
   "ground_truth_complete": false,
   "lines": [
     {
