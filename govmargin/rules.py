@@ -76,6 +76,19 @@ FAR_52_216_7_BILLING_RATE_ADJUSTMENT = RegulatoryRule(
     review_state=RuleReviewState.VERIFIED_TEXT,
 )
 
+FAR_52_216_7_FINAL_PAYMENT = RegulatoryRule(
+    rule_id="FAR_52_216_7_H_FINAL_PAYMENT",
+    source="https://www.acquisition.gov/far/52.216-7",
+    section="52.216-7(h)",
+    source_version="FAC 2026-01; clause Allowable Cost and Payment (Aug 2018)",
+    effective_date=date(2018, 8, 1),
+    required_clauses=frozenset({"52.216-7"}),
+    test="After approval of a completion invoice or voucher and compliance with contract terms, reconcile the remaining balance of supported allowable costs and unpaid fee, while preserving any refunds, credits, prior overpayments or other offsets owed to the Government.",
+    exclusions="Do not treat a draft/unapproved voucher, unsupported cost, unsettled dispute, funding/ceiling issue, release, offset, refund or noncompliance as an automatic collectible balance.",
+    required_evidence=frozenset({"contract", "clause_text", "approved_completion_voucher", "allowable_cost_support", "fee_terms", "cumulative_payments", "contract_compliance_state"}),
+    review_state=RuleReviewState.VERIFIED_TEXT,
+)
+
 FAR_52_232_20_NOTICE = RegulatoryRule(
     rule_id="FAR_52_232_20_B_LIMITATION_OF_COST_NOTICE",
     source="https://www.acquisition.gov/far/52.232-20",
@@ -134,6 +147,7 @@ RULES = {
         FAR_52_216_7_UPDATE_BILLINGS,
         FAR_52_216_7_COMPLETION_VOUCHER,
         FAR_52_216_7_BILLING_RATE_ADJUSTMENT,
+        FAR_52_216_7_FINAL_PAYMENT,
         FAR_52_232_20_NOTICE,
         FAR_52_232_20_EXCESS_LIMIT,
         FAR_52_232_22_NOTICE,
