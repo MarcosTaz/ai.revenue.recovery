@@ -39,35 +39,41 @@ assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
     const networkInput = {
       jurisdiction: 'US_FEDERAL_FERC', project_scope: 'LARGE_GENERATOR_GT_20MW',
       agreement: { executed_lgia_id: 'LGIA-1', article_11_4_1_match: true, source_document_hash: 'sha256:a', source_locator: 'Article 11.4.1', superseded: false, trigger_satisfied: true, repayment_schedule_supported: true },
-      economics: { network_upgrade_amount_paid: 1000, amounts_already_refunded: 100, repayments_received: 200, currency: 'USD' },
-      evidence: { payment_source_hash: 'sha256:p', payment_matches_project: true, payment_is_network_upgrade: true }
+      economics: { network_upgrade_amount_paid: 1000, repayable_network_upgrade_amount: 700, amounts_already_refunded: 100, repayments_received: 200, currency: 'USD' },
+      evidence: { payment_source_hash: 'sha256:p', payment_matches_project: true, payment_is_network_upgrade: true, repayable_basis_source_hash: 'sha256:r', repayable_basis_locator: 'Attachment FF allocation', repayable_basis_verified: true }
     };
     r = await req('/api/evaluate/network-upgrade', { method: 'POST', body: JSON.stringify({ case_id: 'C1', input: networkInput }) });
     assert.equal(r.status, 200);
-    assert.equal((await r.json()).candidate_amount, 700);
+    const evaluation = await r.json();
+    assert.equal(evaluation.candidate_amount, 400);
+    assert.equal(evaluation.verified_total_network_upgrade_paid, 1000);
+    assert.equal(evaluation.verified_repayable_base, 700);
 
     r = await req('/api/evaluate/network-upgrade', { method: 'POST', body: JSON.stringify({ case_id: 'C1', input: networkInput }) }, 'tokenB');
     assert.equal(r.status, 404);
 
     r = await req('/api/dossiers', { method: 'POST', body: JSON.stringify({
       case_id: 'C1',
-      caseMeta: { project_id: 'P1', jurisdiction: 'US_FEDERAL_FERC', transmission_provider: 'TP-1', currency: 'USD' },
-      result: { status: 'SUPPORTED_CANDIDATE', candidate_amount: 700, currency: 'USD' },
-      sources: [{ document_id: 'LGIA-1', sha256: 'sha256:a', locator: 'Article 11.4.1' }],
-      calculations: [{ formula: '1000-100-200', result: 700 }],
+      caseMeta: { project_id: 'P1', jurisdiction: 'US_FEDERAL_FERC', transmission_provider: 'MISO', currency: 'USD' },
+      result: { status: 'SUPPORTED_CANDIDATE', candidate_amount: 400, currency: 'USD' },
+      sources: [
+        { document_id: 'LGIA-1', sha256: 'sha256:a', locator: 'Article 11.4.1' },
+        { document_id: 'REPAYABLE-1', sha256: 'sha256:r', locator: 'Attachment FF allocation' }
+      ],
+      calculations: [{ formula: '700-100-200', result: 400 }],
       uncertainties: [],
       nextAction: 'Controlled reviewer confirmation.'
     }) });
     assert.equal(r.status, 200);
     const d = await r.json();
     assert.equal(d.finding.verified_recovery, false);
-    assert.equal(d.finding.candidate_value, 700);
+    assert.equal(d.finding.candidate_value, 400);
 
     r = await req('/api/cases/C1', { method: 'GET' });
     assert.equal(r.status, 200);
     assert.equal((await r.json()).customer_id, 'A');
 
-    console.log('GRIDRECOVER web API: 12/12 PASS');
+    console.log('GRIDRECOVER web API: 14/14 PASS');
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
