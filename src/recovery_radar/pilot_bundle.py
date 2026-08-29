@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
@@ -15,6 +16,7 @@ MAX_BUNDLE_BYTES = 5 * 1024 * 1024
 MAX_EVIDENCE_FILE_BYTES = 10 * 1024 * 1024
 MAX_TOTAL_EVIDENCE_BYTES = 50 * 1024 * 1024
 MAX_RECORDS_PER_SECTION = 10_000
+_CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
 
 _EVENT_TYPES = {
     "PROGRAM_CANCELLED",
@@ -87,6 +89,13 @@ def _require_text(data: dict[str, Any], key: str) -> str:
     return value.strip()
 
 
+def _string_allow_empty(data: dict[str, Any], key: str) -> str:
+    value = data.get(key, "")
+    if not isinstance(value, str):
+        raise PilotBundleError(f"{key.upper()}_MUST_BE_STRING")
+    return value.strip()
+
+
 def _optional_text(data: dict[str, Any], key: str) -> str | None:
     value = data.get(key)
     if value is None:
@@ -94,6 +103,13 @@ def _optional_text(data: dict[str, Any], key: str) -> str | None:
     if not isinstance(value, str) or not value.strip():
         raise PilotBundleError(f"{key.upper()}_INVALID")
     return value.strip()
+
+
+def _strict_bool(data: dict[str, Any], key: str, *, default: bool = False) -> bool:
+    value = data.get(key, default)
+    if not isinstance(value, bool):
+        raise PilotBundleError(f"{key.upper()}_MUST_BE_BOOLEAN")
+    return value
 
 
 def _decimal(data: dict[str, Any], key: str, *, default: str | None = None) -> Decimal:
@@ -128,6 +144,12 @@ def _enum(value: str, allowed: set[str], key: str) -> str:
     return value
 
 
+def _currency(value: str) -> str:
+    if _CURRENCY_RE.fullmatch(value) is None:
+        raise PilotBundleError(f"CURRENCY_INVALID_FORMAT:{value}")
+    return value
+
+
 def _bounded_list(data: dict[str, Any], key: str) -> list[Any]:
     value = data.get(key, [])
     if not isinstance(value, list):
@@ -141,12 +163,13 @@ def _safe_evidence_path(root: Path, relative: str) -> Path:
     requested = Path(relative)
     if requested.is_absolute():
         raise PilotBundleError("EVIDENCE_FILE_PATH_ESCAPE")
-    candidate = (root / requested).resolve()
+    unresolved = root / requested
+    if unresolved.is_symlink():
+        raise PilotBundleError("EVIDENCE_FILE_SYMLINK_REJECTED")
+    candidate = unresolved.resolve()
     root_resolved = root.resolve()
     if not candidate.is_relative_to(root_resolved):
         raise PilotBundleError("EVIDENCE_FILE_PATH_ESCAPE")
-    if candidate.is_symlink():
-        raise PilotBundleError("EVIDENCE_FILE_SYMLINK_REJECTED")
     if not candidate.is_file():
         raise PilotBundleError("EVIDENCE_FILE_NOT_FOUND")
     size = candidate.stat().st_size
@@ -158,8 +181,10 @@ def _safe_evidence_path(root: Path, relative: str) -> Path:
 def load_pilot_bundle(path: str | Path, *, workspace_id: str) -> PilotBundle:
     """Load normalized pilot inputs while hashing concrete local evidence files.
 
-    The JSON cannot directly provide a document hash. Evidence identity is derived
-    from the referenced file bytes, and raw bytes are not persisted by this layer.
+    Documentary references may be empty when the source is genuinely missing;
+    that gap is preserved for the evidence engine instead of being hidden by the
+    importer. Concrete evidence records, when supplied, are always hashed from
+    their file bytes rather than accepting caller-supplied hashes.
     """
     bundle_path = Path(path)
     if not bundle_path.is_file():
@@ -189,7 +214,7 @@ def load_pilot_bundle(path: str | Path, *, workspace_id: str) -> PilotBundle:
         expected_volume=_decimal(event_data, "expected_volume"),
         revised_volume=_decimal(event_data, "revised_volume"),
         source_ref=_require_text(event_data, "source_ref"),
-        evidence_ref=_require_text(event_data, "evidence_ref"),
+        evidence_ref=_string_allow_empty(event_data, "evidence_ref"),
     )
 
     exposures: list[ExposureLine] = []
@@ -202,6 +227,7 @@ def load_pilot_bundle(path: str | Path, *, workspace_id: str) -> PilotBundle:
         exposure_ids.add(exposure_id)
         category = _enum(_require_text(item, "category"), _EXPOSURE_CATEGORIES, "category")
         ownership = _enum(_require_text(item, "ownership"), _OWNERSHIP, "ownership")
+        currency = _currency(_require_text(item, "currency"))
         exposures.append(
             ExposureLine(
                 exposure_id=exposure_id,
@@ -210,8 +236,8 @@ def load_pilot_bundle(path: str | Path, *, workspace_id: str) -> PilotBundle:
                 category=category,
                 quantity=_decimal(item, "quantity"),
                 unit_cost=_decimal(item, "unit_cost"),
-                currency=_require_text(item, "currency"),
-                inventory_or_cost_ref=_require_text(item, "inventory_or_cost_ref"),
+                currency=currency,
+                inventory_or_cost_ref=_string_allow_empty(item, "inventory_or_cost_ref"),
                 ownership=ownership,
                 mitigation_amount=_decimal(item, "mitigation_amount", default="0"),
                 mitigation_evidence_ref=_optional_text(item, "mitigation_evidence_ref"),
@@ -240,12 +266,8 @@ def load_pilot_bundle(path: str | Path, *, workspace_id: str) -> PilotBundle:
                 support_state=support_state,
                 contractual_basis_ref=_optional_text(item, "contractual_basis_ref"),
                 supporting_document_ref=_optional_text(item, "supporting_document_ref"),
-                recoverable_cap=(
-                    None
-                    if cap_value is None
-                    else _decimal(item, "recoverable_cap")
-                ),
-                legal_review_required=bool(item.get("legal_review_required", False)),
+                recoverable_cap=(None if cap_value is None else _decimal(item, "recoverable_cap")),
+                legal_review_required=_strict_bool(item, "legal_review_required"),
             )
         )
 
@@ -279,9 +301,7 @@ def load_pilot_bundle(path: str | Path, *, workspace_id: str) -> PilotBundle:
                 evidence_type=evidence_type,
                 source_ref=_require_text(item, "source_ref"),
                 version_id=_require_text(item, "version_id"),
-                document_date=_date(
-                    item.get("document_date"), "document_date", optional=True
-                ),
+                document_date=_date(item.get("document_date"), "document_date", optional=True),
                 content=evidence_file.read_bytes(),
                 signed=signed,
             )
