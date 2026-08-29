@@ -1,0 +1,31 @@
+{
+  "rule_id": "FERC_PRO_FORMA_LGIP_CLUSTER_WITHDRAWAL_CAPITAL",
+  "status": "REFERENCE_BASELINE_REQUIRES_PROVIDER_TARIFF_MATCH",
+  "jurisdiction": "US_FEDERAL_FERC",
+  "project_scope": "LARGE_GENERATOR_GT_20MW_CLUSTER_PROCESS",
+  "source_title": "FERC Pro Forma Large Generator Interconnection Procedures",
+  "source_url": "https://www.ferc.gov/sites/default/files/2024-08/LGIP.pdf",
+  "source_version": "Updated as of 2024-08-20",
+  "source_provisions": ["Section 3.7.1.2.4", "Section 3.7.1.2.5", "Article 11.5 cross-reference"],
+  "source_last_checked": "2026-08-29",
+  "entitlement_types": [
+    "NETWORK_UPGRADE_COST_ASSIGNMENT_REDUCTION",
+    "FINANCIAL_SECURITY_REDUCTION",
+    "RESIDUAL_WITHDRAWAL_PENALTY_RETURN"
+  ],
+  "required_conditions": [
+    "transmission_provider_effective_tariff_or_lgip_identified",
+    "provider_rule_matches_relevant_pro_forma_mechanism_or_variation_is_mapped",
+    "cluster_identity_verified",
+    "withdrawal_or_lgia_termination_event_verified",
+    "affected_project_status_and_timing_verified",
+    "network_upgrade_cost_assignment_or_withdrawal_penalty_evidence_available"
+  ],
+  "forbidden_shortcuts": [
+    "do_not_apply_pro_forma_rule_without_provider_tariff_match",
+    "do_not_assume_every_withdrawal_creates_a_refund_or_security_release",
+    "do_not_treat_penalty_funds_as_returnable_before_study_cost_and_shared_cost_uses_are resolved",
+    "do_not_calculate_release_from_estimates_without current cluster impact evidence"
+  ],
+  "finding_policy": "NO_FINDING_UNLESS_PROVIDER_RULE_EVENT_AND_CAPITAL_EVIDENCE_ARE_SOURCE_BOUND"
+}
