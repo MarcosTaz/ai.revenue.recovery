@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('http');
+const crypto = require('crypto');
 const { CaseStore } = require('./case-store');
 const { AuditLog } = require('./audit-log');
 const { evaluatePilotAdmission } = require('./pilot-admission');
@@ -27,12 +28,16 @@ async function readJson(req, limit = 1024 * 1024) {
   catch { throw new Error('INVALID_JSON'); }
 }
 
+function tokenActorId(token) {
+  return `token-sha256:${crypto.createHash('sha256').update(token, 'utf8').digest('hex').slice(0, 24)}`;
+}
+
 function createApi({ tokenToCustomer = {}, store = new CaseStore(), audit = new AuditLog(), now = () => new Date().toISOString() } = {}) {
   function actor(req) {
     const auth = req.headers.authorization || '';
     const match = /^Bearer\s+(.+)$/.exec(auth);
     if (!match || !tokenToCustomer[match[1]]) return null;
-    return { customer_id: tokenToCustomer[match[1]], actor_id: `token:${match[1].slice(0, 8)}` };
+    return { customer_id: tokenToCustomer[match[1]], actor_id: tokenActorId(match[1]) };
   }
 
   return async function handler(req, res) {
@@ -109,4 +114,4 @@ function startServer(options = {}, port = 0) {
   return new Promise(resolve => server.listen(port, '127.0.0.1', () => resolve(server)));
 }
 
-module.exports = { createApi, startServer, readJson };
+module.exports = { createApi, startServer, readJson, tokenActorId };
