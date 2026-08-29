@@ -10,6 +10,7 @@ from typing import Any, Sequence
 
 from .gateway import RecoveryRadarGateway
 from .pilot_bundle import ingest_pilot_bundle, load_pilot_bundle
+from .scope_manifest import build_source_scope_manifest, export_source_scope_atomic
 from .storage import Storage
 from .t2_io import export_scorecard_atomic, load_ground_truth, score_from_input
 
@@ -56,6 +57,14 @@ def _parser() -> argparse.ArgumentParser:
     issue.add_argument("--db", required=True)
     issue.add_argument("--actor", required=True)
     issue.add_argument("--role", required=True, choices=["ADMIN", "ANALYST", "REVIEWER"])
+
+    scope = sub.add_parser(
+        "scope-manifest",
+        help="hash the normalized pilot source scope without importing it",
+    )
+    scope.add_argument("--db", required=True)
+    scope.add_argument("--bundle", required=True)
+    scope.add_argument("--output", required=True)
 
     ingest = sub.add_parser("import-bundle", help="import normalized source truth")
     ingest.add_argument("--db", required=True)
@@ -149,6 +158,16 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
             }
 
         principal = gateway.auth.authenticate(token)
+        if args.command == "scope-manifest":
+            bundle = load_pilot_bundle(args.bundle, workspace_id=principal.workspace_id)
+            manifest = build_source_scope_manifest(bundle)
+            artifact = export_source_scope_atomic(manifest, args.output)
+            return {
+                "command": "scope-manifest",
+                "manifest": artifact,
+                "authorization_status": manifest["authorization_status"],
+            }
+
         if args.command == "import-bundle":
             bundle = load_pilot_bundle(args.bundle, workspace_id=principal.workspace_id)
             result = ingest_pilot_bundle(gateway, token, bundle)
