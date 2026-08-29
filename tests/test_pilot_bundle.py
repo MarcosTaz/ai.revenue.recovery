@@ -169,6 +169,39 @@ def test_bundle_hashes_real_files_and_ingestion_remains_unverified(tmp_path):
         store.close()
 
 
+def test_incomplete_bundle_preserves_missing_evidence_for_action_engine(tmp_path):
+    payload = _bundle_payload(tmp_path)
+    payload["event"]["evidence_ref"] = ""
+    payload["exposures"][0]["inventory_or_cost_ref"] = ""
+    payload["entitlements"][0]["contractual_basis_ref"] = None
+    payload["entitlements"][0]["supporting_document_ref"] = None
+    payload["evidence"] = []
+
+    bundle = load_pilot_bundle(_write_bundle(tmp_path, payload), workspace_id="A")
+    store = Storage(tmp_path / "incomplete.db")
+    try:
+        store.create_workspace("A", "Supplier A")
+        gateway = RecoveryRadarGateway(store)
+        admin = gateway.bootstrap_workspace_admin("A", "owner")
+        analyst = gateway.issue_key(admin, "analyst", "ANALYST")
+        reviewer = gateway.issue_key(admin, "reviewer", "REVIEWER")
+        ingest_pilot_bundle(gateway, analyst, bundle)
+        gateway.review_entitlement_basis(reviewer, "ENT-1", "VERIFIED")
+        package = gateway.build_claim_package(analyst, "EV-1", "SUP-A")
+        assert package["executive_summary"]["claimable_total"] == "0.00"
+        assert package["missing_evidence_actions"]
+        missing_codes = {
+            code
+            for action in package["missing_evidence_actions"]
+            for code in action["missing_codes"]
+        }
+        assert "MISSING_INVENTORY_OR_COST_RECORD" in missing_codes
+        assert "MISSING_CONTRACTUAL_BASIS" in missing_codes
+        assert "MISSING_SUPPORTING_DOCUMENT" in missing_codes
+    finally:
+        store.close()
+
+
 def test_bundle_rejects_path_escape_before_reading_external_evidence(tmp_path):
     payload = _bundle_payload(tmp_path)
     outside = tmp_path.parent / "outside-secret.txt"
@@ -185,7 +218,7 @@ def test_bundle_rejects_duplicate_economic_record_ids(tmp_path):
         load_pilot_bundle(_write_bundle(tmp_path, payload), workspace_id="A")
 
 
-def test_bundle_rejects_unknown_enum_and_non_finite_decimal(tmp_path):
+def test_bundle_rejects_unknown_enum_nonfinite_decimal_and_loose_boolean(tmp_path):
     payload = _bundle_payload(tmp_path)
     payload["event"]["event_type"] = "MAGIC_EVENT"
     with pytest.raises(PilotBundleError, match="EVENT_TYPE_UNSUPPORTED"):
@@ -194,4 +227,16 @@ def test_bundle_rejects_unknown_enum_and_non_finite_decimal(tmp_path):
     payload = _bundle_payload(tmp_path)
     payload["exposures"][0]["quantity"] = "NaN"
     with pytest.raises(PilotBundleError, match="QUANTITY_NON_FINITE"):
+        load_pilot_bundle(_write_bundle(tmp_path, payload), workspace_id="A")
+
+    payload = _bundle_payload(tmp_path)
+    payload["entitlements"][0]["legal_review_required"] = "false"
+    with pytest.raises(PilotBundleError, match="LEGAL_REVIEW_REQUIRED_MUST_BE_BOOLEAN"):
+        load_pilot_bundle(_write_bundle(tmp_path, payload), workspace_id="A")
+
+
+def test_bundle_requires_three_letter_uppercase_currency_code_shape(tmp_path):
+    payload = _bundle_payload(tmp_path)
+    payload["exposures"][0]["currency"] = "euro"
+    with pytest.raises(PilotBundleError, match="CURRENCY_INVALID_FORMAT:euro"):
         load_pilot_bundle(_write_bundle(tmp_path, payload), workspace_id="A")
