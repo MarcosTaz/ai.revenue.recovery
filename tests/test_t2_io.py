@@ -61,6 +61,7 @@ def test_synthetic_scorecard_never_promotes_t2_or_wtp(tmp_path):
     assert result["false_positive_count"] == 0
     assert result["false_negative_count"] == 0
     assert result["case_origin"] == "SYNTHETIC"
+    assert result["case_origin_status"] == "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
     assert result["validation_classification"] == "NON_REAL_CASE_MEASUREMENT_ONLY"
     assert result["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
     assert result["commercial_truth"]["wtp"] == "UNKNOWN_EXTERNAL"
@@ -99,8 +100,11 @@ def test_real_case_origin_is_measurement_input_not_terminal_promotion(tmp_path):
     payload["case_origin"] = "REAL_AUTHORIZED_HISTORICAL_CASE"
     source = load_ground_truth(_write(tmp_path, payload))
     result = score_from_input(_analysis(), source)
+    assert result["case_origin"] == "REAL_AUTHORIZED_HISTORICAL_CASE"
+    assert result["case_origin_status"] == "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
     assert result["validation_classification"] == "REAL_CASE_MEASUREMENT_INPUT"
     assert result["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
+    assert result["commercial_truth"]["wtp"] == "UNKNOWN_EXTERNAL"
 
 
 def test_recorded_authorization_and_scope_hash_never_auto_authorize_or_promote(tmp_path):
