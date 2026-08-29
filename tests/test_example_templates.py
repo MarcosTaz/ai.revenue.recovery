@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
 
+from recovery_radar.engine import analyze_claim
 from recovery_radar.pilot_bundle import load_pilot_bundle
 from recovery_radar.t2_io import load_ground_truth, score_from_input
-from recovery_radar.engine import analyze_claim
 
 
 ROOT = Path(__file__).parents[1]
@@ -28,7 +28,7 @@ def test_pilot_bundle_template_matches_current_parser(tmp_path):
     assert all(len(document.content_sha256) == 64 for document in bundle.evidence_documents)
 
 
-def test_ground_truth_template_matches_current_parser_and_cannot_promote(tmp_path):
+def test_ground_truth_template_matches_current_parser_and_starts_unknown(tmp_path):
     source = ROOT / "examples" / "ground-truth-template.json"
     copy = tmp_path / "ground-truth.json"
     copy.write_bytes(source.read_bytes())
@@ -47,6 +47,7 @@ def test_ground_truth_template_matches_current_parser_and_cannot_promote(tmp_pat
     analysis = analyze_claim(bundle.event, bundle.exposures, bundle.entitlements)
     scorecard = score_from_input(analysis, ground_truth)
     assert ground_truth["complete"] is False
-    assert ground_truth["case_origin"] == "REAL_AUTHORIZED_HISTORICAL_CASE"
+    assert ground_truth["case_origin"] == "UNKNOWN"
+    assert scorecard["validation_classification"] == "NON_REAL_CASE_MEASUREMENT_ONLY"
     assert scorecard["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
     assert scorecard["commercial_truth"]["wtp"] == "UNKNOWN_EXTERNAL"
