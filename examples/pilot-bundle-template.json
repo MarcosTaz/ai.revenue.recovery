@@ -1,0 +1,95 @@
+{
+  "format": "RECOVERY_RADAR_PILOT_BUNDLE_V1",
+  "supplier_id": "SUPPLIER-ALIAS",
+  "event": {
+    "event_id": "EVENT-001",
+    "customer_id": "CUSTOMER-ALIAS",
+    "program_id": "PROGRAM-ALIAS",
+    "part_id": "PART-OR-PROGRAM-ALIAS",
+    "event_type": "PROGRAM_CANCELLED",
+    "event_date": "2026-01-31",
+    "expected_volume": "1000",
+    "revised_volume": "0",
+    "source_ref": "event://EVENT-001",
+    "evidence_ref": "document://customer-notice"
+  },
+  "exposures": [
+    {
+      "exposure_id": "EXP-001",
+      "event_id": "EVENT-001",
+      "economic_loss_id": "LOSS-001",
+      "category": "NRE",
+      "quantity": "1",
+      "unit_cost": "100000.00",
+      "currency": "EUR",
+      "inventory_or_cost_ref": "cost://EXP-001",
+      "ownership": "SUPPLIER",
+      "mitigation_amount": "0",
+      "mitigation_evidence_ref": null,
+      "already_reimbursed_amount": "0",
+      "reimbursement_evidence_ref": null
+    }
+  ],
+  "entitlements": [
+    {
+      "entitlement_id": "ENT-001",
+      "event_id": "EVENT-001",
+      "economic_loss_id": "LOSS-001",
+      "support_state": "UNKNOWN",
+      "contractual_basis_ref": "contract://termination-basis",
+      "supporting_document_ref": "approval://engineering-nre",
+      "recoverable_cap": null,
+      "legal_review_required": true
+    }
+  ],
+  "evidence": [
+    {
+      "document_id": "DOC-NOTICE-001",
+      "supplier_id": "SUPPLIER-ALIAS",
+      "customer_id": "CUSTOMER-ALIAS",
+      "program_id": "PROGRAM-ALIAS",
+      "evidence_type": "CUSTOMER_NOTICE",
+      "source_ref": "document://customer-notice",
+      "version_id": "v1",
+      "document_date": "2026-01-31",
+      "file": "evidence/customer-notice.pdf",
+      "signed": null
+    },
+    {
+      "document_id": "DOC-COST-001",
+      "supplier_id": "SUPPLIER-ALIAS",
+      "customer_id": "CUSTOMER-ALIAS",
+      "program_id": "PROGRAM-ALIAS",
+      "evidence_type": "COST_RECORD",
+      "source_ref": "cost://EXP-001",
+      "version_id": "v1",
+      "document_date": "2026-01-31",
+      "file": "evidence/engineering-cost-record.csv",
+      "signed": null
+    },
+    {
+      "document_id": "DOC-CONTRACT-001",
+      "supplier_id": "SUPPLIER-ALIAS",
+      "customer_id": "CUSTOMER-ALIAS",
+      "program_id": "PROGRAM-ALIAS",
+      "evidence_type": "CONTRACT",
+      "source_ref": "contract://termination-basis",
+      "version_id": "v1",
+      "document_date": "2025-01-01",
+      "file": "evidence/supply-agreement.pdf",
+      "signed": true
+    },
+    {
+      "document_id": "DOC-SUPPORT-001",
+      "supplier_id": "SUPPLIER-ALIAS",
+      "customer_id": "CUSTOMER-ALIAS",
+      "program_id": "PROGRAM-ALIAS",
+      "evidence_type": "PURCHASE_ORDER",
+      "source_ref": "approval://engineering-nre",
+      "version_id": "v1",
+      "document_date": "2025-03-01",
+      "file": "evidence/engineering-authorization.pdf",
+      "signed": null
+    }
+  ]
+}
