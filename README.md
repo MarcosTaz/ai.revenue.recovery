@@ -8,6 +8,24 @@ Source is isolated on `recovery-radar/program-cancellation-claims`; `main` remai
 
 Recovery Radar is currently a **controlled assisted-pilot application**, exposed through a local operator CLI. It is **not** a public SaaS, production IAM deployment, autonomous legal-liability engine, or proof of commercial demand.
 
+### Start here
+
+For the shortest supported historical-pilot path, use `PILOT_START_HERE.md`.
+
+Supporting material:
+
+- `PILOT_ACQUISITION.md` — evidence-backed candidate/qualification plan;
+- `PILOT_OUTREACH_DRAFTS.md` — prepared but **NOT SENT** outreach drafts;
+- `PILOT_OFFER.md` — current unvalidated €4,500 ex-VAT fixed-scope price hypothesis;
+- `PILOT_ONE_PAGER.md` — buyer-facing pilot explanation;
+- `PILOT_DATA_REQUEST.md` — minimum authorized historical data request;
+- `PILOT_DATA_HANDLING.md` — exact local confidentiality/security boundary without production-security claims;
+- `PILOT_RUNBOOK.md` — controlled assisted execution and T2 measurement protocol;
+- `examples/pilot-bundle-template.json` — parser-aligned normalized input template;
+- `examples/ground-truth-template.json` — fail-closed ground-truth template starting at `case_origin=UNKNOWN`.
+
+No outreach has been sent and no real supplier dataset has been received by this Factory.
+
 Implemented and tested:
 
 - deterministic cancellation / volume-reduction event model;
@@ -47,7 +65,8 @@ Implemented and tested:
 - historical scorecard output with final-artifact SHA-256 binding, deterministic JSON envelope and atomic/fsync export;
 - synthetic scorecards are explicitly `NON_REAL_CASE_MEASUREMENT_ONLY` and can never auto-promote T2;
 - deterministic correctness acceptance with 2,000 claim lines;
-- broad synthetic/adversarial portfolio covering full, partial and zero recovery, prior compensation, mitigation, WIP/FG, NRE, supplier commitments, missing evidence, unsupported/expired representations, documentary conflict, duplicate economics, mixed currency and failure recovery.
+- broad synthetic/adversarial portfolio covering full, partial and zero recovery, prior compensation, mitigation, WIP/FG, NRE, supplier commitments, missing evidence, unsupported/expired representations, documentary conflict, duplicate economics, mixed currency and failure recovery;
+- executable example bundle/ground-truth templates tested against the current parsers so pilot onboarding examples cannot silently drift from implementation.
 
 ### Claimability boundary
 
@@ -75,21 +94,21 @@ The supported T1 path is:
 
 External claim submission, OEM/supplier communication, negotiation, settlement action, production hosting and production IAM are outside the T1 assisted-pilot boundary.
 
-See `PILOT_RUNBOOK.md` for the controlled historical-pilot protocol.
-
 ### T2 measurement boundary
 
 `score-historical` compares the current gated analysis to an explicit `RECOVERY_RADAR_GROUND_TRUTH_V1` file and writes a deterministic `RECOVERY_RADAR_T2_SCORECARD_V1` artifact.
 
 The scorecard measures false positives, false negatives, state mismatches, currency mismatches, amount error by currency and supplied operational metrics. `case_origin=REAL_AUTHORIZED_HISTORICAL_CASE` only labels the measurement input; it is **not proof of authorization and does not auto-promote T2**. `terminal_promotion` is always `NOT_INFERRED_FROM_SCORECARD`.
 
+The copyable default ground-truth template starts at `case_origin=UNKNOWN`, `ground_truth_complete=false` and an `UNKNOWN` line disposition to avoid creating real-case status through copy/paste.
+
 Synthetic or self-declared evidence cannot establish customer acceptance, recovered cash or willingness to pay.
 
 ## Current verification
 
-Exact commit `134f8e90604ff28d2fa97da32d88a98e580e85db` passed GitHub Actions with **147 tests** on Python 3.13.15 before the v0.2.1 version/documentation reconciliation.
+Exact commit `13ebeb2aa75ee52427623cccf0f1f223c2bf2750` passed GitHub Actions with **147 tests** on Python 3.13.15.
 
-The current documentation/version HEAD must obtain its own exact-head CI success before it is called the newest GREEN HEAD.
+Subsequent onboarding/template/documentation commits include executable-template regression tests and require their own exact-head CI observation before the newest branch HEAD is called GREEN.
 
 ## Business truth
 
