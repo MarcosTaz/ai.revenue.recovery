@@ -16,16 +16,34 @@ function stable(value) {
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
+function validateEvents(initialEvents) {
+  if (!Array.isArray(initialEvents)) throw new Error('AUDIT_STATE_INVALID');
+  const events = initialEvents.map(event => Object.freeze(clone(event)));
+  let previous_hash = null;
+  for (const event of events) {
+    if (!event || typeof event !== 'object' || !event.event_hash) throw new Error('AUDIT_CHAIN_INVALID');
+    const { event_hash, ...payload } = event;
+    if (payload.previous_hash !== previous_hash || hash(stable(payload)) !== event_hash) throw new Error('AUDIT_CHAIN_INVALID');
+    previous_hash = event_hash;
+  }
+  return events;
+}
+
 class AuditLog {
   constructor(initialEvents = []) {
-    if (!Array.isArray(initialEvents)) throw new Error('AUDIT_STATE_INVALID');
-    this.events = initialEvents.map(event => Object.freeze(clone(event)));
-    if (!this.verify()) throw new Error('AUDIT_CHAIN_INVALID');
+    this.events = validateEvents(initialEvents);
   }
 
   static fromState(state) {
     if (!state || state.version !== 1 || !Array.isArray(state.events)) throw new Error('AUDIT_STATE_INVALID');
     return new AuditLog(state.events);
+  }
+
+  replaceState(state) {
+    if (!state || state.version !== 1 || !Array.isArray(state.events)) throw new Error('AUDIT_STATE_INVALID');
+    const next = validateEvents(state.events);
+    this.events = next;
+    return this.exportState();
   }
 
   exportState() {
@@ -44,15 +62,8 @@ class AuditLog {
   }
 
   verify() {
-    let previous_hash = null;
-    for (const event of this.events) {
-      if (!event || typeof event !== 'object' || !event.event_hash) return false;
-      const { event_hash, ...payload } = event;
-      if (payload.previous_hash !== previous_hash) return false;
-      if (hash(stable(payload)) !== event_hash) return false;
-      previous_hash = event_hash;
-    }
-    return true;
+    try { validateEvents(this.events); return true; }
+    catch { return false; }
   }
 
   listForCustomer(customerId) {
