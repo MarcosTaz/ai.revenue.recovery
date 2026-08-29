@@ -14,23 +14,39 @@ function stable(value) {
   return JSON.stringify(value);
 }
 
+function clone(value) { return JSON.parse(JSON.stringify(value)); }
+
 class AuditLog {
-  constructor() { this.events = []; }
+  constructor(initialEvents = []) {
+    if (!Array.isArray(initialEvents)) throw new Error('AUDIT_STATE_INVALID');
+    this.events = initialEvents.map(event => Object.freeze(clone(event)));
+    if (!this.verify()) throw new Error('AUDIT_CHAIN_INVALID');
+  }
+
+  static fromState(state) {
+    if (!state || state.version !== 1 || !Array.isArray(state.events)) throw new Error('AUDIT_STATE_INVALID');
+    return new AuditLog(state.events);
+  }
+
+  exportState() {
+    return { version: 1, events: this.events.map(clone) };
+  }
 
   append(event) {
     if (!event || !event.customer_id || !event.case_id || !event.actor_id || !event.action) throw new Error('AUDIT_EVENT_INCOMPLETE');
     if (!event.at || Number.isNaN(Date.parse(event.at))) throw new Error('AUDIT_TIMESTAMP_INVALID');
     const previous_hash = this.events.length ? this.events[this.events.length - 1].event_hash : null;
-    const payload = { ...event, previous_hash };
+    const payload = clone({ ...event, previous_hash });
     const event_hash = hash(stable(payload));
     const frozen = Object.freeze({ ...payload, event_hash });
     this.events.push(frozen);
-    return frozen;
+    return clone(frozen);
   }
 
   verify() {
     let previous_hash = null;
     for (const event of this.events) {
+      if (!event || typeof event !== 'object' || !event.event_hash) return false;
       const { event_hash, ...payload } = event;
       if (payload.previous_hash !== previous_hash) return false;
       if (hash(stable(payload)) !== event_hash) return false;
@@ -40,7 +56,7 @@ class AuditLog {
   }
 
   listForCustomer(customerId) {
-    return this.events.filter(e => e.customer_id === customerId).map(e => ({ ...e }));
+    return this.events.filter(e => e.customer_id === customerId).map(clone);
   }
 }
 
