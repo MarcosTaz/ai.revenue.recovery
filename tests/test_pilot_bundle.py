@@ -190,14 +190,16 @@ def test_incomplete_bundle_preserves_missing_evidence_for_action_engine(tmp_path
         package = gateway.build_claim_package(analyst, "EV-1", "SUP-A")
         assert package["executive_summary"]["claimable_total"] == "0.00"
         assert package["missing_evidence_actions"]
-        missing_codes = {
-            code
-            for action in package["missing_evidence_actions"]
-            for code in action["missing_codes"]
+        evidence_codes = {
+            action["evidence_code"] for action in package["missing_evidence_actions"]
         }
-        assert "MISSING_INVENTORY_OR_COST_RECORD" in missing_codes
-        assert "MISSING_CONTRACTUAL_BASIS" in missing_codes
-        assert "MISSING_SUPPORTING_DOCUMENT" in missing_codes
+        assert "MISSING_INVENTORY_OR_COST_RECORD" in evidence_codes
+        assert "MISSING_CONTRACTUAL_BASIS" in evidence_codes
+        assert "MISSING_SUPPORTING_DOCUMENT" in evidence_codes
+        assert all(
+            action["obtainability_likelihood"] == "UNKNOWN"
+            for action in package["missing_evidence_actions"]
+        )
     finally:
         store.close()
 
