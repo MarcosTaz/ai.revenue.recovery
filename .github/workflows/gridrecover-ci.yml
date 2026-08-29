@@ -19,6 +19,10 @@ jobs:
         with:
           node-version: '22'
       - name: Validate rule JSON
-        run: node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgia-network-upgrade-repayment.json','utf8'))"
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgia-network-upgrade-repayment.json','utf8'))"
+          node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgip-cluster-withdrawal-capital.json','utf8'))"
       - name: Run GRIDRECOVER core regressions
         run: cd gridrecover && npm test
+      - name: Run GRIDRECOVER provenance model regressions
+        run: node gridrecover/test/project-model.test.js
