@@ -6,8 +6,9 @@ Run one authorized historical supplier cancellation / severe-volume-reduction ca
 
 T1 scope is intentionally assisted:
 
-`AUTHORIZED HISTORICAL CASE`
+`HUMAN AUTHORIZATION`
 → `NORMALIZE BUNDLE`
+→ `FREEZE SOURCE-SCOPE MANIFEST`
 → `ATOMIC IMPORT`
 → `INDEPENDENT REVIEW`
 → `ANALYZE`
@@ -15,10 +16,12 @@ T1 scope is intentionally assisted:
 → `PACKAGE`
 → `DETERMINISTIC EXPORT`
 → `OPTIONAL INTERNAL CASE`
-→ `EXPLICIT GROUND TRUTH`
-→ `DETERMINISTIC SCORECARD`.
+→ `FROZEN GROUND TRUTH`
+→ `SOURCE-SCOPE-BOUND SCORECARD`.
 
 No external submission, negotiation, settlement instruction or customer/OEM communication is part of this runbook.
+
+See also `PILOT_AUTHORIZATION_RECORD.md`, `PILOT_PROVENANCE.md` and `GROUND_TRUTH_PROTOCOL.md`.
 
 ## Roles
 
@@ -32,9 +35,9 @@ The source creator and reviewer must have different `actor_id` values. Separate 
 
 ## Data authorization boundary
 
-Before import, record outside the application that the operator is authorized to use the historical case data.
+Before confidential processing, retain the participant/data-owner authorization using the participant's actual controlled process. `PILOT_AUTHORIZATION_RECORD.md` is a checklist/reference aid, not a self-authorizing legal instrument.
 
-Recovery Radar's pilot registry stores structured source records plus evidence metadata/content hashes. Raw evidence file bytes remain in the operator-controlled pilot directory and are not persisted into the Recovery Radar evidence registry.
+Recovery Radar stores structured source records plus evidence metadata/content hashes. Raw evidence file bytes remain in the operator-controlled pilot directory and are not persisted into the Recovery Radar evidence registry.
 
 Do not import:
 
@@ -43,7 +46,7 @@ Do not import:
 - live customer communication for automated sending;
 - information that the operator cannot lawfully process for the pilot.
 
-A `case_origin` field inside a later ground-truth file is a measurement label only. It is not proof that authorization exists.
+A `case_origin`, authorization reference or source hash inside a later ground-truth file is metadata only. None proves that authorization exists.
 
 ## Local setup
 
@@ -105,13 +108,35 @@ Important truth rules:
 - evidence hashes are derived from referenced file bytes by the loader; do not manufacture hashes;
 - if a source is genuinely absent, leave the absence explicit so the missing-evidence engine can report it.
 
-## 4. Back up before import when reusing an existing workspace
+## 4. Freeze the source scope before import/comparison
+
+Set `RECOVERY_RADAR_TOKEN` to an authorized workspace token and run:
+
+```text
+recovery-radar scope-manifest \
+  --db pilot.db \
+  --bundle bundle.json \
+  --output source-scope.json
+```
+
+Preserve both returned hashes:
+
+- `source_scope_sha256` — identity of the normalized modeled source scope;
+- `artifact_sha256` — identity of the exported manifest bytes.
+
+The source-scope hash binds event volumes, exposure economics, mitigation/reimbursement values, entitlement states/caps/references and evidence metadata/content hashes. Raw evidence bytes are not embedded.
+
+The hash proves identity only. It does not prove authorization, completeness, truth, entitlement or legal admissibility.
+
+If the normalized bundle or any concrete evidence bytes change materially, create a new source-scope manifest and treat the run as a new scope/version.
+
+## 5. Back up before import when reusing an existing workspace
 
 For a fresh pilot DB this is optional. For any reused DB, create and verify a backup using the tested Storage backup path before importing new truth.
 
 Do not continue if backup verification fails.
 
-## 5. Atomic import
+## 6. Atomic import
 
 Set `RECOVERY_RADAR_TOKEN` to the ANALYST token:
 
@@ -128,7 +153,7 @@ Expected boundary:
 
 Import success is not claim readiness.
 
-## 6. Independent evidence review
+## 7. Independent evidence review
 
 Set `RECOVERY_RADAR_TOKEN` to the REVIEWER token.
 
@@ -146,7 +171,7 @@ Use `REJECTED` whenever identity, scope, signature/confirmation, ambiguity or su
 
 Do not bulk-verify merely because files were imported.
 
-## 7. Independent entitlement review
+## 8. Independent entitlement review
 
 Review each structured entitlement interpretation separately:
 
@@ -160,7 +185,7 @@ recovery-radar review-entitlement \
 
 A later or competing contract version does not automatically supersede another. If precedence is ambiguous, keep/revert the interpretation to review/rejected outside the claimable path.
 
-## 8. Build package
+## 9. Build package
 
 Set `RECOVERY_RADAR_TOKEN` to an authorized ANALYST/ADMIN token:
 
@@ -186,7 +211,7 @@ Inspect at minimum:
 - draft claim package;
 - audit trail.
 
-## 9. Stop conditions before internal claim creation
+## 10. Stop conditions before internal claim creation
 
 Do not create a case when any of these applies:
 
@@ -202,7 +227,7 @@ Do not create a case when any of these applies:
 - backup/storage integrity is uncertain;
 - operator cannot explain a modeled amount from source evidence and calculation trace.
 
-## 10. Deterministic export
+## 11. Deterministic export
 
 ```text
 recovery-radar export \
@@ -214,7 +239,7 @@ recovery-radar export \
 
 Preserve the returned SHA-256 manifest with the pilot record. The export is deterministic for the same package truth and is verified after atomic write.
 
-## 11. Optional internal claim case
+## 12. Optional internal claim case
 
 Only after the claimability gates pass:
 
@@ -227,43 +252,29 @@ recovery-radar create-case \
 
 This creates an internal workflow case. It does not submit anything externally.
 
-## 12. Prepare explicit T2 ground truth
+## 13. Freeze explicit T2 ground truth
 
-Use a separate file with format:
-
-```text
-RECOVERY_RADAR_GROUND_TRUTH_V1
-```
-
-Minimal shape:
+Start from `examples/ground-truth-template.json`. Its neutral defaults are deliberate:
 
 ```json
 {
   "format": "RECOVERY_RADAR_GROUND_TRUTH_V1",
-  "case_origin": "REAL_AUTHORIZED_HISTORICAL_CASE",
-  "ground_truth_complete": true,
-  "lines": [
-    {
-      "economic_loss_id": "LOSS-001",
-      "disposition": "CLAIMABLE",
-      "currency": "EUR",
-      "expected_amount": "1000.00",
-      "note": "Human historical ground truth"
-    }
-  ],
+  "case_origin": "UNKNOWN",
+  "ground_truth_complete": false,
+  "provenance": {
+    "authorization_reference": null,
+    "source_scope_sha256": null,
+    "ground_truth_method": "UNKNOWN"
+  },
+  "lines": [],
   "operational_metrics": {
-    "analyst_preparation_minutes": "30",
-    "reviewer_minutes": "15",
-    "total_time_to_package_minutes": "60",
-    "reviewer_evidence_corrections": 1,
-    "reviewer_entitlement_corrections": 0,
-    "missing_evidence_actions_useful": 2,
-    "missing_evidence_actions_not_useful": 0,
     "repeat_use_signal": "UNKNOWN",
     "wtp_evidence_reference": null
   }
 }
 ```
+
+Only replace neutral metadata when externally supported. For a controlled real/historical run, record the frozen `source_scope_sha256` from step 4.
 
 Ground-truth rules:
 
@@ -271,12 +282,14 @@ Ground-truth rules:
 - dispositions are `CLAIMABLE`, `REQUIRES_REVIEW`, `NON_CLAIMABLE`, or `UNKNOWN`;
 - keep source currency; do not combine currencies;
 - `UNKNOWN` truth never becomes success evidence;
+- `ground_truth_method=BLIND` only when the reference was frozen without exposure to the Recovery Radar first-pass result; otherwise use `ASSISTED` or `UNKNOWN`;
+- all provenance labels remain human-recorded metadata and are not independently authenticated by the application;
 - WTP is not inferred from repeat-use, usefulness, value recovered or a free-text claim;
-- `wtp_evidence_reference`, when present, is stored only as `RECORDED_NOT_INDEPENDENTLY_VERIFIED`; it cannot make WTP evidenced.
+- `wtp_evidence_reference`, when present, remains `RECORDED_NOT_INDEPENDENTLY_VERIFIED`; it cannot make WTP evidenced.
 
-## 13. Produce deterministic T2 scorecard
+## 14. Produce source-scope-bound T2 scorecard
 
-Set `RECOVERY_RADAR_TOKEN` to an authorized token that can read the pilot workspace, then run:
+Run:
 
 ```text
 recovery-radar score-historical \
@@ -287,7 +300,15 @@ recovery-radar score-historical \
   --output t2-scorecard.json
 ```
 
-The command recomputes the current gated analysis from persisted truth, compares it with the explicit ground truth and writes a `RECOVERY_RADAR_T2_SCORECARD_V1` envelope atomically.
+The command:
+
+1. recomputes the current gated analysis from persisted truth;
+2. reconstructs the current persisted normalized source scope;
+3. compares a recorded `source_scope_sha256`, when present, with the persisted scope;
+4. refuses with `SOURCE_SCOPE_SHA256_MISMATCH` and writes no scorecard when they differ;
+5. compares the analysis with explicit human ground truth;
+6. writes a `RECOVERY_RADAR_T2_SCORECARD_V1` envelope atomically;
+7. recomputes final `scorecard_sha256` after persisted-scope status is added.
 
 The scorecard records:
 
@@ -298,12 +319,15 @@ The scorecard records:
 - signed and absolute amount error by currency;
 - unknown/missing/unexpected loss IDs;
 - operational metrics supplied in the ground-truth file;
-- a source scorecard hash plus a final SHA-256 covering case-origin/classification metadata;
+- caller-recorded case origin plus `case_origin_status=RECORDED_NOT_INDEPENDENTLY_VERIFIED`;
+- authorization/source-scope/ground-truth-method provenance and their verification limitations;
+- persisted source-scope hash/status;
+- source scorecard hash plus final SHA-256;
 - `terminal_promotion=NOT_INFERRED_FROM_SCORECARD`.
 
-Synthetic input is classified `NON_REAL_CASE_MEASUREMENT_ONLY`. Even `REAL_AUTHORIZED_HISTORICAL_CASE` is only `REAL_CASE_MEASUREMENT_INPUT`; the application does not decide that T2 has been reached.
+Synthetic input is classified `NON_REAL_CASE_MEASUREMENT_ONLY`. Even a caller-recorded `REAL_AUTHORIZED_HISTORICAL_CASE` is only `REAL_CASE_MEASUREMENT_INPUT`; the application does not prove authorization and does not decide that T2 has been reached.
 
-## 14. Compare with known historical outcome where available
+## 15. Compare with known historical outcome where available
 
 Separately record any authorized historical submitted/accepted/settled/paid amount and reasons for differences between modeled claimability and the known outcome.
 
@@ -315,4 +339,4 @@ Promote to `T2 — REAL-CASE VALIDATED` only when the historical/real case produ
 
 If a material defect is found, stop terminal promotion, classify it P0/P1/P2, repair, rerun the synthetic/adversarial suite, then rerun the affected historical test.
 
-No scorecard field, synthetic fixture, free-text WTP note or caller-selected `case_origin` may promote T2 automatically.
+No scorecard field, source hash, authorization reference, synthetic fixture, free-text WTP note or caller-selected `case_origin` may promote T2 automatically.
