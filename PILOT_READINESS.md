@@ -6,14 +6,14 @@ Status vocabulary: `PROVEN_LOCAL`, `PARTIAL`, `ABSENT`, `UNKNOWN_EXTERNAL`.
 
 `T1 — PILOT CAPABLE = YES_FOR_CONTROLLED_ASSISTED_HISTORICAL_PILOT`
 
-This promotion is deliberately narrow. It means the local assisted application has a tested path to ingest an authorized historical supplier case, preserve uncertainty, require independent review, generate an auditable package and export it reproducibly.
+This promotion is deliberately narrow. It means the local assisted application has a tested path to ingest an authorized historical supplier case, preserve uncertainty, require independent review, generate an auditable package, export it reproducibly, and score the result against explicit historical ground truth.
 
 It does **not** mean production SaaS readiness, autonomous legal determination, live claim submission, customer acceptance, willingness to pay, recovered cash or commercial validation.
 
 | Gate | State | Evidence / remaining boundary |
 |---|---|---|
 | Canonical source | PROVEN_LOCAL | Dedicated branch in `MarcosTaz/ai.revenue.recovery`; `main` remains untouched. |
-| Assisted-pilot application | PROVEN_LOCAL | Local CLI/operator path exists from workspace bootstrap through bundle import, review, package/export and internal case creation. Public/customer-facing web app is not part of T1. |
+| Assisted-pilot application | PROVEN_LOCAL | Local CLI/operator path exists from workspace bootstrap through bundle import, review, package/export, internal case creation and historical scorecard. Public/customer-facing web app is not part of T1. |
 | Event model | PROVEN_LOCAL | Cancellation, severe volume reduction and related modeled event types persist tenant-scoped. |
 | Exposure engine | PROVEN_LOCAL | Category, quantity, unit cost, mitigation, prior reimbursement, ownership and net exposure. |
 | Entitlement model | PROVEN_LOCAL | Supported/partial/conflicting/not-supported/unknown; structured support does not count until independently reviewed. |
@@ -38,10 +38,14 @@ It does **not** mean production SaaS readiness, autonomous legal determination, 
 | Schema compatibility | PROVEN_LOCAL | Required table/column manifest + schema version; unknown newer DB refuses startup; older version requires explicit migration. No automatic data-transform migration is claimed. |
 | Scale correctness | PROVEN_LOCAL | Exact deterministic economics proven with 2,000 claim lines. No latency/SLA claim. |
 | Synthetic/adversarial portfolio | PROVEN_LOCAL | Full/partial/zero recovery, compensation, mitigation, multiple exposure categories, evidence gaps/conflicts, unsupported representations, duplicates, malformed economics, currency and failure cases. |
-| Latest exact code HEAD CI | PROVEN_LOCAL | `61cdbbc81a37cef07333c7080b074f3f3a22b732` — GitHub Actions SUCCESS, **131 passed**. Documentation commits after it require their own exact-head CI observation. |
-| Known P0/P1 in covered assisted-pilot surface | PROVEN_LOCAL | No known unresolved P0/P1 after the current adversarial suite. This is not a claim about production hosting/IAM or unknown real-data failure modes. |
-| Real supplier historical case | ABSENT | No confidential real supplier dataset has been authorized/run. |
-| Commercial/WTP validation | ABSENT | No paid pilot, buyer commitment, recovered cash or WTP evidence. |
+| T2 ground-truth adapter | PROVEN_LOCAL | `RECOVERY_RADAR_GROUND_TRUTH_V1` requires explicit case origin/completeness, typed lines and typed operational metrics; malformed/non-finite data fails closed. |
+| T2 scorecard | PROVEN_LOCAL | FP/FN, state/currency mismatch and amount-error measurement; final scorecard metadata is SHA-bound and atomically exported as `RECOVERY_RADAR_T2_SCORECARD_V1`. |
+| T2 truth boundary | PROVEN_LOCAL | Synthetic input is measurement-only; caller-selected `case_origin` never auto-promotes T2; WTP reference remains `UNKNOWN_EXTERNAL` / `RECORDED_NOT_INDEPENDENTLY_VERIFIED`. |
+| Latest exact code HEAD CI | PROVEN_LOCAL | `134f8e90604ff28d2fa97da32d88a98e580e85db` — GitHub Actions SUCCESS, **147 passed**. Version/documentation commits after it require their own exact-head CI observation. |
+| Known P0/P1 in covered assisted-pilot surface | PROVEN_LOCAL | No known unresolved P0/P1 after the latest exact-code-head adversarial suite. This is not a claim about production hosting/IAM or unknown real-data failure modes. |
+| Real supplier historical case | ABSENT | No confidential/authorized real supplier dataset has been run. |
+| T2 real-case validation | ABSENT | Measurement infrastructure exists, but T2 cannot be reached without real/historical case evidence and Factory review. |
+| Commercial/WTP validation | ABSENT | No paid pilot, buyer commitment, recovered cash or independently verified WTP evidence. |
 | Production deployment | ABSENT | No public production service; deliberately not required for T1 controlled assisted pilot. |
 
 ## T1 operating boundary
@@ -72,6 +76,8 @@ Promotion beyond T1 requires evidence from at least one authorized historical/re
 - difference between modeled claimability and actual accepted/settled/recovered outcome when outcome data exists;
 - practical data-preparation burden;
 - qualitative repeat-use signal;
-- WTP only when explicitly evidenced.
+- WTP only when independently evidenced outside the self-authored scorecard.
 
-Until then, business status remains `SIGNAL / HIGH COMPETITIVE COLLISION / WTP UNKNOWN`.
+The current application can create the scorecard needed for that decision, but the application itself cannot promote the terminal.
+
+Until a real case is run and reviewed, business status remains `SIGNAL / HIGH COMPETITIVE COLLISION / WTP UNKNOWN`.
