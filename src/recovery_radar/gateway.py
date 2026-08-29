@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from pathlib import Path
 from typing import Iterable
 
 from .auth import AuthService, Role
 from .evidence import EvidenceDocument
+from .export import export_claim_package_atomic
 from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 from .service import TenantService
 from .verification import ReviewState
@@ -70,6 +72,17 @@ class RecoveryRadarGateway:
         return self.tenant.build_claim_package(
             self.auth.authenticate(token), event_id, supplier_id
         )
+
+    def export_claim_package(
+        self,
+        token: str,
+        event_id: str,
+        supplier_id: str,
+        destination: str | Path,
+    ) -> dict:
+        """Build from current authenticated tenant truth, then atomically export."""
+        package = self.build_claim_package(token, event_id, supplier_id)
+        return export_claim_package_atomic(package, destination)
 
     def create_case(
         self,
