@@ -1,0 +1,25 @@
+{
+  "format": "RECOVERY_RADAR_GROUND_TRUTH_V1",
+  "case_origin": "REAL_AUTHORIZED_HISTORICAL_CASE",
+  "ground_truth_complete": false,
+  "lines": [
+    {
+      "economic_loss_id": "LOSS-001",
+      "disposition": "UNKNOWN",
+      "currency": "EUR",
+      "expected_amount": null,
+      "note": "Independent reviewer completes this after Recovery Radar first-pass output is frozen."
+    }
+  ],
+  "operational_metrics": {
+    "analyst_preparation_minutes": null,
+    "reviewer_minutes": null,
+    "total_time_to_package_minutes": null,
+    "reviewer_evidence_corrections": null,
+    "reviewer_entitlement_corrections": null,
+    "missing_evidence_actions_useful": null,
+    "missing_evidence_actions_not_useful": null,
+    "repeat_use_signal": "UNKNOWN",
+    "wtp_evidence_reference": null
+  }
+}
