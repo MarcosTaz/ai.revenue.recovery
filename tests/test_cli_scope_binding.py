@@ -1,3 +1,4 @@
+import hashlib
 import json
 from datetime import date
 from decimal import Decimal
@@ -87,4 +88,10 @@ def test_score_historical_records_verified_match_to_persisted_scope(tmp_path, ca
     scorecard = json.loads(output.read_text(encoding="utf-8"))["scorecard"]
     assert scorecard["provenance"]["persisted_source_scope_sha256"] == scope["source_scope_sha256"]
     assert scorecard["provenance"]["persisted_source_scope_status"] == "MATCHED_RECORDED_SCOPE"
+    assert scorecard["case_origin_status"] == "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
     assert scorecard["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
+    claimed = scorecard["scorecard_sha256"]
+    unsigned = dict(scorecard)
+    del unsigned["scorecard_sha256"]
+    canonical = json.dumps(unsigned, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    assert claimed == hashlib.sha256(canonical).hexdigest()
