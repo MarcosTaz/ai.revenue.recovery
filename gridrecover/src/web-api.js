@@ -38,12 +38,22 @@ function tokenActorId(token) {
   return `token-sha256:${crypto.createHash('sha256').update(token, 'utf8').digest('hex').slice(0, 24)}`;
 }
 
+function resolveCustomerForToken(tokenToCustomer, token) {
+  if (!tokenToCustomer || typeof tokenToCustomer !== 'object') return null;
+  if (!Object.prototype.hasOwnProperty.call(tokenToCustomer, token)) return null;
+  const customerId = tokenToCustomer[token];
+  if (typeof customerId !== 'string' || !customerId.trim()) return null;
+  return customerId;
+}
+
 function createApi({ tokenToCustomer = {}, store = new CaseStore(), audit = new AuditLog(), vault = null, now = () => new Date().toISOString() } = {}) {
   function actor(req) {
     const auth = req.headers.authorization || '';
     const match = /^Bearer\s+(.+)$/.exec(auth);
-    if (!match || !tokenToCustomer[match[1]]) return null;
-    return { customer_id: tokenToCustomer[match[1]], actor_id: tokenActorId(match[1]) };
+    if (!match) return null;
+    const customerId = resolveCustomerForToken(tokenToCustomer, match[1]);
+    if (!customerId) return null;
+    return { customer_id: customerId, actor_id: tokenActorId(match[1]) };
   }
 
   return async function handler(req, res) {
@@ -159,4 +169,4 @@ function startServer(options = {}, port = 0) {
   return new Promise(resolve => server.listen(port, '127.0.0.1', () => resolve(server)));
 }
 
-module.exports = { createApi, startServer, readJson, readBytes, tokenActorId };
+module.exports = { createApi, startServer, readJson, readBytes, tokenActorId, resolveCustomerForToken };
