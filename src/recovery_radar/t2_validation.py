@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal
 
@@ -65,6 +65,9 @@ class PilotOperationalMetrics:
         ):
             if value is not None and value < 0:
                 raise ValueError("INVALID_COUNT_METRIC")
+        if self.wtp_evidence is not None:
+            if not isinstance(self.wtp_evidence, str) or not self.wtp_evidence.strip():
+                raise ValueError("WTP_EVIDENCE_REFERENCE_INVALID")
 
 
 def _serialize_decimal(value: Decimal | None) -> str | None:
@@ -101,6 +104,11 @@ def score_historical_case(
     The caller must say whether ground truth is exhaustive. Unexpected modeled
     positives are counted as false positives only when the truth set is declared
     complete. UNKNOWN truth lines never become success evidence.
+
+    Commercial observations are deliberately non-self-validating. A string stored
+    in ``wtp_evidence`` is only a pointer/note for later independent verification;
+    it cannot promote willingness-to-pay to an evidenced state inside this
+    scorecard.
     """
     truth_by_loss: dict[str, GroundTruthLine] = {}
     for item in ground_truth:
@@ -204,7 +212,12 @@ def score_historical_case(
         "missing_evidence_actions_useful": metrics.missing_evidence_actions_useful,
         "missing_evidence_actions_not_useful": metrics.missing_evidence_actions_not_useful,
         "repeat_use_signal": metrics.repeat_use_signal,
-        "wtp_evidence": metrics.wtp_evidence,
+        "wtp_evidence_reference": metrics.wtp_evidence,
+        "wtp_evidence_status": (
+            "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
+            if metrics.wtp_evidence
+            else "NOT_RECORDED"
+        ),
     }
 
     result = {
@@ -227,7 +240,8 @@ def score_historical_case(
         "unexpected_modeled_ids": unexpected_modeled_ids,
         "operational_metrics": metrics_payload,
         "commercial_truth": {
-            "wtp": "EVIDENCED" if metrics.wtp_evidence else "UNKNOWN",
+            "wtp": "UNKNOWN_EXTERNAL",
+            "wtp_reference_status": metrics_payload["wtp_evidence_status"],
             "recovered_cash": "NOT_INFERRED_FROM_THIS_SCORECARD",
             "customer_acceptance": "NOT_INFERRED_FROM_THIS_SCORECARD",
         },
