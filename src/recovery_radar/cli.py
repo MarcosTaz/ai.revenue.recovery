@@ -11,6 +11,7 @@ from typing import Any, Sequence
 from .gateway import RecoveryRadarGateway
 from .pilot_bundle import ingest_pilot_bundle, load_pilot_bundle
 from .storage import Storage
+from .t2_io import load_ground_truth, score_from_input
 
 TOKEN_ENV = "RECOVERY_RADAR_TOKEN"
 
@@ -88,6 +89,15 @@ def _parser() -> argparse.ArgumentParser:
     create_case.add_argument("--event-id", required=True)
     create_case.add_argument("--supplier-id", required=True)
     create_case.add_argument("--exposure-id", action="append", dest="exposure_ids")
+
+    score = sub.add_parser(
+        "score-historical",
+        help="score current gated analysis against explicit historical ground truth",
+    )
+    score.add_argument("--db", required=True)
+    score.add_argument("--event-id", required=True)
+    score.add_argument("--supplier-id", required=True)
+    score.add_argument("--ground-truth", required=True)
 
     return parser
 
@@ -181,6 +191,12 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
                 selected_exposure_ids=args.exposure_ids,
             )
             return {"command": "create-case", "case": asdict(case)}
+
+        if args.command == "score-historical":
+            analysis = gateway.analyze_event(token, args.event_id, args.supplier_id)
+            ground_truth = load_ground_truth(args.ground_truth)
+            scorecard = score_from_input(analysis, ground_truth)
+            return {"command": "score-historical", "scorecard": scorecard}
 
         raise RuntimeError("UNREACHABLE_COMMAND")
     finally:
