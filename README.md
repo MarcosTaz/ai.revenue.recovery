@@ -1,52 +1,86 @@
 # Recovery Radar
 
-Evidence-first system for constructing and defending supplier recovery claims after customer program cancellation or severe volume reduction.
+Evidence-first supplier-side cancellation-claim pre-audit for customer program cancellation or severe volume reduction.
 
-## Current product truth — v0.3
+## Current product truth — v0.2.0
 
-Source is isolated on `recovery-radar/program-cancellation-claims`; `main` originally contained only `.gitkeep` and remains untouched.
+Source is isolated on `recovery-radar/program-cancellation-claims`; `main` remains untouched.
 
-Implemented:
+Recovery Radar is currently a **controlled assisted-pilot application**, exposed through a local operator CLI. It is **not** a public SaaS, production IAM deployment, autonomous legal-liability engine, or proof of commercial demand.
+
+Implemented and tested:
 
 - deterministic cancellation / volume-reduction event model;
 - stranded exposure categories: raw material, E&O, WIP, finished goods, tooling, NRE, supplier commitments and dedicated capacity;
 - mitigation and prior-reimbursement deduction;
 - exposure != entitlement != claimability != settlement != payment;
-- ownership fail-closed checks and duplicate economic-loss protection;
-- missing-evidence detection and explicit contractual support states;
-- partial support with defensible caps and legal/high-risk human-review routing;
+- ownership fail-closed checks;
+- duplicate economic-loss and duplicate economic-representation protection;
+- mixed-currency fail-closed handling with totals separated by currency and no false scalar aggregation;
+- non-finite and unsupported-range economic input rejection;
+- missing-evidence detection plus line-specific retrieval actions without invented obtainability probability;
+- partial support with defensible caps and legal/high-risk review routing;
 - independent arithmetic and claim-line ground-truth scoring;
-- Alpha Components, zero-recovery, partial-recovery and RedTeam Industrial fixtures;
 - settlement/payment workflow where `SETTLED != PAID`;
 - multiple evidenced payments with duplicate/currency/overpayment controls;
-- tenant-scoped SQLite claim and evidence-metadata persistence with audit events;
-- backup/restore economic-digest verification;
-- service methods scoped by a pre-authenticated `Principal`, not caller-selected tenant IDs;
-- reviewer cannot create, submit, negotiate, settle or record payment;
-- SHA-256 evidence-document registry with duplicate/version conflict controls;
-- wrong tenant/supplier/customer/program and unconfirmed signature surfaced for review;
-- extracted document text explicitly treated as untrusted data;
-- documentary fact disagreements fail closed to `CONFLICTING` when precedence is not modeled;
-- **registered evidence claimability gate**: nonempty source-reference strings are not enough to make a claim package ready. Required event, cost/inventory, contract/support, mitigation and reimbursement sources must be registered and correctly scoped.
+- tenant-scoped SQLite persistence for events, exposures, entitlements, claim cases, evidence metadata/hashes, reviews and audit events;
+- token-authenticated local application gateway; workspace and role are derived from the credential, not caller-selected business parameters;
+- one-time bootstrap/admin credential, PBKDF-protected stored API-key secrets, key revocation and tenant-scoped roles;
+- independent evidence verification: registration/upload != verification;
+- independent entitlement verification: analyst-entered support state != verified entitlement;
+- reviewer cannot source-write, submit, settle or record payment;
+- same actor cannot create evidence/entitlement and then independently verify it under another role;
+- SHA-256 evidence registry with duplicate/version conflict and scope controls;
+- documentary disagreements and ambiguous contract versions fail closed rather than silently selecting precedence;
+- registered-and-reviewed evidence claimability gate for event, cost/inventory, contractual/support and conditional mitigation/reimbursement evidence;
+- deterministic claim package with calculation trace, lineage, uncertainty, missing-evidence actions and draft-claim output;
+- canonical claim-package export with SHA-256 manifest, atomic write, fsync, round-trip verification and tamper detection;
+- verified SQLite backup with integrity / foreign-key checks and whole-database truth digest;
+- rollback protection for interrupted critical writes;
+- DB-lock, concurrency, retry and corrupted-backup adversarial tests;
+- application-schema compatibility gate that refuses unknown newer schemas and requires explicit migration for older versions;
+- strict pilot-bundle loader with size limits, enum/type validation, path-escape/symlink controls and evidence hashes derived from concrete file bytes;
+- atomic, retry-safe pilot-bundle ingestion: event/exposure/entitlement/evidence/audit commit together or roll back together;
+- assisted-pilot CLI: `bootstrap`, `issue-key`, `import-bundle`, `review-evidence`, `review-entitlement`, `package`, `export`, `create-case`;
+- deterministic correctness acceptance with 2,000 claim lines;
+- broad synthetic/adversarial portfolio covering full, partial and zero recovery, prior compensation, mitigation, WIP/FG, NRE, supplier commitments, missing evidence, unsupported/expired representations, documentary conflict, duplicate economics, mixed currency and failure recovery.
 
 ### Claimability boundary
 
-The economic engine can produce a candidate `CLAIMABLE` / `REQUIRES_REVIEW` state from supplied records, but a customer-facing claim package is not ready until `apply_registered_evidence_gate()` has verified the required source records against the evidence registry. Missing or wrong-scope registered evidence downgrades the affected line to `POTENTIAL_ENTITLEMENT`.
+The economic engine may identify a candidate amount from normalized records. That amount does not become usable claim-package money merely because source-reference strings exist.
 
-This explicitly prevents an arbitrary URI string such as `contract://...` from being treated as sufficient proof by the package workflow.
+For the assisted-pilot application, required source records must be registered, correctly scoped and currently `VERIFIED` by an independent reviewer. The related entitlement interpretation must also be independently `VERIFIED`. Failure of either boundary keeps or returns the line to a non-claimable/review state.
 
-### Other boundaries
+`CLAIMABLE` remains an internal economic/evidence workflow conclusion. It is **not** legal certainty, customer acceptance, settlement or cash.
 
-- `CLAIMABLE` is an economic/evidence workflow state, not a legal conclusion.
-- `REQUIRES_REVIEW` is not customer approval.
-- `SETTLED` is not `PAID`.
-- claim value never becomes recovered cash without evidenced payment records.
-- `Principal` assumes authentication already occurred outside this module; production authentication/session infrastructure is **not implemented**.
-- raw document bytes are not persisted by the registry; current persistence stores identity metadata and content hashes.
-- full event/exposure/entitlement persistence and source-document parsing are not yet implemented.
+### Evidence and contract-version boundary
+
+Recovery Radar stores evidence identity, metadata and content hashes; it does not persist raw evidence bytes. Pilot-bundle evidence hashes are derived from local file bytes, not accepted from a caller-provided hash.
+
+If multiple registered documents compete for the same source identity, the system fails closed as ambiguous. It does not infer that a later contract automatically supersedes an earlier contract. Contract precedence remains a human commercial/legal decision.
+
+### Currency boundary
+
+Recovery Radar does not add EUR + USD (or any other mixed currencies) into one scalar amount. Mixed-currency analyses expose `totals_by_currency`, mark the package `MULTI_CURRENCY_SPLIT_REQUIRED`, and cannot create a single claim case until the currencies are split or otherwise handled outside the current model.
+
+### Assisted-pilot operating boundary
+
+The supported T1 path is:
+
+`workspace bootstrap → distinct analyst/reviewer identities → normalized historical bundle import → independent evidence + entitlement review → evidence-gated analysis → package → deterministic export → internal claim case`.
+
+External claim submission, OEM/supplier communication, negotiation, settlement action, production hosting and production IAM are outside the T1 assisted-pilot boundary.
+
+See `PILOT_RUNBOOK.md` for the controlled historical-pilot protocol.
 
 ## Current verification
 
-Exact commit `dec1f0893592900ac0d3b04c66250b19b6d61dcd` passed GitHub Actions with **46 tests** on Python 3.13.15 before this README update.
+Exact commit `61cdbbc81a37cef07333c7080b074f3f3a22b732` passed GitHub Actions with **131 tests** on Python 3.13.15 before this documentation reconciliation.
 
-Synthetic correctness is not commercial proof and does not establish collectibility or willingness to pay.
+The documentation commit that contains this README must obtain its own exact-head CI success before it is called the newest GREEN HEAD.
+
+## Business truth
+
+`SIGNAL / HIGH COMPETITIVE COLLISION / WTP UNKNOWN / COMMERCIAL SUCCESS UNPROVEN`.
+
+Synthetic correctness, pilot capability and a safe assisted workflow are **not** evidence of willingness to pay, collectibility, real-world claim acceptance or recovered revenue.
