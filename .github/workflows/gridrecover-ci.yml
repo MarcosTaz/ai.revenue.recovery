@@ -22,11 +22,5 @@ jobs:
         run: |
           node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgia-network-upgrade-repayment.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgip-cluster-withdrawal-capital.json','utf8'))"
-      - name: Run GRIDRECOVER core regressions
+      - name: Run full GRIDRECOVER deterministic + E2E suite
         run: cd gridrecover && npm test
-      - name: Run GRIDRECOVER provenance model regressions
-        run: node gridrecover/test/project-model.test.js
-      - name: Run GRIDRECOVER cluster-withdrawal regressions
-        run: node gridrecover/test/cluster-withdrawal.test.js
-      - name: Run GRIDRECOVER synthetic case pack
-        run: node gridrecover/test/synthetic-case-pack.test.js
