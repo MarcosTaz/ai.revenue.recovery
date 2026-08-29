@@ -146,9 +146,9 @@ function createApi({ tokenToCustomer = {}, store = new CaseStore(), audit = new 
       return json(res, 404, { error: 'NOT_FOUND' });
     } catch (e) {
       if (e.message === 'PAYLOAD_TOO_LARGE' || e.message === 'DOCUMENT_TOO_LARGE') return json(res, 413, { error: e.message });
+      if (e.message === 'EVIDENCE_ID_EXISTS' || e.message === 'DOCUMENT_ID_EXISTS') return json(res, 409, { error: e.message });
       if (e.message === 'INVALID_JSON') return json(res, 400, { error: e.message });
       if (/^(DOCUMENT_|PDF_|CUSTOMER_ID_|DOCUMENT_ID_|DOCUMENT_TYPE_)/.test(e.message)) return json(res, 400, { error: e.message });
-      if (e.message === 'EVIDENCE_ID_EXISTS' || e.message === 'DOCUMENT_ID_EXISTS') return json(res, 409, { error: e.message });
       return json(res, 500, { error: 'INTERNAL_ERROR' });
     }
   };
