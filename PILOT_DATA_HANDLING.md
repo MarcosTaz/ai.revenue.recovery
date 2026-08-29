@@ -6,13 +6,12 @@ This statement describes the current **local controlled historical-pilot** archi
 
 ## Current processing model
 
-Recovery Radar v0.2.1 is a local Python/SQLite operator application.
+Recovery Radar v0.2.2 is a local Python/SQLite operator application.
 
 For the controlled pilot:
 
 - the application can be run on an operator-controlled local machine/environment;
 - the current repository has no declared runtime dependency on a remote SaaS/API service;
-- the current code search contains no `requests`, `httpx`, `urllib`, `socket`, `boto`, `openai`, or subprocess-based network integration;
 - no ERP/EDI/PLM write access is required for the first historical pilot;
 - no OEM/customer communication is performed by the application;
 - production hosting is outside the current T1 boundary.
@@ -26,9 +25,9 @@ Examples include contracts, purchase orders, notices, cost exports, tooling appr
 Current boundary:
 
 - raw evidence files remain in the operator-controlled pilot directory;
-- Recovery Radar reads the referenced file bytes to calculate SHA-256 identity hashes and construct evidence metadata;
-- the evidence registry does **not** persist the raw document bytes;
-- the raw evidence directory therefore remains a separate data-retention/security responsibility;
+- Recovery Radar reads referenced file bytes to calculate SHA-256 identity hashes and construct evidence metadata;
+- the evidence registry does **not** persist raw document bytes;
+- the raw evidence directory therefore remains a separate retention/security responsibility;
 - deleting a raw source file later does not erase normalized facts, metadata, hashes, reviews or audit records already stored in the Recovery Radar database.
 
 ## What the SQLite database stores
@@ -80,19 +79,38 @@ It does **not** currently claim:
 
 Those are not required for the current controlled local historical-pilot boundary and would be separate production-readiness work.
 
+## Source-scope manifest
+
+Before a T2-quality comparison, the operator can create `RECOVERY_RADAR_SOURCE_SCOPE_V1` using `scope-manifest`.
+
+The manifest contains normalized case identity/economic fields and evidence metadata/content hashes. It deliberately does **not** embed raw evidence bytes.
+
+Treat both the manifest and its hashes as confidential pilot metadata because they can reveal source identifiers and economic structure.
+
+A source-scope SHA proves modeled dataset identity for comparison. It is **not** authorization, encryption, completeness proof, legal admissibility or proof of entitlement.
+
 ## Exports
 
-Recovery Radar can create deterministic claim-package and T2 scorecard JSON exports.
+Recovery Radar can create deterministic source-scope, claim-package and T2 scorecard JSON artifacts.
 
-Exports may contain confidential normalized economic, evidence-lineage, review and audit information. They are therefore confidential pilot artifacts even though raw evidence bytes are not embedded.
+These artifacts may contain confidential normalized economic, evidence-lineage, review, audit or source-identity information. They are confidential pilot artifacts even though raw evidence bytes are not embedded.
 
 The application:
 
 - writes supported exports atomically;
 - produces SHA-256 manifests/identities for integrity verification;
-- verifies the written bytes after export where implemented.
+- verifies written bytes after export where implemented;
+- binds T2 scoring to the persisted normalized source scope when the ground-truth file records `source_scope_sha256`.
 
-A SHA-256 hash proves byte identity/integrity for comparison; it is **not encryption** and does not make the export non-confidential.
+A SHA-256 hash proves byte/data identity for comparison; it is **not encryption** and does not make an artifact non-confidential.
+
+## Authorization/provenance boundary
+
+Actual participant/data-owner authorization remains external to Recovery Radar.
+
+The application may record an authorization reference, case origin and ground-truth method, but deliberately marks these as not independently verified. The presence of those fields cannot establish legal authority, T2, WTP, customer acceptance or recovered cash.
+
+Use `PILOT_AUTHORIZATION_RECORD.md` and `PILOT_PROVENANCE.md` to retain the external governance chain without misrepresenting application metadata as proof.
 
 ## Backups
 
@@ -128,9 +146,10 @@ For a controlled pilot, retention/deletion must be handled by the operator under
 - raw evidence directory;
 - SQLite database;
 - database backups;
+- exported source-scope manifests;
 - exported claim packages;
 - exported T2 scorecards;
-- any separately stored manifests or reviewer notes.
+- any separately stored authorization/ground-truth/reviewer notes.
 
 Do not promise cryptographic erasure or certified deletion unless separately implemented and verified.
 
@@ -144,7 +163,7 @@ Before receiving confidential files, agree on:
 4. analyst and independent reviewer identities;
 5. allowed aliases/redactions;
 6. where raw evidence may be stored;
-7. where exports/backups may be stored;
+7. where manifests/exports/backups may be stored;
 8. retention/deletion date/process;
 9. prohibition on external claim/customer communication from the pilot;
 10. a stop/escalation path if unexpected sensitive or unrelated data appears.
