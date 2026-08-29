@@ -27,32 +27,39 @@ Public evidence:
 
 - In April 2024, one of AAM's largest customers terminated production purchase orders related to a previously announced contract to supply e-Beam axles for a future vehicle program.
 - AAM publicly stated that it submitted a cancellation claim to recover costs incurred in connection with those terminated purchase orders.
-- In January 2026, the company reached a settlement agreement with the customer on the matter.
-- It reported receiving approximately **US$28 million** in Q1 2026 for reimbursement of capitalized engineering, design and development costs.
-- Effective January 26, 2026, American Axle & Manufacturing Holdings, Inc. changed its name to Dauch Corporation. The filing does not publicly identify the customer behind the cancelled e-Beam program; do not infer one.
+- At December 31, 2024, AAM publicly disclosed approximately **US$70 million of balance-sheet assets associated with the program**, consisting of capitalized engineering, design and development costs and other commercial amounts, and said it believed it was entitled to claim and recover the full amount while also warning that ultimate recovery was not determinable and could differ materially.
+- In January 2026, the company reached a final settlement agreement with the customer.
+- The 2025 annual report said it expected approximately **US$28 million** in Q1 2026 reimbursement of capitalized engineering, design and development costs; it also recorded a **US$20 million** write-off of certain assets not recovered under the agreement and a separate approximately **US$22 million** write-off tied to an asset with a substantially offsetting liability.
+- Effective January 26, 2026, American Axle & Manufacturing Holdings, Inc. changed its name to Dauch Corporation. The filings do not publicly identify the customer behind the cancelled e-Beam program; do not infer one.
+
+Critical comparison boundary:
+
+**Do not describe this publicly as a “US$70M claim reduced to a US$28M settlement.”**
+
+The public US$70M figure was a balance-sheet asset amount associated with the program, not a disclosed line-level original claim amount. The US$28M figure was specifically described as reimbursement of capitalized engineering, design and development costs, while other write-offs/accounting entries were also recorded. Without the authorized historical claim file and category-level settlement allocation, the figures are not proven apples-to-apples.
 
 Why this is the strongest T2 case:
 
 - exact cancellation-claim workflow rather than generic cost recovery;
 - historical/closed settlement reduces risk of influencing an active dispute;
-- known reimbursement outcome creates a real comparison point;
-- engineering/design/development cost category directly tests entitlement/evidence boundaries rather than only stranded inventory;
-- the original submission and final settlement should permit, if authorized, a retrospective comparison between source records, claimed categories, reviewer corrections and final outcome.
+- public pre-settlement exposure plus final settlement/write-off accounting creates an unusually strong falsification target;
+- engineering/design/development and other commercial cost categories directly test entitlement/evidence boundaries rather than only stranded inventory;
+- if authorized internal records exist, Recovery Radar can test whether it reconstructs the eventual recoverable/non-recoverable category split without being tuned to the final outcome.
 
 What remains UNKNOWN:
 
 - whether Dauch/AAM retained an exportable line-level historical case file;
-- whether the settlement included or excluded other categories not publicly disclosed;
-- original amount claimed;
-- reasons for any gap between original claim and US$28M reimbursement;
+- original line-level amount submitted in the cancellation claim;
+- exact category composition of the settlement beyond the public ED&D reimbursement description;
+- reasons for each accepted, excluded, written-off or offset amount;
 - whether data can be shared for a pilot;
 - reviewer time / internal process burden;
 - willingness to participate or pay.
 
 Public sources:
 
-- https://www.sec.gov/Archives/edgar/data/1062231/000106223125000087/axl-20250630.htm
-- https://www.sec.gov/Archives/edgar/data/1062231/000106223126000126/dch-20260331.htm
+- https://www.sec.gov/Archives/edgar/data/1062231/000106223125000033/a25-aamx0016_annualreportd.pdf
+- https://www.sec.gov/Archives/edgar/data/1062231/000106223126000020/dch-20251231.htm
 
 ### 2 — Magna International
 
