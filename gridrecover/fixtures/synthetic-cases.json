@@ -1,0 +1,62 @@
+[
+  {
+    "case_id": "SYN-NUR-001",
+    "engine": "network_upgrade_repayment",
+    "expected": {"status":"SUPPORTED_CANDIDATE","candidate_amount":650000},
+    "input": {
+      "jurisdiction":"US_FEDERAL_FERC",
+      "project_scope":"LARGE_GENERATOR_GT_20MW",
+      "agreement":{"executed_lgia_id":"LGIA-SYN-001","article_11_4_1_match":true,"source_document_hash":"sha256:a1","source_locator":"Article 11.4.1","superseded":false,"trigger_satisfied":true,"repayment_schedule_supported":true},
+      "economics":{"network_upgrade_amount_paid":1000000,"amounts_already_refunded":100000,"repayments_received":250000,"currency":"USD"},
+      "evidence":{"payment_source_hash":"sha256:p1","payment_matches_project":true,"payment_is_network_upgrade":true}
+    }
+  },
+  {
+    "case_id": "SYN-NUR-002",
+    "engine": "network_upgrade_repayment",
+    "expected": {"status":"NO_RECOVERY","candidate_amount":0},
+    "input": {
+      "jurisdiction":"US_FEDERAL_FERC",
+      "project_scope":"LARGE_GENERATOR_GT_20MW",
+      "agreement":{"executed_lgia_id":"LGIA-SYN-002","article_11_4_1_match":true,"source_document_hash":"sha256:a2","source_locator":"Article 11.4.1","superseded":false,"trigger_satisfied":true,"repayment_schedule_supported":true},
+      "economics":{"network_upgrade_amount_paid":1000000,"amounts_already_refunded":250000,"repayments_received":750000,"currency":"USD"},
+      "evidence":{"payment_source_hash":"sha256:p2","payment_matches_project":true,"payment_is_network_upgrade":true}
+    }
+  },
+  {
+    "case_id": "SYN-NUR-003",
+    "engine": "network_upgrade_repayment",
+    "expected": {"status":"UNKNOWN","candidate_amount":null},
+    "input": {
+      "jurisdiction":"US_FEDERAL_FERC",
+      "project_scope":"LARGE_GENERATOR_GT_20MW",
+      "agreement":{"executed_lgia_id":"LGIA-SYN-003","article_11_4_1_match":false,"source_document_hash":"sha256:a3","source_locator":"Article 11.4.1","superseded":false,"trigger_satisfied":true,"repayment_schedule_supported":true},
+      "economics":{"network_upgrade_amount_paid":2000000,"amounts_already_refunded":0,"repayments_received":0,"currency":"USD"},
+      "evidence":{"payment_source_hash":"sha256:p3","payment_matches_project":true,"payment_is_network_upgrade":true}
+    }
+  },
+  {
+    "case_id": "SYN-CW-001",
+    "engine": "cluster_withdrawal",
+    "expected": {"status":"SUPPORTED_CANDIDATE","security_release_candidate":1500000},
+    "input": {
+      "jurisdiction":"US_FEDERAL_FERC","project_scope":"LARGE_GENERATOR_GT_20MW_CLUSTER_PROCESS","transmission_provider":"TP-001","provider_tariff_document_hash":"sha256:t1","provider_tariff_locator":"Section 3.7.1.2.4","provider_rule_match_verified":true,"cluster_id":"CL-1","withdrawal_event_source_hash":"sha256:w1","withdrawal_event_verified":true,"role":"REMAINING_CUSTOMER","currency":"USD","original_network_upgrade_assignment":5000000,"amended_network_upgrade_assignment":3500000,"original_security_required":5000000,"amended_security_required":3500000,"amended_lgia_or_notice_hash":"sha256:m1","amended_assignment_effective":true
+    }
+  },
+  {
+    "case_id": "SYN-CW-002",
+    "engine": "cluster_withdrawal",
+    "expected": {"status":"SUPPORTED_CANDIDATE","cash_refund_candidate":250000},
+    "input": {
+      "jurisdiction":"US_FEDERAL_FERC","project_scope":"LARGE_GENERATOR_GT_20MW_CLUSTER_PROCESS","transmission_provider":"TP-001","provider_tariff_document_hash":"sha256:t2","provider_tariff_locator":"Section 3.7.1.2.5","provider_rule_match_verified":true,"cluster_id":"CL-2","withdrawal_event_source_hash":"sha256:w2","withdrawal_event_verified":true,"role":"WITHDRAWN_CUSTOMER","currency":"USD","withdrawal_penalty_paid":1000000,"penalty_applied_to_study_costs":150000,"penalty_applied_to_shared_cost_increases":500000,"penalty_already_returned":100000,"final_distribution_complete":true,"final_distribution_source_hash":"sha256:d2"
+    }
+  },
+  {
+    "case_id": "SYN-CW-003",
+    "engine": "cluster_withdrawal",
+    "expected": {"status":"UNKNOWN"},
+    "input": {
+      "jurisdiction":"US_FEDERAL_FERC","project_scope":"LARGE_GENERATOR_GT_20MW_CLUSTER_PROCESS","transmission_provider":"TP-001","provider_tariff_document_hash":"sha256:t3","provider_tariff_locator":"Section 3.7.1.2.5","provider_rule_match_verified":true,"cluster_id":"CL-3","withdrawal_event_source_hash":"sha256:w3","withdrawal_event_verified":true,"role":"WITHDRAWN_CUSTOMER","currency":"USD","withdrawal_penalty_paid":1000000,"penalty_applied_to_study_costs":150000,"penalty_applied_to_shared_cost_increases":500000,"penalty_already_returned":0,"final_distribution_complete":false,"final_distribution_source_hash":"sha256:d3"
+    }
+  }
+]
