@@ -36,13 +36,7 @@ class TenantService:
         self.entitlement_reviews = EntitlementReviewStore(storage)
 
     def _mutate(self, operation: Callable[..., T], *args, **kwargs) -> T:
-        """Fail closed at the application boundary on interrupted SQLite writes.
-
-        Some repository methods perform a business write followed by an audit
-        write before commit. If the second step fails, rollback is mandatory so
-        an un-audited partial state cannot remain visible on the connection or be
-        committed by a later operation.
-        """
+        """Fail closed at the application boundary on interrupted SQLite writes."""
         try:
             return operation(*args, **kwargs)
         except Exception:
@@ -58,6 +52,28 @@ class TenantService:
     def _require_reviewer(principal: Principal) -> None:
         if principal.role != "REVIEWER":
             raise PermissionError("REVIEWER_REQUIRED_FOR_INDEPENDENT_VERIFICATION")
+
+    def _require_independent_actor_review(
+        self,
+        principal: Principal,
+        *,
+        entity_type: str,
+        entity_id: str,
+    ) -> None:
+        row = self.storage.conn.execute(
+            """
+            SELECT actor_id
+            FROM audit_events
+            WHERE workspace_id=? AND entity_type=? AND entity_id=? AND action='CREATE'
+            ORDER BY event_id ASC
+            LIMIT 1
+            """,
+            (principal.workspace_id, entity_type, entity_id),
+        ).fetchone()
+        if row is None:
+            raise PermissionError("SOURCE_CREATOR_PROVENANCE_REQUIRED_FOR_REVIEW")
+        if row["actor_id"] == principal.actor_id:
+            raise PermissionError("SELF_REVIEW_NOT_ALLOWED")
 
     def store_recovery_event(self, principal: Principal, event: RecoveryEvent) -> None:
         self._require_source_write(principal)
@@ -103,6 +119,11 @@ class TenantService:
         note: str = "",
     ) -> None:
         self._require_reviewer(principal)
+        self._require_independent_actor_review(
+            principal,
+            entity_type="ENTITLEMENT_BASIS",
+            entity_id=entitlement_id,
+        )
         self._mutate(
             self.entitlement_reviews.review,
             principal.workspace_id,
@@ -115,6 +136,7 @@ class TenantService:
     def store_evidence_document(
         self, principal: Principal, document: EvidenceDocument
     ) -> None:
+        self._require_source_write(principal)
         if document.workspace_id != principal.workspace_id:
             raise PermissionError("CROSS_TENANT_DOCUMENT_REJECTED")
         self._mutate(
@@ -137,6 +159,11 @@ class TenantService:
         note: str = "",
     ) -> None:
         self._require_reviewer(principal)
+        self._require_independent_actor_review(
+            principal,
+            entity_type="EVIDENCE_DOCUMENT",
+            entity_id=document_id,
+        )
         self._mutate(
             self.evidence_reviews.review,
             principal.workspace_id,
