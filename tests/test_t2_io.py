@@ -55,6 +55,17 @@ def _write(tmp_path, payload):
     return path
 
 
+def _real_payload():
+    payload = _payload()
+    payload["case_origin"] = "REAL_AUTHORIZED_HISTORICAL_CASE"
+    payload["provenance"] = {
+        "authorization_reference": "controlled-approval://CASE-001",
+        "source_scope_sha256": "a" * 64,
+        "ground_truth_method": "BLIND",
+    }
+    return payload
+
+
 def test_synthetic_scorecard_never_promotes_t2_or_wtp(tmp_path):
     source = load_ground_truth(_write(tmp_path, _payload()))
     result = score_from_input(_analysis(), source)
@@ -96,15 +107,26 @@ def test_scorecard_export_is_atomic_deterministic_and_manifest_bound(tmp_path):
 
 
 def test_real_case_origin_is_measurement_input_not_terminal_promotion(tmp_path):
-    payload = _payload()
-    payload["case_origin"] = "REAL_AUTHORIZED_HISTORICAL_CASE"
-    source = load_ground_truth(_write(tmp_path, payload))
+    source = load_ground_truth(_write(tmp_path, _real_payload()))
     result = score_from_input(_analysis(), source)
     assert result["case_origin"] == "REAL_AUTHORIZED_HISTORICAL_CASE"
     assert result["case_origin_status"] == "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
     assert result["validation_classification"] == "REAL_CASE_MEASUREMENT_INPUT"
     assert result["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
     assert result["commercial_truth"]["wtp"] == "UNKNOWN_EXTERNAL"
+    assert result["provenance"]["authorization_status"] == "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
+
+
+def test_recorded_real_case_requires_authorization_reference_and_scope_hash(tmp_path):
+    payload = _real_payload()
+    payload["provenance"]["authorization_reference"] = None
+    with pytest.raises(GroundTruthInputError, match="REAL_CASE_REQUIRES_AUTHORIZATION_REFERENCE"):
+        load_ground_truth(_write(tmp_path, payload))
+
+    payload = _real_payload()
+    payload["provenance"]["source_scope_sha256"] = None
+    with pytest.raises(GroundTruthInputError, match="REAL_CASE_REQUIRES_SOURCE_SCOPE_SHA256"):
+        load_ground_truth(_write(tmp_path, payload))
 
 
 def test_recorded_authorization_and_scope_hash_never_auto_authorize_or_promote(tmp_path):
