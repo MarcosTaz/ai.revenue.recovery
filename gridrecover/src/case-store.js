@@ -2,6 +2,7 @@
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function freezeRecord(record) { return Object.freeze(clone(record)); }
+function tenantCaseKey(customerId, caseId) { return `${customerId}\u0000${caseId}`; }
 
 class CaseStore {
   constructor(initialRecords = []) {
@@ -9,8 +10,9 @@ class CaseStore {
     if (!Array.isArray(initialRecords)) throw new Error('CASE_STATE_INVALID');
     for (const record of initialRecords) {
       if (!record || !record.case_id || !record.customer_id) throw new Error('CASE_STATE_INVALID');
-      if (this.cases.has(record.case_id)) throw new Error('CASE_STATE_DUPLICATE_ID');
-      this.cases.set(record.case_id, freezeRecord(record));
+      const key = tenantCaseKey(record.customer_id, record.case_id);
+      if (this.cases.has(key)) throw new Error('CASE_STATE_DUPLICATE_ID');
+      this.cases.set(key, freezeRecord(record));
     }
   }
 
@@ -27,16 +29,17 @@ class CaseStore {
     if (!actor || !actor.customer_id) throw new Error('AUTH_REQUIRED');
     if (!record || !record.case_id) throw new Error('CASE_ID_REQUIRED');
     if (record.customer_id !== actor.customer_id) throw new Error('CROSS_TENANT_CREATE_DENIED');
-    if (this.cases.has(record.case_id)) throw new Error('CASE_ID_EXISTS');
+    const key = tenantCaseKey(actor.customer_id, record.case_id);
+    if (this.cases.has(key)) throw new Error('CASE_ID_EXISTS');
     const frozen = freezeRecord(record);
-    this.cases.set(record.case_id, frozen);
+    this.cases.set(key, frozen);
     return clone(frozen);
   }
 
   getCase(actor, caseId) {
     if (!actor || !actor.customer_id) throw new Error('AUTH_REQUIRED');
-    const record = this.cases.get(caseId);
-    if (!record || record.customer_id !== actor.customer_id) throw new Error('CASE_NOT_FOUND');
+    const record = this.cases.get(tenantCaseKey(actor.customer_id, caseId));
+    if (!record) throw new Error('CASE_NOT_FOUND');
     return clone(record);
   }
 
@@ -51,9 +54,9 @@ class CaseStore {
     const current = Array.isArray(record.evidence) ? record.evidence : [];
     if (current.some(e => e.document_id === evidence.document_id)) throw new Error('EVIDENCE_ID_EXISTS');
     const updated = freezeRecord({ ...record, evidence: [...current, freezeRecord(evidence)] });
-    this.cases.set(caseId, updated);
+    this.cases.set(tenantCaseKey(actor.customer_id, caseId), updated);
     return clone(updated);
   }
 }
 
-module.exports = { CaseStore };
+module.exports = { CaseStore, tenantCaseKey };
