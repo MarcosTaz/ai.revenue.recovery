@@ -2,11 +2,21 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { computeIndirectTrueUp } from "../lib/true-up.mjs";
+import { evaluateFundingSafeguard } from "../lib/funding.mjs";
 
 type Result = {
   state: string;
   expectedIndirect: number | null;
   variance: number | null;
+  explanation: string;
+};
+
+type FundingResult = {
+  state: string;
+  verifiedLimit?: number;
+  projectedCostAtNoticeWindow?: number;
+  thresholdAmount?: number;
+  automaticRecoveryAllowed: boolean;
   explanation: string;
 };
 
@@ -18,11 +28,19 @@ export function TrueUpCalculator() {
   const [billedIndirect, setBilledIndirect] = useState("200000");
   const [ceiling, setCeiling] = useState("");
   const [funding, setFunding] = useState("100000");
+  const [fundingClause, setFundingClause] = useState("52.232-22");
+  const [estimatedCost, setEstimatedCost] = useState("1200000");
+  const [allottedFunds, setAllottedFunds] = useState("1100000");
+  const [costsIncurred, setCostsIncurred] = useState("700000");
+  const [nextWindowCosts, setNextWindowCosts] = useState("100000");
+  const [noticeThresholdPct, setNoticeThresholdPct] = useState("75");
+  const [noticeWindowDays, setNoticeWindowDays] = useState("60");
   const [settled, setSettled] = useState(true);
   const [termsVerified, setTermsVerified] = useState(true);
   const [allowability, setAllowability] = useState(true);
   const [allocability, setAllocability] = useState(true);
   const [result, setResult] = useState<Result | null>(null);
+  const [fundingResult, setFundingResult] = useState<FundingResult | null>(null);
 
   const stateClass = useMemo(() => {
     if (!result) return "status-neutral";
@@ -46,6 +64,17 @@ export function TrueUpCalculator() {
         indirectCeilingAmount: ceiling === "" ? null : Number(ceiling),
         remainingFunding: funding === "" ? null : Number(funding),
       }) as Result,
+    );
+    setFundingResult(
+      evaluateFundingSafeguard({
+        clause: fundingClause,
+        costsIncurred: Number(costsIncurred),
+        expectedNextNoticeWindowCosts: Number(nextWindowCosts),
+        estimatedCost: estimatedCost === "" ? null : Number(estimatedCost),
+        allottedFunds: allottedFunds === "" ? null : Number(allottedFunds),
+        noticeThresholdPercent: Number(noticeThresholdPct) / 100,
+        noticeWindowDays: Number(noticeWindowDays),
+      }) as FundingResult,
     );
   }
 
@@ -77,7 +106,7 @@ export function TrueUpCalculator() {
           <input value={ceiling} onChange={(e) => setCeiling(e.target.value)} inputMode="decimal" placeholder="No ceiling entered" />
         </label>
         <label>
-          Verified remaining funding (optional)
+          Verified remaining funding (true-up cap check)
           <input value={funding} onChange={(e) => setFunding(e.target.value)} inputMode="decimal" />
         </label>
 
@@ -88,13 +117,51 @@ export function TrueUpCalculator() {
           <label><input type="checkbox" checked={allocability} onChange={(e) => setAllocability(e.target.checked)} /> Allocability supported</label>
         </div>
 
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Funding safeguard</p>
+            <h2>Notice / limit check</h2>
+          </div>
+        </div>
+        <label>
+          Funding clause
+          <select value={fundingClause} onChange={(e) => setFundingClause(e.target.value)}>
+            <option value="52.232-22">FAR 52.232-22 — Limitation of Funds</option>
+            <option value="52.232-20">FAR 52.232-20 — Limitation of Cost</option>
+          </select>
+        </label>
+        <label>
+          Estimated cost (52.232-20)
+          <input value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} inputMode="decimal" />
+        </label>
+        <label>
+          Actually allotted funds (52.232-22)
+          <input value={allottedFunds} onChange={(e) => setAllottedFunds(e.target.value)} inputMode="decimal" />
+        </label>
+        <label>
+          Costs incurred
+          <input value={costsIncurred} onChange={(e) => setCostsIncurred(e.target.value)} inputMode="decimal" />
+        </label>
+        <label>
+          Expected costs in notice window
+          <input value={nextWindowCosts} onChange={(e) => setNextWindowCosts(e.target.value)} inputMode="decimal" />
+        </label>
+        <label>
+          Contract notice threshold (%)
+          <input value={noticeThresholdPct} onChange={(e) => setNoticeThresholdPct(e.target.value)} inputMode="decimal" />
+        </label>
+        <label>
+          Contract notice window (days)
+          <input value={noticeWindowDays} onChange={(e) => setNoticeWindowDays(e.target.value)} inputMode="numeric" />
+        </label>
+
         <button className="primary-button" type="submit">Reconcile synthetic case</button>
       </form>
 
       {result && (
         <div className={`result ${stateClass}`} aria-live="polite">
           <div>
-            <span>Result</span>
+            <span>True-up result</span>
             <strong>{result.state.replaceAll("_", " ")}</strong>
           </div>
           <div>
@@ -106,6 +173,24 @@ export function TrueUpCalculator() {
             <strong>{result.variance === null ? "—" : usd.format(result.variance)}</strong>
           </div>
           <p>{result.explanation}</p>
+        </div>
+      )}
+
+      {fundingResult && (
+        <div className="result status-review" aria-live="polite">
+          <div>
+            <span>Funding safeguard</span>
+            <strong>{fundingResult.state.replaceAll("_", " ")}</strong>
+          </div>
+          <div>
+            <span>Verified limit</span>
+            <strong>{fundingResult.verifiedLimit === undefined ? "—" : usd.format(fundingResult.verifiedLimit)}</strong>
+          </div>
+          <div>
+            <span>Automatic recovery</span>
+            <strong>{fundingResult.automaticRecoveryAllowed ? "YES" : "NO"}</strong>
+          </div>
+          <p>{fundingResult.explanation}</p>
         </div>
       )}
     </section>
