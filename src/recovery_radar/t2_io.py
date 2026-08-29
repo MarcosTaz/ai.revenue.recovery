@@ -15,6 +15,14 @@ class GroundTruthInputError(ValueError):
     pass
 
 
+def _text(value, name, *, optional=False):
+    if value is None and optional:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise GroundTruthInputError(f"{name}_REQUIRED")
+    return value.strip()
+
+
 def _decimal(value, name):
     if value is None:
         return None
@@ -27,6 +35,14 @@ def _decimal(value, name):
     if not result.is_finite():
         raise GroundTruthInputError(f"{name}_NON_FINITE")
     return result
+
+
+def _count(value, name):
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise GroundTruthInputError(f"{name}_INVALID_NONNEGATIVE_INTEGER")
+    return value
 
 
 def load_ground_truth(path: str | Path) -> dict:
@@ -53,18 +69,15 @@ def load_ground_truth(path: str | Path) -> dict:
     for item in raw_lines:
         if not isinstance(item, dict):
             raise GroundTruthInputError("GROUND_TRUTH_LINE_MUST_BE_OBJECT")
-        try:
-            lines.append(
-                GroundTruthLine(
-                    str(item["economic_loss_id"]),
-                    str(item["disposition"]),
-                    str(item["currency"]),
-                    _decimal(item.get("expected_amount"), "EXPECTED_AMOUNT"),
-                    str(item.get("note", "")),
-                )
+        lines.append(
+            GroundTruthLine(
+                _text(item.get("economic_loss_id"), "ECONOMIC_LOSS_ID"),
+                _text(item.get("disposition"), "DISPOSITION"),
+                _text(item.get("currency"), "CURRENCY"),
+                _decimal(item.get("expected_amount"), "EXPECTED_AMOUNT"),
+                _text(item.get("note"), "NOTE", optional=True) or "",
             )
-        except KeyError as exc:
-            raise GroundTruthInputError(f"GROUND_TRUTH_FIELD_REQUIRED:{exc.args[0]}") from None
+        )
     metrics = data.get("operational_metrics", {})
     if not isinstance(metrics, dict):
         raise GroundTruthInputError("OPERATIONAL_METRICS_MUST_BE_OBJECT")
@@ -75,12 +88,12 @@ def load_ground_truth(path: str | Path) -> dict:
         analyst_preparation_minutes=_decimal(metrics.get("analyst_preparation_minutes"), "ANALYST_PREPARATION_MINUTES"),
         reviewer_minutes=_decimal(metrics.get("reviewer_minutes"), "REVIEWER_MINUTES"),
         total_time_to_package_minutes=_decimal(metrics.get("total_time_to_package_minutes"), "TOTAL_TIME_TO_PACKAGE_MINUTES"),
-        reviewer_evidence_corrections=metrics.get("reviewer_evidence_corrections"),
-        reviewer_entitlement_corrections=metrics.get("reviewer_entitlement_corrections"),
-        missing_evidence_actions_useful=metrics.get("missing_evidence_actions_useful"),
-        missing_evidence_actions_not_useful=metrics.get("missing_evidence_actions_not_useful"),
+        reviewer_evidence_corrections=_count(metrics.get("reviewer_evidence_corrections"), "REVIEWER_EVIDENCE_CORRECTIONS"),
+        reviewer_entitlement_corrections=_count(metrics.get("reviewer_entitlement_corrections"), "REVIEWER_ENTITLEMENT_CORRECTIONS"),
+        missing_evidence_actions_useful=_count(metrics.get("missing_evidence_actions_useful"), "MISSING_EVIDENCE_ACTIONS_USEFUL"),
+        missing_evidence_actions_not_useful=_count(metrics.get("missing_evidence_actions_not_useful"), "MISSING_EVIDENCE_ACTIONS_NOT_USEFUL"),
         repeat_use_signal=repeat,
-        wtp_evidence=metrics.get("wtp_evidence_reference"),
+        wtp_evidence=_text(metrics.get("wtp_evidence_reference"), "WTP_EVIDENCE_REFERENCE", optional=True),
     )
     return {
         "case_origin": origin,
