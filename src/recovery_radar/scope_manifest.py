@@ -5,28 +5,38 @@ import json
 import os
 import tempfile
 from pathlib import Path
+from typing import Iterable
 
+from .evidence import EvidenceDocument
+from .models import EntitlementBasis, ExposureLine, RecoveryEvent
 from .pilot_bundle import PilotBundle
 
 FORMAT = "RECOVERY_RADAR_SOURCE_SCOPE_V1"
 
 
-def build_source_scope_manifest(bundle: PilotBundle) -> dict:
-    """Freeze complete normalized pilot truth without embedding raw evidence bytes."""
+def build_source_scope_manifest_from_records(
+    *,
+    supplier_id: str,
+    event: RecoveryEvent,
+    exposures: Iterable[ExposureLine],
+    entitlements: Iterable[EntitlementBasis],
+    evidence_documents: Iterable[EvidenceDocument],
+) -> dict:
+    """Freeze complete normalized source truth without embedding raw evidence bytes."""
     payload = {
         "format": FORMAT,
-        "supplier_id": bundle.supplier_id,
+        "supplier_id": supplier_id,
         "event": {
-            "event_id": bundle.event.event_id,
-            "customer_id": bundle.event.customer_id,
-            "program_id": bundle.event.program_id,
-            "part_id": bundle.event.part_id,
-            "event_type": bundle.event.event_type,
-            "event_date": bundle.event.event_date.isoformat(),
-            "expected_volume": str(bundle.event.expected_volume),
-            "revised_volume": str(bundle.event.revised_volume),
-            "source_ref": bundle.event.source_ref,
-            "evidence_ref": bundle.event.evidence_ref,
+            "event_id": event.event_id,
+            "customer_id": event.customer_id,
+            "program_id": event.program_id,
+            "part_id": event.part_id,
+            "event_type": event.event_type,
+            "event_date": event.event_date.isoformat(),
+            "expected_volume": str(event.expected_volume),
+            "revised_volume": str(event.revised_volume),
+            "source_ref": event.source_ref,
+            "evidence_ref": event.evidence_ref,
         },
         "exposures": [
             {
@@ -44,7 +54,7 @@ def build_source_scope_manifest(bundle: PilotBundle) -> dict:
                 "already_reimbursed_amount": str(line.already_reimbursed_amount),
                 "reimbursement_evidence_ref": line.reimbursement_evidence_ref,
             }
-            for line in sorted(bundle.exposures, key=lambda item: item.exposure_id)
+            for line in sorted(exposures, key=lambda item: item.exposure_id)
         ],
         "entitlements": [
             {
@@ -61,7 +71,7 @@ def build_source_scope_manifest(bundle: PilotBundle) -> dict:
                 ),
                 "legal_review_required": basis.legal_review_required,
             }
-            for basis in sorted(bundle.entitlements, key=lambda item: item.entitlement_id)
+            for basis in sorted(entitlements, key=lambda item: item.entitlement_id)
         ],
         "evidence": [
             {
@@ -78,9 +88,7 @@ def build_source_scope_manifest(bundle: PilotBundle) -> dict:
                 "content_sha256": document.content_sha256,
                 "signed": document.signed,
             }
-            for document in sorted(
-                bundle.evidence_documents, key=lambda item: item.document_id
-            )
+            for document in sorted(evidence_documents, key=lambda item: item.document_id)
         ],
         "raw_evidence_bytes_embedded": False,
         "authorization_status": "NOT_INFERRED_FROM_SOURCE_SCOPE",
@@ -90,6 +98,16 @@ def build_source_scope_manifest(bundle: PilotBundle) -> dict:
     )
     payload["source_scope_sha256"] = hashlib.sha256(canonical).hexdigest()
     return payload
+
+
+def build_source_scope_manifest(bundle: PilotBundle) -> dict:
+    return build_source_scope_manifest_from_records(
+        supplier_id=bundle.supplier_id,
+        event=bundle.event,
+        exposures=bundle.exposures,
+        entitlements=bundle.entitlements,
+        evidence_documents=bundle.evidence_documents,
+    )
 
 
 def canonical_source_scope_bytes(manifest: dict) -> bytes:
