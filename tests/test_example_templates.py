@@ -48,6 +48,12 @@ def test_ground_truth_template_matches_current_parser_and_starts_unknown(tmp_pat
     scorecard = score_from_input(analysis, ground_truth)
     assert ground_truth["complete"] is False
     assert ground_truth["case_origin"] == "UNKNOWN"
+    assert ground_truth["provenance"] == {
+        "authorization_reference": None,
+        "source_scope_sha256": None,
+        "ground_truth_method": "UNKNOWN",
+    }
     assert scorecard["validation_classification"] == "NON_REAL_CASE_MEASUREMENT_ONLY"
     assert scorecard["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
+    assert scorecard["provenance"]["authorization_status"] == "NOT_RECORDED"
     assert scorecard["commercial_truth"]["wtp"] == "UNKNOWN_EXTERNAL"
