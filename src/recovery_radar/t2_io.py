@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import tempfile
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -13,6 +14,8 @@ FORMAT = "RECOVERY_RADAR_GROUND_TRUTH_V1"
 SCORECARD_FORMAT = "RECOVERY_RADAR_T2_SCORECARD_V1"
 MAX_BYTES = 5 * 1024 * 1024
 _CASE_ORIGINS = {"REAL_AUTHORIZED_HISTORICAL_CASE", "SYNTHETIC", "UNKNOWN"}
+_GROUND_TRUTH_METHODS = {"BLIND", "ASSISTED", "UNKNOWN"}
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class GroundTruthInputError(ValueError):
@@ -25,6 +28,15 @@ def _text(value, name, *, optional=False):
     if not isinstance(value, str) or not value.strip():
         raise GroundTruthInputError(f"{name}_REQUIRED")
     return value.strip()
+
+
+def _sha256(value, name):
+    if value is None:
+        return None
+    value = _text(value, name)
+    if not _SHA256_RE.fullmatch(value):
+        raise GroundTruthInputError(f"{name}_INVALID_SHA256")
+    return value
 
 
 def _decimal(value, name):
@@ -66,6 +78,29 @@ def load_ground_truth(path: str | Path) -> dict:
     origin = data.get("case_origin")
     if origin not in _CASE_ORIGINS:
         raise GroundTruthInputError(f"CASE_ORIGIN_UNSUPPORTED:{origin}")
+
+    provenance = data.get("provenance", {})
+    if provenance is None:
+        provenance = {}
+    if not isinstance(provenance, dict):
+        raise GroundTruthInputError("PROVENANCE_MUST_BE_OBJECT")
+    ground_truth_method = provenance.get("ground_truth_method", "UNKNOWN")
+    if ground_truth_method not in _GROUND_TRUTH_METHODS:
+        raise GroundTruthInputError(
+            f"GROUND_TRUTH_METHOD_UNSUPPORTED:{ground_truth_method}"
+        )
+    parsed_provenance = {
+        "authorization_reference": _text(
+            provenance.get("authorization_reference"),
+            "AUTHORIZATION_REFERENCE",
+            optional=True,
+        ),
+        "source_scope_sha256": _sha256(
+            provenance.get("source_scope_sha256"), "SOURCE_SCOPE"
+        ),
+        "ground_truth_method": ground_truth_method,
+    }
+
     raw_lines = data.get("lines")
     if not isinstance(raw_lines, list) or len(raw_lines) > 10_000:
         raise GroundTruthInputError("GROUND_TRUTH_LINES_INVALID")
@@ -104,6 +139,7 @@ def load_ground_truth(path: str | Path) -> dict:
         "complete": data["ground_truth_complete"],
         "lines": tuple(lines),
         "metrics": operational,
+        "provenance": parsed_provenance,
     }
 
 
@@ -121,6 +157,27 @@ def score_from_input(analysis: dict, source: dict) -> dict:
         if source["case_origin"] == "REAL_AUTHORIZED_HISTORICAL_CASE"
         else "NON_REAL_CASE_MEASUREMENT_ONLY"
     )
+    provenance = source.get("provenance") or {
+        "authorization_reference": None,
+        "source_scope_sha256": None,
+        "ground_truth_method": "UNKNOWN",
+    }
+    result["provenance"] = {
+        "authorization_reference": provenance.get("authorization_reference"),
+        "authorization_status": (
+            "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
+            if provenance.get("authorization_reference")
+            else "NOT_RECORDED"
+        ),
+        "source_scope_sha256": provenance.get("source_scope_sha256"),
+        "source_scope_hash_status": (
+            "CALLER_RECORDED_IDENTITY_ONLY"
+            if provenance.get("source_scope_sha256")
+            else "NOT_RECORDED"
+        ),
+        "ground_truth_method": provenance.get("ground_truth_method", "UNKNOWN"),
+        "ground_truth_method_status": "RECORDED_NOT_INDEPENDENTLY_VERIFIED",
+    }
     result["terminal_promotion"] = "NOT_INFERRED_FROM_SCORECARD"
     canonical = json.dumps(result, sort_keys=True, separators=(",", ":")).encode("utf-8")
     result["scorecard_sha256"] = hashlib.sha256(canonical).hexdigest()
