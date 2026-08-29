@@ -48,3 +48,15 @@ test('funding shortfall requires review', () => {
   assert.equal(result.state, 'REQUIRES_REVIEW');
   assert.equal(result.variance, 50_000);
 });
+
+test('negative inputs fail closed', () => {
+  const result = computeIndirectTrueUp({ ...base, allocationBase: -1 });
+  assert.equal(result.state, 'REQUIRES_REVIEW');
+  assert.equal(result.variance, null);
+});
+
+test('non-finite inputs fail closed', () => {
+  const result = computeIndirectTrueUp({ ...base, finalRate: Number.NaN });
+  assert.equal(result.state, 'REQUIRES_REVIEW');
+  assert.equal(result.variance, null);
+});
