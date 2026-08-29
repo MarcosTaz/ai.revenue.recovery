@@ -1,40 +1,46 @@
 # Synthetic contractor portfolio A–Z
 
-This portfolio is a truth table for product development. A case is not considered PASS until the relevant engine path exists and has an automated assertion.
+This portfolio is a truth table for GovMargin. Every case now has an executable path in `govmargin.synthetic` and an automated expected-state assertion in `tests/test_synthetic_portfolio.py`.
+
+A synthetic PASS proves the implementation handles the designed trap. It does **not** prove real-world recovery frequency, legal entitlement or customer data quality.
 
 | Case | Scenario | Expected truth |
 |---|---|---|
-| A | All rates and billings correct | NO_VARIANCE |
-| B | Settled final indirect rate > billed economics | RECOVERY_CANDIDATE if every limitation passes |
-| C | Settled final indirect rate < billed economics | PAYABLE_CANDIDATE |
-| D | Unallowable cost included | SUPPORTED_UNALLOWABLE / remove from entitlement |
-| E | Supported allowable cost excluded | candidate only after allocability + contract terms pass |
-| F | Wrong allocation base | REQUIRES_REVIEW until corrected deterministically |
-| G | Wrong cost pool | REQUIRES_REVIEW until corrected deterministically |
-| H | Ceiling prevents incremental billing | NO_RECOVERY / ceiling-constrained |
-| I | Funding limitation prevents asserted recovery | REQUIRES_REVIEW; never auto-create receivable |
-| J | Unbilled allowable ODC | RECOVERY_CANDIDATE only if contractually billable |
-| K | ODC not contractually billable | NO_RECOVERY |
-| L | Fee miscalculated | variance only after fee clause and formula are evidenced |
-| M | Modification adds funding | funding ledger updates; no entitlement inferred solely from added funding |
-| N | Modification changes ceiling | use effective contract version / modified ceiling |
-| O | Prior invoice already contains amount | NO_DUPLICATE_RECOVERY |
-| P | Payment shortfall after valid invoice | RECEIVABLE_CANDIDATE subject to payment evidence |
-| Q | Final voucher missing supported amount | RECOVERY_CANDIDATE before release/deadline blockers |
-| R | Contract already closed / release executed | REQUIRES_LEGAL_REVIEW; do not claim recoverability |
-| S | Accounting-system migration | reconcile lineage across old/new ledgers; UNKNOWN where lineage breaks |
-| T | Multiple task orders | calculate per applicable order ceilings/funding/terms |
-| U | Multiple indirect pools | deterministic multi-layer allocation |
-| V | Wrong regulatory-version trap | UNKNOWN / reject current rule until version applicability is proven |
-| W | Contractor believes amount is due but expressly unallowable | SUPPORTED_UNALLOWABLE / NO_RECOVERY |
-| X | Insufficient evidence | UNKNOWN |
-| Y | Duplicate transaction | exclude duplicate and flag data-quality event |
-| Z | False-positive recovery trap | NO_RECOVERY; P0 if product asserts receivable |
+| A | all rates correct, nothing recoverable | `NO_VARIANCE` |
+| B | settled final indirect rate > cumulative billed economics | `RECOVERY_CANDIDATE` after gates |
+| C | settled final economics < cumulative billings | `PAYABLE_CANDIDATE` |
+| D | unallowable cost was billed | `PAYABLE_CANDIDATE` |
+| E | supported allowable/allocable/billable cost omitted | `RECOVERY_CANDIDATE` |
+| F | wrong / unsupported allocation base | `REQUIRES_REVIEW` |
+| G | wrong / unsupported cost pool | `REQUIRES_REVIEW` |
+| H | ceiling prevents additional billing | `NO_VARIANCE` in constrained synthetic case |
+| I | funding limitation blocks positive variance | `REQUIRES_REVIEW` |
+| J | unbilled allowable ODC | `RECOVERY_CANDIDATE` only when contract-billable |
+| K | ODC not contractually billable | `NO_VARIANCE` when not previously billed |
+| L | supported fixed-fee balance omitted | `RECOVERY_CANDIDATE` subject to fee terms/ceiling |
+| M | modification adds funding | contract state changes only from supported modification; no recovery inferred solely from funding |
+| N | modification changes ceiling | effective version controls ceiling; no recovery inferred solely from modification |
+| O | prior invoice already contains amount | `NO_VARIANCE` |
+| P | verified invoice payment shortfall | `RECOVERY_CANDIDATE` unless disputed/withheld |
+| Q | final voucher omits supported economics before release blocker | `RECOVERY_CANDIDATE` |
+| R | signed general release with apparent positive variance | `REQUIRES_REVIEW` |
+| S | accounting-system migration without supported lineage | `UNKNOWN` |
+| T | multiple task-order context | order-level candidate remains constrained to supported order funding/ceiling |
+| U | multiple supported indirect pools | deterministic reproducible calculation, no variance by itself |
+| V | wrong regulatory-version trap | `UNKNOWN`; current rule does not auto-apply to historic contract |
+| W | contractor believes amount is due but cost is supported unallowable | `NO_VARIANCE` if unbilled; never recovery |
+| X | insufficient contract evidence | `UNKNOWN` |
+| Y | duplicate transaction | excluded; `NO_VARIANCE` |
+| Z | positive arithmetic under provisional/unsettled rate | `REQUIRES_REVIEW`, never recovery |
 
-## Current automated coverage
+## Explicit false-positive traps
 
-Automated now: A, B, C, H (simple indirect ceiling), I (funding fail-closed), O (through cumulative billed amount), V (current rule applicability guard), X.
+Cases `C D F G H I K M N O R S W X Y Z` are asserted never to emit `RECOVERY_CANDIDATE` under their defined scenario.
 
-Partial / not yet implemented: D, E, F, G, J, K, L, M, N, P, Q, R, S, T, U, W, Y, Z.
+Positive cases are deliberately limited to `B E J L P Q T`, each of which has a specific supported path rather than generic “unbilled = due” logic.
 
-Gate 9 remains **NOT PASSED** until every A–Z path has executable tests and the false-recovery traps remain zero.
+## Gate 9 status
+
+**LOCAL PASS: A–Z executable, 46-test full Python suite GREEN as of 2026-08-29.**
+
+Gate 9 becomes **CI PASS** only when the branch workflow independently executes the current HEAD successfully. Gate 10 remains open because real-file ingestion, tenant/auth controls, human-review workflow and an end-to-end evidence pack still require implementation and verification.
