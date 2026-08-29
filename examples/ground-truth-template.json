@@ -2,6 +2,11 @@
   "format": "RECOVERY_RADAR_GROUND_TRUTH_V1",
   "case_origin": "UNKNOWN",
   "ground_truth_complete": false,
+  "provenance": {
+    "authorization_reference": null,
+    "source_scope_sha256": null,
+    "ground_truth_method": "UNKNOWN"
+  },
   "lines": [],
   "operational_metrics": {
     "analyst_preparation_minutes": null,
