@@ -1,7 +1,13 @@
 'use strict';
 
 const assert = require('assert');
-const { startServer } = require('../src/web-api');
+const { startServer, tokenActorId } = require('../src/web-api');
+
+const secretToken = 'super-secret-bearer-value';
+const actorId = tokenActorId(secretToken);
+assert.match(actorId, /^token-sha256:[a-f0-9]{24}$/);
+assert.equal(actorId.includes(secretToken), false);
+assert.equal(actorId.includes(secretToken.slice(0, 8)), false);
 
 (async () => {
   const server = await startServer({ tokenToCustomer: { tokenA: 'A', tokenB: 'B' }, now: () => '2026-08-29T20:00:00Z' });
@@ -61,7 +67,7 @@ const { startServer } = require('../src/web-api');
     assert.equal(r.status, 200);
     assert.equal((await r.json()).customer_id, 'A');
 
-    console.log('GRIDRECOVER web API: 9/9 PASS');
+    console.log('GRIDRECOVER web API: 12/12 PASS');
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
