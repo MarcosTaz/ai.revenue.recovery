@@ -1,3 +1,4 @@
+import hashlib
 import json
 from decimal import Decimal
 
@@ -52,6 +53,17 @@ def test_synthetic_scorecard_never_promotes_t2_or_wtp(tmp_path):
     assert result["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
     assert result["commercial_truth"]["wtp"] == "UNKNOWN_EXTERNAL"
     assert result["operational_metrics"]["wtp_evidence_status"] == "RECORDED_NOT_INDEPENDENTLY_VERIFIED"
+
+
+def test_final_scorecard_hash_covers_case_origin_and_validation_metadata(tmp_path):
+    source = load_ground_truth(_write(tmp_path, _payload()))
+    result = score_from_input(_analysis(), source)
+    claimed = result["scorecard_sha256"]
+    payload = dict(result)
+    del payload["scorecard_sha256"]
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    assert claimed == hashlib.sha256(canonical).hexdigest()
+    assert len(result["source_scorecard_sha256"]) == 64
 
 
 def test_real_case_origin_is_measurement_input_not_terminal_promotion(tmp_path):
