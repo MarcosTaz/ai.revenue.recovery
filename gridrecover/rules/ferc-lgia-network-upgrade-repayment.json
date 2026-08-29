@@ -1,0 +1,36 @@
+{
+  "rule_id": "FERC_PRO_FORMA_LGIA_11_4_1_NETWORK_UPGRADE_REPAYMENT",
+  "status": "REFERENCE_BASELINE_REQUIRES_EXECUTED_AGREEMENT_MATCH",
+  "jurisdiction": "US_FEDERAL_FERC",
+  "project_scope": "LARGE_GENERATOR_GT_20MW",
+  "source_title": "FERC Pro Forma Large Generator Interconnection Agreement",
+  "source_url": "https://www.ferc.gov/media/pro-forma-lgia",
+  "source_provision": "Article 11.4.1",
+  "source_last_checked": "2026-08-29",
+  "source_effective_context": "Pro forma baseline; transmission-provider tariff and executed LGIA may contain Commission-approved variations",
+  "entitlement_type": "NETWORK_UPGRADE_REPAYMENT",
+  "required_conditions": [
+    "executed_or_filed_lgia_identified",
+    "applicable_lgia_contains_article_11_4_1_or_materially_equivalent_crediting_language",
+    "amount_was_advanced_for_network_upgrades",
+    "amount_not_already_refunded_under_article_5_17_8_or_other_mechanism",
+    "commercial_operation_or_other_contractual_trigger_satisfied_when_required",
+    "repayment_schedule_and_transmission_service_crediting_context_supported_by_source"
+  ],
+  "calculation_inputs": [
+    "network_upgrade_amount_paid",
+    "tax_related_network_upgrade_payments_if_supported",
+    "amounts_already_refunded",
+    "repayments_already_received",
+    "payment_dates",
+    "commercial_operation_date",
+    "applicable_interest_methodology_if_supported"
+  ],
+  "forbidden_shortcuts": [
+    "do_not_apply_from_ferc_pro_forma_text_alone",
+    "do_not_assume_all_rto_iso_tariffs_use_crediting",
+    "do_not_treat_network_upgrade_balance_as_recoverable_without_executed_agreement_match",
+    "do_not_calculate_interest_without supported rate methodology and dates"
+  ],
+  "finding_policy": "NO_FINDING_UNLESS_EXECUTED_AGREEMENT_AND_PAYMENT_EVIDENCE_SUPPORT_APPLICABILITY"
+}
