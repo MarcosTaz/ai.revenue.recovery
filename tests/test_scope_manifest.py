@@ -13,15 +13,15 @@ from recovery_radar.scope_manifest import (
 )
 
 
-def _bundle(evidence_bytes=b"contract evidence"):
+def _bundle(evidence_bytes=b"contract evidence", *, quantity="10", unit_cost="12.50"):
     event = RecoveryEvent(
         "EV-1", "OEM-A", "PRG-A", "PART-A", "PROGRAM_CANCELLED",
         date(2026, 7, 1), Decimal("100"), Decimal("0"),
         "event://1", "notice://1",
     )
     exposure = ExposureLine(
-        "EXP-1", "EV-1", "LOSS-1", "RAW_MATERIAL", Decimal("10"),
-        Decimal("12.50"), "EUR", "inventory://1", "SUPPLIER",
+        "EXP-1", "EV-1", "LOSS-1", "RAW_MATERIAL", Decimal(quantity),
+        Decimal(unit_cost), "EUR", "inventory://1", "SUPPLIER",
     )
     entitlement = EntitlementBasis(
         "ENT-1", "EV-1", "LOSS-1", "SUPPORTED", "contract://1", "po://1"
@@ -61,6 +61,14 @@ def test_source_scope_hash_changes_when_evidence_bytes_change():
     first = build_source_scope_manifest(_bundle(b"version one"))
     second = build_source_scope_manifest(_bundle(b"version two"))
     assert first["source_scope_sha256"] != second["source_scope_sha256"]
+
+
+def test_source_scope_hash_changes_when_economic_truth_changes():
+    baseline = build_source_scope_manifest(_bundle(quantity="10", unit_cost="12.50"))
+    changed_quantity = build_source_scope_manifest(_bundle(quantity="11", unit_cost="12.50"))
+    changed_cost = build_source_scope_manifest(_bundle(quantity="10", unit_cost="12.51"))
+    assert baseline["source_scope_sha256"] != changed_quantity["source_scope_sha256"]
+    assert baseline["source_scope_sha256"] != changed_cost["source_scope_sha256"]
 
 
 def test_source_scope_export_is_atomic_and_manifest_bound(tmp_path):
