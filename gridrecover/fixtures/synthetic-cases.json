@@ -7,8 +7,20 @@
       "jurisdiction":"US_FEDERAL_FERC",
       "project_scope":"LARGE_GENERATOR_GT_20MW",
       "agreement":{"executed_lgia_id":"LGIA-SYN-001","article_11_4_1_match":true,"source_document_hash":"sha256:a1","source_locator":"Article 11.4.1","superseded":false,"trigger_satisfied":true,"repayment_schedule_supported":true},
-      "economics":{"network_upgrade_amount_paid":1000000,"amounts_already_refunded":100000,"repayments_received":250000,"currency":"USD"},
-      "evidence":{"payment_source_hash":"sha256:p1","payment_matches_project":true,"payment_is_network_upgrade":true}
+      "economics":{"network_upgrade_amount_paid":1000000,"repayable_network_upgrade_amount":1000000,"amounts_already_refunded":100000,"repayments_received":250000,"currency":"USD"},
+      "evidence":{"payment_source_hash":"sha256:p1","payment_matches_project":true,"payment_is_network_upgrade":true,"repayable_basis_source_hash":"sha256:r1","repayable_basis_locator":"repayment basis","repayable_basis_verified":true}
+    }
+  },
+  {
+    "case_id": "SYN-NUR-001B",
+    "engine": "network_upgrade_repayment",
+    "expected": {"status":"SUPPORTED_CANDIDATE","candidate_amount":250000,"verified_repayable_base":600000},
+    "input": {
+      "jurisdiction":"US_FEDERAL_FERC",
+      "project_scope":"LARGE_GENERATOR_GT_20MW",
+      "agreement":{"executed_lgia_id":"LGIA-SYN-001B","article_11_4_1_match":true,"source_document_hash":"sha256:a1b","source_locator":"Article 11.4.1","superseded":false,"trigger_satisfied":true,"repayment_schedule_supported":true},
+      "economics":{"network_upgrade_amount_paid":1000000,"repayable_network_upgrade_amount":600000,"amounts_already_refunded":100000,"repayments_received":250000,"currency":"USD"},
+      "evidence":{"payment_source_hash":"sha256:p1b","payment_matches_project":true,"payment_is_network_upgrade":true,"repayable_basis_source_hash":"sha256:r1b","repayable_basis_locator":"Attachment FF allocation","repayable_basis_verified":true}
     }
   },
   {
@@ -19,8 +31,8 @@
       "jurisdiction":"US_FEDERAL_FERC",
       "project_scope":"LARGE_GENERATOR_GT_20MW",
       "agreement":{"executed_lgia_id":"LGIA-SYN-002","article_11_4_1_match":true,"source_document_hash":"sha256:a2","source_locator":"Article 11.4.1","superseded":false,"trigger_satisfied":true,"repayment_schedule_supported":true},
-      "economics":{"network_upgrade_amount_paid":1000000,"amounts_already_refunded":250000,"repayments_received":750000,"currency":"USD"},
-      "evidence":{"payment_source_hash":"sha256:p2","payment_matches_project":true,"payment_is_network_upgrade":true}
+      "economics":{"network_upgrade_amount_paid":1000000,"repayable_network_upgrade_amount":1000000,"amounts_already_refunded":250000,"repayments_received":750000,"currency":"USD"},
+      "evidence":{"payment_source_hash":"sha256:p2","payment_matches_project":true,"payment_is_network_upgrade":true,"repayable_basis_source_hash":"sha256:r2","repayable_basis_locator":"repayment basis","repayable_basis_verified":true}
     }
   },
   {
@@ -31,8 +43,8 @@
       "jurisdiction":"US_FEDERAL_FERC",
       "project_scope":"LARGE_GENERATOR_GT_20MW",
       "agreement":{"executed_lgia_id":"LGIA-SYN-003","article_11_4_1_match":false,"source_document_hash":"sha256:a3","source_locator":"Article 11.4.1","superseded":false,"trigger_satisfied":true,"repayment_schedule_supported":true},
-      "economics":{"network_upgrade_amount_paid":2000000,"amounts_already_refunded":0,"repayments_received":0,"currency":"USD"},
-      "evidence":{"payment_source_hash":"sha256:p3","payment_matches_project":true,"payment_is_network_upgrade":true}
+      "economics":{"network_upgrade_amount_paid":2000000,"repayable_network_upgrade_amount":2000000,"amounts_already_refunded":0,"repayments_received":0,"currency":"USD"},
+      "evidence":{"payment_source_hash":"sha256:p3","payment_matches_project":true,"payment_is_network_upgrade":true,"repayable_basis_source_hash":"sha256:r3","repayable_basis_locator":"repayment basis","repayable_basis_verified":true}
     }
   },
   {
