@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from dataclasses import asdict
@@ -8,6 +9,11 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Sequence
 
+from .artifact_verify import (
+    verify_claim_package_artifact,
+    verify_scorecard_artifact,
+    verify_source_scope_artifact,
+)
 from .gateway import RecoveryRadarGateway
 from .pilot_bundle import ingest_pilot_bundle, load_pilot_bundle
 from .scope_manifest import (
@@ -113,6 +119,25 @@ def _parser() -> argparse.ArgumentParser:
     score.add_argument("--ground-truth", required=True)
     score.add_argument("--output", required=True)
 
+    verify_package = sub.add_parser(
+        "verify-package-export", help="verify a saved claim-package artifact offline"
+    )
+    verify_package.add_argument("--file", required=True)
+    verify_package.add_argument("--sha256", required=True)
+
+    verify_scorecard = sub.add_parser(
+        "verify-scorecard-export", help="verify a saved T2 scorecard artifact offline"
+    )
+    verify_scorecard.add_argument("--file", required=True)
+    verify_scorecard.add_argument("--sha256", required=True)
+
+    verify_scope = sub.add_parser(
+        "verify-source-scope", help="verify a saved source-scope artifact offline"
+    )
+    verify_scope.add_argument("--file", required=True)
+    verify_scope.add_argument("--sha256", required=True)
+    verify_scope.add_argument("--source-scope-sha256")
+
     return parser
 
 
@@ -154,6 +179,26 @@ def _current_persisted_scope(
 
 def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
     args = _parser().parse_args(argv)
+
+    if args.command == "verify-package-export":
+        return {
+            "command": args.command,
+            "verification": verify_claim_package_artifact(args.file, args.sha256),
+        }
+    if args.command == "verify-scorecard-export":
+        return {
+            "command": args.command,
+            "verification": verify_scorecard_artifact(args.file, args.sha256),
+        }
+    if args.command == "verify-source-scope":
+        return {
+            "command": args.command,
+            "verification": verify_source_scope_artifact(
+                args.file,
+                args.sha256,
+                expected_source_scope_sha256=args.source_scope_sha256,
+            ),
+        }
 
     if args.command == "bootstrap":
         storage = Storage(Path(args.db))
@@ -263,7 +308,6 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
             )
             unsigned = dict(scorecard)
             unsigned.pop("scorecard_sha256", None)
-            import hashlib
             canonical = json.dumps(
                 unsigned, sort_keys=True, separators=(",", ":")
             ).encode("utf-8")
