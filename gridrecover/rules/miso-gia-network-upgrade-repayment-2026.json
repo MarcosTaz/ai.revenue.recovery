@@ -1,0 +1,34 @@
+{
+  "rule_id": "MISO_GIA_11_4_1_NETWORK_UPGRADE_REPAYMENT_2026",
+  "status": "PROVIDER_SPECIFIC_REFERENCE_REQUIRES_PROJECT_GIA_MATCH",
+  "jurisdiction": "US_FEDERAL_FERC",
+  "transmission_provider": "MISO",
+  "tariff_component": "Attachment X Appendix 6 Generator Interconnection Agreement",
+  "tariff_records": ["108.0.0", "110.0.0"],
+  "effective_date": "2026-02-04",
+  "ferc_docket": "ER26-677-000",
+  "ferc_acceptance_accession": "20260203-3023",
+  "filing_source_url": "https://cdn.misoenergy.org/2025-12-05_Docket%20No.%20ER26-677-000731087.pdf",
+  "acceptance_source_url": "https://cdn.misoenergy.org/2026-02-03_194%20FERC%20%C2%B6%2061%2C093_Docket%20No.%20ER26-677-000739667.pdf",
+  "source_provision": "Article 11.4.1",
+  "source_last_checked": "2026-08-29",
+  "entitlement_type": "NETWORK_UPGRADE_REPAYMENT",
+  "critical_provider_variation": "Repayment is limited to the repayable portion of Network Upgrades as provided under Attachment FF; total Network Upgrade spend is not automatically the repayment base.",
+  "required_conditions": [
+    "project_gia_identity_and_effective_version_verified",
+    "project_gia_article_11_4_1_or_applicable_equivalent_verified",
+    "attachment_ff_repayable_portion_verified_for_the_specific_upgrade",
+    "repayable_basis_source_bound",
+    "network_upgrade_payment_source_bound",
+    "prior_refunds_and_repayments_reconciled",
+    "commercial_operation_or_other_applicable_trigger_verified",
+    "suspension_and_not-needed-period_adjustments_reviewed_before_interest"
+  ],
+  "forbidden_shortcuts": [
+    "do_not_use_total_network_upgrade_cost_as_repayable_amount_without_attachment_ff_basis",
+    "do_not_assume_tax_related_payment_is_repayable_without repayable-portion support",
+    "do_not_calculate_interest without exact payment dates, suspension periods and applicable methodology",
+    "do_not_apply this 2026 tariff record to a project governed by a different effective GIA/tariff version"
+  ],
+  "finding_policy": "NO_MISO_REPAYMENT_FINDING_UNLESS_REPAYABLE_PORTION_AND_PROJECT_GIA_ARE_SOURCE_BOUND"
+}
