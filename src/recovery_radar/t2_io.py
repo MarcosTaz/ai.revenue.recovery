@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -110,6 +111,7 @@ def score_from_input(analysis: dict, source: dict) -> dict:
         ground_truth_complete=source["complete"],
         operational_metrics=source["metrics"],
     )
+    result["source_scorecard_sha256"] = result.pop("scorecard_sha256")
     result["case_origin"] = source["case_origin"]
     result["validation_classification"] = (
         "REAL_CASE_MEASUREMENT_INPUT"
@@ -117,4 +119,6 @@ def score_from_input(analysis: dict, source: dict) -> dict:
         else "NON_REAL_CASE_MEASUREMENT_ONLY"
     )
     result["terminal_promotion"] = "NOT_INFERRED_FROM_SCORECARD"
+    canonical = json.dumps(result, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    result["scorecard_sha256"] = hashlib.sha256(canonical).hexdigest()
     return result
