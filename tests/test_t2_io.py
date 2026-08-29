@@ -26,6 +26,11 @@ def _payload():
         "format": FORMAT,
         "case_origin": "SYNTHETIC",
         "ground_truth_complete": True,
+        "provenance": {
+            "authorization_reference": None,
+            "source_scope_sha256": None,
+            "ground_truth_method": "UNKNOWN",
+        },
         "lines": [
             {
                 "economic_loss_id": "LOSS-A1",
@@ -96,6 +101,50 @@ def test_real_case_origin_is_measurement_input_not_terminal_promotion(tmp_path):
     result = score_from_input(_analysis(), source)
     assert result["validation_classification"] == "REAL_CASE_MEASUREMENT_INPUT"
     assert result["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
+
+
+def test_recorded_authorization_and_scope_hash_never_auto_authorize_or_promote(tmp_path):
+    payload = _payload()
+    payload["case_origin"] = "SYNTHETIC"
+    payload["provenance"] = {
+        "authorization_reference": "pilot-authorization-record://CASE-001",
+        "source_scope_sha256": "a" * 64,
+        "ground_truth_method": "BLIND",
+    }
+    source = load_ground_truth(_write(tmp_path, payload))
+    result = score_from_input(_analysis(), source)
+    assert result["validation_classification"] == "NON_REAL_CASE_MEASUREMENT_ONLY"
+    assert result["terminal_promotion"] == "NOT_INFERRED_FROM_SCORECARD"
+    assert result["provenance"] == {
+        "authorization_reference": "pilot-authorization-record://CASE-001",
+        "authorization_status": "RECORDED_NOT_INDEPENDENTLY_VERIFIED",
+        "source_scope_sha256": "a" * 64,
+        "source_scope_hash_status": "CALLER_RECORDED_IDENTITY_ONLY",
+        "ground_truth_method": "BLIND",
+        "ground_truth_method_status": "RECORDED_NOT_INDEPENDENTLY_VERIFIED",
+    }
+
+
+def test_provenance_changes_final_scorecard_hash(tmp_path):
+    first_source = load_ground_truth(_write(tmp_path, _payload()))
+    first = score_from_input(_analysis(), first_source)
+    payload = _payload()
+    payload["provenance"]["authorization_reference"] = "auth://1"
+    second_source = load_ground_truth(_write(tmp_path, payload))
+    second = score_from_input(_analysis(), second_source)
+    assert first["scorecard_sha256"] != second["scorecard_sha256"]
+
+
+def test_ground_truth_input_rejects_bad_provenance_hash_and_method(tmp_path):
+    payload = _payload()
+    payload["provenance"]["source_scope_sha256"] = "NOT-A-HASH"
+    with pytest.raises(GroundTruthInputError, match="SOURCE_SCOPE_INVALID_SHA256"):
+        load_ground_truth(_write(tmp_path, payload))
+
+    payload = _payload()
+    payload["provenance"]["ground_truth_method"] = "MAGIC"
+    with pytest.raises(GroundTruthInputError, match="GROUND_TRUTH_METHOD_UNSUPPORTED"):
+        load_ground_truth(_write(tmp_path, payload))
 
 
 def test_ground_truth_input_rejects_nonboolean_complete_and_nonfinite_money(tmp_path):
