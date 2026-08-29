@@ -6,18 +6,20 @@ Purpose: identify public evidence that a supplier has experienced exactly the ki
 
 This file is acquisition preparation only. It does not authorize outreach, claim submission, negotiation, spending or external data collection.
 
+Use `PILOT_ROUTING_MATRIX.md` for the separate question of how an authorized inquiry could be routed. **Case fit and routing fit are not the same score.**
+
 ## Selection rule
 
 Prefer a historical case with all of the following:
 
-1. customer program cancellation or material volume reduction is publicly evidenced;
-2. supplier-side stranded cost / tooling / engineering / pre-production exposure is publicly evidenced;
-3. a recovery claim, commercial recovery or settlement is publicly evidenced where possible;
+1. customer program cancellation or material volume reduction is publicly or internally evidenced;
+2. supplier-side stranded cost / tooling / engineering / pre-production exposure is evidenced;
+3. a recovery claim, commercial recovery or settlement is known where possible;
 4. the matter is closed or sufficiently historical that analysis cannot influence a live dispute;
 5. the supplier could, if authorized, provide normalized internal records for an independent ground-truth comparison;
-6. known historical outcome can be distinguished from legal truth: settlement amount is a useful benchmark, not proof every modeled entitlement was legally correct.
+6. known historical outcome can be distinguished from entitlement truth: settlement amount is a useful observed outcome, not proof every modeled entitlement was legally correct.
 
-## Ranked historical-pilot candidates
+## Ranked historical-pilot candidates — measurement quality
 
 ### 1 — Dauch Corporation / former American Axle & Manufacturing Holdings (AAM)
 
@@ -38,53 +40,74 @@ Critical comparison boundary:
 
 The public US$70M figure was a balance-sheet asset amount associated with the program, not a disclosed line-level original claim amount. The US$28M figure was specifically described as reimbursement of capitalized engineering, design and development costs, while other write-offs/accounting entries were also recorded. Without the authorized historical claim file and category-level settlement allocation, the figures are not proven apples-to-apples.
 
-Why this is the strongest T2 case:
+Why strongest:
 
-- exact cancellation-claim workflow rather than generic cost recovery;
-- historical/closed settlement reduces risk of influencing an active dispute;
-- public pre-settlement exposure plus final settlement/write-off accounting creates an unusually strong falsification target;
-- engineering/design/development and other commercial cost categories directly test entitlement/evidence boundaries rather than only stranded inventory;
-- if authorized internal records exist, Recovery Radar can test whether it reconstructs the eventual recoverable/non-recoverable category split without being tuned to the final outcome.
+- exact cancellation-claim workflow;
+- historical/closed settlement;
+- public pre-settlement exposure plus final settlement/write-off accounting creates a strong falsification target;
+- engineering/design/development and other commercial cost categories test entitlement/evidence boundaries, not only stranded inventory;
+- authorized internal records could test whether Recovery Radar reconstructs recoverable/non-recoverable category splits without tuning to the final outcome.
 
-What remains UNKNOWN:
+Still UNKNOWN:
 
-- whether Dauch/AAM retained an exportable line-level historical case file;
-- original line-level amount submitted in the cancellation claim;
-- exact category composition of the settlement beyond the public ED&D reimbursement description;
-- reasons for each accepted, excluded, written-off or offset amount;
-- whether data can be shared for a pilot;
-- reviewer time / internal process burden;
-- willingness to participate or pay.
+- whether a usable line-level historical file is retained;
+- original line-level claim amount/categories;
+- category allocation of settlement/write-offs;
+- reasons for accepted/excluded amounts;
+- data-sharing authorization;
+- reviewer/process burden;
+- willingness to participate/pay.
 
 Public sources:
 
 - https://www.sec.gov/Archives/edgar/data/1062231/000106223125000033/a25-aamx0016_annualreportd.pdf
 - https://www.sec.gov/Archives/edgar/data/1062231/000106223126000020/dch-20251231.htm
 
-### 2 — Magna International
+### 2 — Dee Zee, Inc. / GM BrightDrop
 
-**Classification:** `DIRECT PAIN + ACTIVE COMMERCIAL RECOVERY EVIDENCE`
+**Classification:** `HIGH SUPPLIER→PROGRAM EXPOSURE FIT / OUTCOME UNKNOWN`
+
+Public evidence previously captured in the routing dossier links Dee Zee directly to BrightDrop as a Tier-1 supplier and describes program-specific industrialization/facility/tooling adaptation. GM later ended BrightDrop production.
+
+Why useful:
+
+- unusually discrete supplier/program relationship;
+- strong test of tooling/industrialization exposure and mitigation/reuse boundaries;
+- smaller/more specific case may be easier to normalize than a large enterprise portfolio if an internal case owner exists.
+
+Why it does not outrank Dauch:
+
+- no public evidence currently establishes a supplier cancellation claim;
+- no public accepted/settled/paid outcome is known;
+- asset reuse/mitigation and cancellation responsibility remain unknown;
+- the publicly indexed OEM contact form is explicitly quoting-only and must not be misused.
+
+Use only if an authorized knowledgeable participant can confirm a historical case and outcome suitable for ground truth.
+
+See `PILOT_ROUTING_MATRIX.md` for public routing constraints.
+
+### 3 — Magna International
+
+**Classification:** `DIRECT PAIN + COMMERCIAL RECOVERY EVIDENCE / CLOSED CASE REQUIRED`
 
 Public evidence:
 
-- Magna's 2024 and 2025 disclosures state that North American OEMs have deferred or cancelled EV programs and/or reduced production volumes below quoted levels.
-- Magna states that it is pursuing commercial recoveries from customers for these actions.
-- The exposed categories named publicly include pre-production, tooling, engineering and other costs incurred before production.
-- Magna also warns of unutilized/underutilized capacity and workforce disruption from cancellations/volume reductions.
-- Its 2026 public materials continue to describe customer recoveries for certain North American EV investments.
+- North American OEM EV deferrals/cancellations/volume reductions were publicly disclosed;
+- Magna states it has pursued customer commercial recoveries;
+- public exposed categories include pre-production, tooling, engineering and other advance costs;
+- public materials recognize underutilized capacity/workforce consequences and risk of incomplete recovery.
 
-Why it is high value:
+Why high value:
 
-- pain and recovery activity are first-party disclosed, not inferred from an OEM event;
-- likely multiple historical cases create repeatability potential;
-- categories strongly overlap the current Recovery Radar model;
-- public disclosures explicitly recognize the risk of incomplete recovery.
+- pain and recovery activity are first-party disclosed;
+- multiple cases may permit repeatability testing;
+- categories map well to Recovery Radar.
 
-Why it ranks below Dauch for first T2:
+Why below Dauch/conditional Dee Zee for first T2:
 
-- public material does not expose one clean closed claim with a known claim-versus-settlement trail;
-- Magna is much larger and operationally more complex, increasing data-access/procurement risk;
-- active commercial recovery portfolios may involve live matters that should be excluded from the first controlled pilot.
+- no single clean closed public claim/outcome chain is identified;
+- active recovery matters must be excluded from the first retrospective benchmark;
+- enterprise data/procurement complexity is higher.
 
 Public sources:
 
@@ -92,25 +115,25 @@ Public sources:
 - https://www.sec.gov/Archives/edgar/data/749098/000110465926019969/tm2530886d5_ex99-1.htm
 - https://www.sec.gov/Archives/edgar/data/749098/000119312526128771/d20215dex9911.pdf
 
-### 3 — Dana Incorporated
+### 4 — Dana Incorporated
 
-**Classification:** `DIRECT CUSTOMER-CANCELLATION / VOLUME-DECLINE COST EVIDENCE`
+**Classification:** `ZERO/PARTIAL-RECOVERY FALSIFICATION FIT`
 
 Public evidence:
 
 - Dana reported **US$59 million** of charges in the first six months of 2026, including impairment/loss on property, plant and equipment associated with EV programs either cancelled by the customer or experiencing a precipitous decline in program volumes.
 - Q1 2026 alone included US$56 million of such charges.
 
-Why it is relevant:
+Why useful:
 
-- first-party supplier disclosure of customer cancellation / severe volume reduction;
-- recent event with material financial effect;
-- directly tests the distinction between economic exposure and recoverable entitlement.
+- direct supplier disclosure of customer cancellation/severe volume decline;
+- tests the distinction between economic exposure and recoverable entitlement;
+- a valid result may be zero or partial recovery, making it a useful falsification case.
 
-Why it ranks below Magna/Dauch:
+Why lower first-pilot fit:
 
-- public filing establishes loss/impairment but not a corresponding cancellation claim or settlement;
-- recoverability may be zero or materially limited; that is still useful truth, but data access would need to reveal contractual basis and mitigation before the case could validate claimability logic.
+- no public corresponding claim/settlement trail is established;
+- contractual basis, mitigation and actual recoverability remain unknown.
 
 Public sources:
 
@@ -119,13 +142,13 @@ Public sources:
 
 ## OEM trigger map — discovery evidence, not supplier entitlement evidence
 
-These events are useful for locating potential supplier-side historical cases. They do **not** establish that any unnamed supplier had a recoverable claim.
+These events locate possible supplier-side historical cases. They do **not** establish that any unnamed supplier had a recoverable claim.
 
 ### Ford EV roadmap cancellations
 
-Ford disclosed that in December 2025 it cancelled three planned EVs — a full-size pickup, a U.S. commercial van and a European commercial van — and ended production of the current-generation F-150 Lightning. Its 2025 10-K reported US$1.2B of other charges primarily related to contractual commitments tied to those programs and potential additional cash expenditures. Ford also separately disclosed earlier all-electric three-row SUV cancellation costs and payments to EV-related suppliers.
+Ford disclosed December 2025 EV program cancellations and other charges tied to contractual commitments; it also separately disclosed earlier EV program cancellation costs/payments to EV-related suppliers.
 
-Discovery use: ask only suppliers that self-identify as having had program-specific material/tooling/engineering/capacity exposure to one of the affected programs.
+Discovery use: only approach suppliers that independently identify their own program-specific material/tooling/engineering/capacity exposure.
 
 Sources:
 
@@ -134,9 +157,9 @@ Sources:
 
 ### General Motors EV capacity realignment
 
-GM disclosed 2025 EV strategic-realignment cash-related charges including supplier commercial settlements and contract-cancellation fees. In H1 2026 it recorded additional charges tied to ongoing commercial negotiations with its supply base and JV partners and losses on contractual supply agreements.
+GM disclosed 2025 EV strategic-realignment cash-related charges including supplier commercial settlements and contract-cancellation fees, with additional 2026 charges tied to supply-base/JV commercial negotiations.
 
-Discovery use: strong evidence that supplier-side commercial recovery work exists around EV capacity changes, but do not infer which suppliers or which costs were recoverable.
+Discovery use: proves the category of supplier-side commercial recovery work exists, not which supplier/cost was recoverable.
 
 Sources:
 
@@ -145,9 +168,9 @@ Sources:
 
 ### Stellantis product / EV supply-chain reset
 
-Stellantis publicly disclosed cancellation of future products including the planned Ram 1500 BEV, reduced BEV volume expectations, product-plan realignment/program-cancellation charges, tooling/platform impairments and expected future cash payments associated with cancelled or materially lower-volume products. Separately, in July 2025 it discontinued its hydrogen fuel-cell technology program and ended the planned hydrogen Pro One launch/series-production path, while discussing alternatives for Symbio.
+Stellantis publicly disclosed future-product cancellations, lower BEV volume expectations, program-cancellation/tooling/platform charges and expected payments associated with cancelled/materially lower-volume products. It separately discontinued its hydrogen fuel-cell development program in 2025.
 
-Discovery use: identify only suppliers that independently confirm customer-specific stranded exposure. Do not infer a claim from the OEM's accounting charges.
+Discovery use: identify only suppliers that independently confirm customer-specific stranded exposure. Do not infer a claim from OEM accounting charges.
 
 Sources:
 
@@ -226,26 +249,41 @@ Per economic-loss line:
 - analyst preparation time if reconstructable;
 - reviewer time/corrections if reconstructable.
 
-## Measurement plan
+## Measurement protocol after authorization
 
-For a qualified authorized case:
+1. retain the actual human/data-owner authorization outside the app;
+2. normalize the bundle and concrete evidence files;
+3. run `scope-manifest` and preserve `source_scope_sha256` + artifact hash;
+4. atomically import and independently review evidence/entitlement interpretations;
+5. produce deterministic claim package/export;
+6. freeze independent `RECOVERY_RADAR_GROUND_TRUTH_V1`, recording the matching source-scope hash and ground-truth method;
+7. run `score-historical`; scope mismatch must fail before score output;
+8. preserve `RECOVERY_RADAR_T2_SCORECARD_V1` and final SHA-256;
+9. measure FP/FN, state/currency mismatches, amount error, reviewer corrections, missing-evidence usefulness and time-to-package;
+10. compare historical claim/settlement/payment only as a separate observed outcome;
+11. classify any material miss as P0/P1/P2 and repair before terminal promotion;
+12. T2 promotion remains a Factory evidence decision, never an application field.
 
-1. freeze/source-hash the input set;
-2. normalize/import without showing the operator the desired Recovery Radar result;
-3. independent evidence + entitlement review;
-4. produce package/export;
-5. prepare independent `RECOVERY_RADAR_GROUND_TRUTH_V1`;
-6. run `score-historical` and preserve the `RECOVERY_RADAR_T2_SCORECARD_V1` SHA-256 manifest;
-7. measure FP/FN, state/currency mismatches, amount error, reviewer corrections, missing-evidence usefulness and time-to-package;
-8. compare with historical claim/settlement/payment only as a separate observed outcome;
-9. classify any material miss as P0/P1/P2 and repair before terminal promotion;
-10. T2 promotion remains a Factory evidence decision, never an application field.
+See `PILOT_PROVENANCE.md`, `PILOT_AUTHORIZATION_RECORD.md`, `PILOT_RUNBOOK.md` and `GROUND_TRUTH_PROTOCOL.md`.
 
-## Current acquisition order
+## Two separate acquisition orders
+
+### T2 measurement quality
 
 1. **Dauch / former AAM — closed e-Beam cancellation claim**
-2. **Magna — historical North American EV cancellation/reduction recovery case**
-3. **Dana — historical customer-cancelled / severe-volume-decline EV program**
-4. broader suppliers discovered from Ford / GM / Stellantis public trigger maps only after supplier-specific exposure is independently evidenced.
+2. **Dee Zee / BrightDrop — only if a knowledgeable authorized participant can provide a real historical outcome/reference**
+3. **Magna — one specifically closed North American EV cancellation/reduction recovery case**
+4. **Dana — one closed cancelled/severe-volume-decline case, especially for zero/partial-recovery falsification**
+
+### Routing/access
+
+Do not assign fabricated response probabilities. Use the first appropriate verified route after authorization:
+
+1. Dauch general business inquiry routed to the appropriate strategy/commercial-finance/historical-case owner;
+2. Magna group/general inquiry;
+3. Dana business inquiry, respecting its vendor-solicitation caveat;
+4. Dee Zee only through an appropriate professional/corporate route — do not misuse its quoting-only OEM form.
+
+A legitimate warm introduction to a knowledgeable case owner overrides this routing order because it reduces routing uncertainty without changing case truth.
 
 No outreach has been sent. Participation, data access and WTP remain UNKNOWN.
