@@ -12,7 +12,7 @@ FORMAT = "RECOVERY_RADAR_SOURCE_SCOPE_V1"
 
 
 def build_source_scope_manifest(bundle: PilotBundle) -> dict:
-    """Describe the normalized pilot source set without embedding raw evidence bytes."""
+    """Freeze complete normalized pilot truth without embedding raw evidence bytes."""
     payload = {
         "format": FORMAT,
         "supplier_id": bundle.supplier_id,
@@ -23,17 +23,25 @@ def build_source_scope_manifest(bundle: PilotBundle) -> dict:
             "part_id": bundle.event.part_id,
             "event_type": bundle.event.event_type,
             "event_date": bundle.event.event_date.isoformat(),
+            "expected_volume": str(bundle.event.expected_volume),
+            "revised_volume": str(bundle.event.revised_volume),
             "source_ref": bundle.event.source_ref,
             "evidence_ref": bundle.event.evidence_ref,
         },
         "exposures": [
             {
                 "exposure_id": line.exposure_id,
+                "event_id": line.event_id,
                 "economic_loss_id": line.economic_loss_id,
                 "category": line.category,
+                "quantity": str(line.quantity),
+                "unit_cost": str(line.unit_cost),
                 "currency": line.currency,
                 "inventory_or_cost_ref": line.inventory_or_cost_ref,
+                "ownership": line.ownership,
+                "mitigation_amount": str(line.mitigation_amount),
                 "mitigation_evidence_ref": line.mitigation_evidence_ref,
+                "already_reimbursed_amount": str(line.already_reimbursed_amount),
                 "reimbursement_evidence_ref": line.reimbursement_evidence_ref,
             }
             for line in sorted(bundle.exposures, key=lambda item: item.exposure_id)
@@ -41,15 +49,26 @@ def build_source_scope_manifest(bundle: PilotBundle) -> dict:
         "entitlements": [
             {
                 "entitlement_id": basis.entitlement_id,
+                "event_id": basis.event_id,
                 "economic_loss_id": basis.economic_loss_id,
+                "support_state": basis.support_state,
                 "contractual_basis_ref": basis.contractual_basis_ref,
                 "supporting_document_ref": basis.supporting_document_ref,
+                "recoverable_cap": (
+                    str(basis.recoverable_cap)
+                    if basis.recoverable_cap is not None
+                    else None
+                ),
+                "legal_review_required": basis.legal_review_required,
             }
             for basis in sorted(bundle.entitlements, key=lambda item: item.entitlement_id)
         ],
         "evidence": [
             {
                 "document_id": document.document_id,
+                "supplier_id": document.supplier_id,
+                "customer_id": document.customer_id,
+                "program_id": document.program_id,
                 "evidence_type": document.evidence_type,
                 "source_ref": document.source_ref,
                 "version_id": document.version_id,
@@ -57,6 +76,7 @@ def build_source_scope_manifest(bundle: PilotBundle) -> dict:
                     document.document_date.isoformat() if document.document_date else None
                 ),
                 "content_sha256": document.content_sha256,
+                "signed": document.signed,
             }
             for document in sorted(
                 bundle.evidence_documents, key=lambda item: item.document_id
