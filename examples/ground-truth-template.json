@@ -2,15 +2,7 @@
   "format": "RECOVERY_RADAR_GROUND_TRUTH_V1",
   "case_origin": "UNKNOWN",
   "ground_truth_complete": false,
-  "lines": [
-    {
-      "economic_loss_id": "LOSS-001",
-      "disposition": "UNKNOWN",
-      "currency": "EUR",
-      "expected_amount": null,
-      "note": "Independent reviewer completes this after Recovery Radar first-pass output is frozen."
-    }
-  ],
+  "lines": [],
   "operational_metrics": {
     "analyst_preparation_minutes": null,
     "reviewer_minutes": null,
