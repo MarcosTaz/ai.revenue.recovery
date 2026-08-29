@@ -32,7 +32,13 @@ class FindingState(str, Enum):
 
 
 def money(value: Decimal) -> Decimal:
+    if not value.is_finite():
+        raise ValueError("Money value must be finite")
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def _valid_nonnegative(value: Optional[Decimal]) -> bool:
+    return value is None or (value.is_finite() and value >= 0)
 
 
 @dataclass(frozen=True)
@@ -55,19 +61,39 @@ class IndirectTrueUpResult:
     contract_id: str
     period: str
     expected_indirect: Optional[Decimal]
-    billed_indirect: Decimal
+    billed_indirect: Optional[Decimal]
     variance: Optional[Decimal]
     state: FindingState
     explanation: str
 
 
 def compute_indirect_true_up(case: IndirectTrueUpInput) -> IndirectTrueUpResult:
+    numeric_values = (
+        case.allocation_base,
+        case.final_rate,
+        case.billed_indirect,
+        case.indirect_ceiling_amount,
+        case.remaining_funding,
+    )
+    if not all(_valid_nonnegative(value) for value in numeric_values):
+        return IndirectTrueUpResult(
+            case.contract_id,
+            case.period,
+            None,
+            None,
+            None,
+            FindingState.REQUIRES_REVIEW,
+            "Non-finite or negative numeric inputs require explicit credit/adjustment review and cannot create a recovery candidate.",
+        )
+
+    billed = money(case.billed_indirect)
+
     if case.contract_terms in {SupportState.UNKNOWN, SupportState.INSUFFICIENT_EVIDENCE}:
         return IndirectTrueUpResult(
             case.contract_id,
             case.period,
             None,
-            money(case.billed_indirect),
+            billed,
             None,
             FindingState.UNKNOWN,
             "Contract applicability or terms are not sufficiently evidenced.",
@@ -78,7 +104,7 @@ def compute_indirect_true_up(case: IndirectTrueUpInput) -> IndirectTrueUpResult:
             case.contract_id,
             case.period,
             None,
-            money(case.billed_indirect),
+            billed,
             None,
             FindingState.REQUIRES_REVIEW,
             "Contract terms require qualified review before economic entitlement is computed.",
@@ -89,7 +115,7 @@ def compute_indirect_true_up(case: IndirectTrueUpInput) -> IndirectTrueUpResult:
             case.contract_id,
             case.period,
             None,
-            money(case.billed_indirect),
+            billed,
             None,
             FindingState.REQUIRES_REVIEW,
             "A non-settled rate cannot create a verified recovery finding.",
@@ -100,7 +126,7 @@ def compute_indirect_true_up(case: IndirectTrueUpInput) -> IndirectTrueUpResult:
             case.contract_id,
             case.period,
             None,
-            money(case.billed_indirect),
+            billed,
             None,
             FindingState.REQUIRES_REVIEW,
             "Allocation base must be supported as allowable and allocable.",
@@ -110,7 +136,6 @@ def compute_indirect_true_up(case: IndirectTrueUpInput) -> IndirectTrueUpResult:
     if case.indirect_ceiling_amount is not None and expected > case.indirect_ceiling_amount:
         expected = money(case.indirect_ceiling_amount)
 
-    billed = money(case.billed_indirect)
     variance = money(expected - billed)
 
     if variance > 0 and case.remaining_funding is not None and variance > money(case.remaining_funding):
