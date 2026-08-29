@@ -28,3 +28,5 @@ jobs:
         run: node gridrecover/test/project-model.test.js
       - name: Run GRIDRECOVER cluster-withdrawal regressions
         run: node gridrecover/test/cluster-withdrawal.test.js
+      - name: Run GRIDRECOVER synthetic case pack
+        run: node gridrecover/test/synthetic-case-pack.test.js
