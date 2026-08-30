@@ -1,7 +1,9 @@
+import json
 import unittest
+from datetime import datetime
+from pathlib import Path
 
 from govmargin.authz import AuthorizationError, OrganizationMember, Role
-from govmargin.operation import load_normalized_bundle
 from govmargin.review import HumanReview, ReviewDecision
 from govmargin.secure_operation import ReviewAuthorizationError, run_authorized_normalized_indirect_audit
 
@@ -14,7 +16,8 @@ class SecureOperationTests(unittest.TestCase):
             OrganizationMember("org-b", "analyst-2", Role.ANALYST),
             OrganizationMember("org-b", "reviewer-2", Role.REVIEWER),
         )
-        self.bundle = load_normalized_bundle("examples/normalized-indirect-bundle.json")
+        fixture = Path(__file__).resolve().parents[1] / "examples" / "normalized-indirect-bundle.json"
+        self.bundle = json.loads(fixture.read_text(encoding="utf-8"))
 
     def review(self, reviewer_id="reviewer-1", reviewer_role="REVIEWER"):
         return HumanReview(
@@ -23,7 +26,7 @@ class SecureOperationTests(unittest.TestCase):
             reviewer_role=reviewer_role,
             decision=ReviewDecision.APPROVED,
             rationale="Evidence and deterministic calculation reviewed.",
-            reviewed_at="2026-08-29T18:00:00+00:00",
+            reviewed_at=datetime.fromisoformat("2026-08-29T18:00:00+00:00"),
         )
 
     def test_authorized_analyst_can_run_audit(self):
