@@ -27,6 +27,13 @@ class EvidenceManifestTests(unittest.TestCase):
             with self.subTest(filename=filename), self.assertRaises(ValueError):
                 build_evidence_manifest(**data)
 
+    def test_rejects_control_and_format_characters_in_filename(self):
+        for filename in ("contract\n.pdf", "contract\u202eexe.pdf"):
+            data = self.kwargs()
+            data["filename"] = filename
+            with self.subTest(filename=filename), self.assertRaises(ValueError):
+                build_evidence_manifest(**data)
+
     def test_rejects_unsupported_content_type(self):
         data = self.kwargs()
         data["content_type"] = "application/x-msdownload"
@@ -56,6 +63,13 @@ class EvidenceManifestTests(unittest.TestCase):
         data["organization_id"] = ""
         with self.assertRaises(ValueError):
             build_evidence_manifest(**data)
+
+    def test_rejects_non_string_security_metadata_fail_closed(self):
+        for field in ("organization_id", "evidence_id", "filename", "content_type", "captured_at"):
+            data = self.kwargs()
+            data[field] = None
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                build_evidence_manifest(**data)
 
 
 if __name__ == "__main__":
