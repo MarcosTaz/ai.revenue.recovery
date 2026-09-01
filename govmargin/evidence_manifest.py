@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib
+import unicodedata
 
 
 ALLOWED_CONTENT_TYPES = frozenset({
@@ -25,6 +26,12 @@ class EvidenceManifest:
     captured_at: str
 
 
+def _required_text(value: object, field: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field} is required")
+    return value.strip()
+
+
 def build_evidence_manifest(
     *,
     organization_id: str,
@@ -38,17 +45,23 @@ def build_evidence_manifest(
 
     This boundary intentionally does not parse or execute document content. It
     establishes tenant identity, bounded size, approved content type, immutable
-    content hash and an offset-aware capture time. Malware scanning and durable
-    encrypted object storage remain production deployment responsibilities.
+    content hash and an offset-aware capture time. Malware scanning, file-signature
+    verification and durable encrypted object storage remain production deployment
+    responsibilities and must not be inferred from this manifest.
     """
-    if not organization_id.strip():
-        raise ValueError("organization_id is required")
-    if not evidence_id.strip():
-        raise ValueError("evidence_id is required")
-    if not filename.strip() or filename in {".", ".."}:
+    organization_id = _required_text(organization_id, "organization_id")
+    evidence_id = _required_text(evidence_id, "evidence_id")
+    filename = unicodedata.normalize("NFC", _required_text(filename, "filename"))
+    content_type = _required_text(content_type, "content_type")
+    captured_at = _required_text(captured_at, "captured_at")
+
+    if filename in {".", ".."}:
         raise ValueError("filename is required")
     if "/" in filename or "\\" in filename or "\x00" in filename:
         raise ValueError("filename must not contain path separators or NUL")
+    if any(unicodedata.category(char).startswith("C") for char in filename):
+        raise ValueError("filename must not contain control or format characters")
+
     normalized_type = content_type.split(";", 1)[0].strip().lower()
     if normalized_type not in ALLOWED_CONTENT_TYPES:
         raise ValueError("unsupported content type")
@@ -60,10 +73,11 @@ def build_evidence_manifest(
         raise ValueError("evidence content exceeds size limit")
     try:
         captured = datetime.fromisoformat(captured_at.replace("Z", "+00:00"))
-    except (TypeError, ValueError) as exc:
+    except ValueError as exc:
         raise ValueError("captured_at must be ISO-8601") from exc
     if captured.tzinfo is None or captured.utcoffset() is None:
         raise ValueError("captured_at must be timezone-aware")
+
     digest = hashlib.sha256(content).hexdigest()
     return EvidenceManifest(
         organization_id=organization_id,
