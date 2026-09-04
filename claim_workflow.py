@@ -1,0 +1,160 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
+from datetime import datetime
+from decimal import Decimal
+from enum import Enum
+
+from aviation_recovery import Status
+
+
+class ClaimLifecycle(str, Enum):
+    DETECTED = "detected"
+    REVIEWING = "reviewing"
+    CLAIM_READY = "claim_ready"
+    SUBMITTED = "submitted"
+    ACKNOWLEDGED = "acknowledged"
+    DISPUTED = "disputed"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    SETTLED = "settled"
+
+
+class SettlementType(str, Enum):
+    CASH_RECEIPT = "cash_receipt"
+    CREDIT_MEMO = "credit_memo"
+    CONTRACTUAL_OFFSET = "contractual_offset"
+    REFUND = "refund"
+
+
+@dataclass(frozen=True)
+class SettlementEvidence:
+    settlement_type: SettlementType
+    amount: Decimal
+    currency: str
+    reference: str
+
+
+@dataclass(frozen=True)
+class ClaimRecord:
+    claim_id: str
+    lifecycle: ClaimLifecycle
+    currency: str
+    asserted_recovery_amount: Decimal
+    verified_settled_amount: Decimal = Decimal("0")
+
+
+@dataclass(frozen=True)
+class ClaimAuditEvent:
+    claim_id: str
+    from_state: ClaimLifecycle
+    to_state: ClaimLifecycle
+    occurred_at: datetime
+    actor: str
+    reason: str
+    settlement_reference: str | None = None
+
+
+class WorkflowError(ValueError):
+    pass
+
+
+_ALLOWED_TRANSITIONS: dict[ClaimLifecycle, set[ClaimLifecycle]] = {
+    ClaimLifecycle.DETECTED: {ClaimLifecycle.REVIEWING},
+    ClaimLifecycle.REVIEWING: {ClaimLifecycle.CLAIM_READY, ClaimLifecycle.REJECTED},
+    ClaimLifecycle.CLAIM_READY: {ClaimLifecycle.SUBMITTED, ClaimLifecycle.REVIEWING},
+    ClaimLifecycle.SUBMITTED: {
+        ClaimLifecycle.ACKNOWLEDGED,
+        ClaimLifecycle.DISPUTED,
+        ClaimLifecycle.APPROVED,
+        ClaimLifecycle.REJECTED,
+    },
+    ClaimLifecycle.ACKNOWLEDGED: {
+        ClaimLifecycle.DISPUTED,
+        ClaimLifecycle.APPROVED,
+        ClaimLifecycle.REJECTED,
+    },
+    ClaimLifecycle.DISPUTED: {
+        ClaimLifecycle.APPROVED,
+        ClaimLifecycle.REJECTED,
+        ClaimLifecycle.REVIEWING,
+    },
+    ClaimLifecycle.APPROVED: {ClaimLifecycle.SETTLED},
+    ClaimLifecycle.REJECTED: {ClaimLifecycle.REVIEWING},
+    ClaimLifecycle.SETTLED: set(),
+}
+
+
+def _validate_record(record: ClaimRecord) -> None:
+    if not record.claim_id.strip():
+        raise WorkflowError("claim_id is required")
+    if not record.currency.strip():
+        raise WorkflowError("currency is required")
+    if record.asserted_recovery_amount < 0:
+        raise WorkflowError("asserted_recovery_amount cannot be negative")
+    if record.verified_settled_amount < 0:
+        raise WorkflowError("verified_settled_amount cannot be negative")
+
+
+def transition_claim(
+    record: ClaimRecord,
+    target: ClaimLifecycle,
+    *,
+    occurred_at: datetime,
+    actor: str,
+    reason: str,
+    evaluation_status: Status | None = None,
+    externalization_gate_passed: bool = False,
+    settlement_evidence: SettlementEvidence | None = None,
+) -> tuple[ClaimRecord, ClaimAuditEvent]:
+    _validate_record(record)
+
+    if not actor.strip():
+        raise WorkflowError("actor is required")
+    if not reason.strip():
+        raise WorkflowError("reason is required")
+    if occurred_at.tzinfo is None or occurred_at.utcoffset() is None:
+        raise WorkflowError("occurred_at must be timezone-aware")
+
+    allowed = _ALLOWED_TRANSITIONS[record.lifecycle]
+    if target not in allowed:
+        raise WorkflowError(
+            f"invalid transition: {record.lifecycle.value} -> {target.value}"
+        )
+
+    if target == ClaimLifecycle.CLAIM_READY:
+        if evaluation_status != Status.CLAIM_READY:
+            raise WorkflowError("claim_ready requires a claim-ready economic evaluation")
+        if not externalization_gate_passed:
+            raise WorkflowError("claim_ready requires the evidence-lineage gate to pass")
+
+    settled_amount = record.verified_settled_amount
+    settlement_reference: str | None = None
+
+    if target == ClaimLifecycle.SETTLED:
+        if settlement_evidence is None:
+            raise WorkflowError("settled requires economic settlement evidence")
+        if settlement_evidence.amount <= 0:
+            raise WorkflowError("settlement amount must be positive")
+        if settlement_evidence.currency != record.currency:
+            raise WorkflowError("settlement currency mismatch")
+        if not settlement_evidence.reference.strip():
+            raise WorkflowError("settlement evidence reference is required")
+        settled_amount = settlement_evidence.amount
+        settlement_reference = settlement_evidence.reference
+
+    updated = replace(
+        record,
+        lifecycle=target,
+        verified_settled_amount=settled_amount,
+    )
+    event = ClaimAuditEvent(
+        claim_id=record.claim_id,
+        from_state=record.lifecycle,
+        to_state=target,
+        occurred_at=occurred_at,
+        actor=actor,
+        reason=reason,
+        settlement_reference=settlement_reference,
+    )
+    return updated, event
