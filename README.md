@@ -1,6 +1,17 @@
-# Aviation Recovery
+# AERVIND
+
+**AERVIND** is the canonical commercial brand for the Aviation Lease Entitlement Recovery product and assisted recovery operation.
 
 Recovery-first software and assisted recovery operations for airline/lessee aircraft-lease entitlements.
+
+## Brand / legal identity
+
+- Canonical brand: **AERVIND**
+- Product descriptor: **Aviation Lease Entitlement Recovery**
+- Preferred legal-company form: **AERVIND, Unipessoal Lda.**, subject to formal Portuguese company-name admissibility and incorporation.
+- Preferred primary domain: **aervind.com** (checked available on 2026-09-04; purchase not yet executed).
+
+Until incorporation is complete, do not represent AERVIND as an already registered Portuguese company or invent NIPC/VAT, registered office, banking, insurance or signatory facts.
 
 ## Current status
 
@@ -10,7 +21,7 @@ The product is ready for a bounded, human-reviewed paid airline Recovery Scan. I
 
 Core product, recovery-truth controls, evidence lineage, claim workflow, synthetic E2E, buyer mapping, compliant channel strategy, TAP procurement preparation, capability statement and meeting-ready synthetic proof are complete for the first assisted engagement.
 
-The remaining gate is external, not architectural: a real supplier legal identity, truthful procurement declarations, an authorized signatory where required, and explicit approval to register/contact/submit through the selected airline channel.
+The remaining gate is external, not architectural: incorporation/selection of the real supplier legal identity, truthful procurement declarations, an authorized signatory where required, and explicit approval to register/contact/submit through the selected airline channel.
 
 Canonical external milestone: GitHub issue **#15 — FIRST PAID AIRLINE PILOT — external execution gate**.
 
@@ -129,18 +140,20 @@ First-reference / procurement:
 
 - `docs/CAPABILITY_STATEMENT.md`
 - `docs/TAP_SUPPLIER_INTAKE.md`
+- `docs/TAP_LIVE_ONBOARDING_2026.md`
 - `docs/PROCUREMENT_READINESS.md`
 - `docs/TAP_SYNTHETIC_DEMO.md`
+- `docs/BRAND_AND_ENTITY.md`
 - `ops/CONTACT_ROUTES.csv`
 - `ops/OUTBOUND_QUEUE.csv`
 
 ## External execution boundary
 
-Do not fabricate or infer formal supplier facts such as legal entity name, registered address, VAT/tax number, company registration number, banking details, insurance, certifications, beneficial ownership or authorized signatory.
+Do not fabricate or infer formal supplier facts such as registered legal entity status, registered address, VAT/tax number, company registration number, banking details, insurance, certifications, beneficial ownership or authorized signatory.
 
-Do not use guessed buyer emails or prohibited cold-commercial infrastructure. Under the current setup, Primitive is not the Aviation Recovery cold-prospecting channel.
+Do not use guessed buyer emails or prohibited cold-commercial infrastructure. Under the current setup, Primitive is not the AERVIND cold-prospecting channel.
 
-Do not represent Aviation Recovery as legal counsel, statutory auditor, MRO or airworthiness authority.
+Do not represent AERVIND as legal counsel, statutory auditor, MRO or airworthiness authority.
 
 ## Boundary of the current milestone
 
