@@ -5,6 +5,7 @@ from pathlib import Path
 
 from aviation_io import evaluate_payload
 from workflow_case import (
+    CASE_SCHEMA_VERSION,
     build_case_export,
     cohort_digest,
     parse_bundle,
@@ -94,6 +95,7 @@ class WorkflowCaseTests(unittest.TestCase):
         )
         view = workflow_view(bundle)
         record = view["records"][0]
+        self.assertEqual(view["schema_version"], CASE_SCHEMA_VERSION)
         self.assertEqual(record["lifecycle"], "settled")
         self.assertEqual(record["verified_settled_amount"], "875000")
         self.assertEqual(record["allowed_transitions"], [])
@@ -133,6 +135,22 @@ class WorkflowCaseTests(unittest.TestCase):
                 external_reference="REF-1",
             )
 
+    def test_released_workflow_without_digest_is_rejected(self):
+        bundle = self._to_claim_ready()
+        del bundle["cohort_digest"]
+        with self.assertRaisesRegex(ValueError, "missing its bound cohort digest"):
+            transition_bundle(
+                cohort=self.cohort,
+                evaluated=self.evaluated,
+                bundle=bundle,
+                claim_id=self.claim_id,
+                target="submitted",
+                occurred_at=NOW_3,
+                actor="operator@aervind.com",
+                reason="submit",
+                external_reference="REF-1",
+            )
+
     def test_pre_release_review_can_rebind_to_updated_cohort(self):
         bundle = self._to_reviewing()
         changed = copy.deepcopy(self.cohort)
@@ -166,11 +184,55 @@ class WorkflowCaseTests(unittest.TestCase):
         self.assertEqual(artifact["submission_status"], "not_submitted")
         self.assertEqual(len(artifact["content_sha256"]), 64)
 
+    def test_artifact_outside_claim_ready_window_is_rejected(self):
+        bundle = self._to_claim_ready()
+        bundle = transition_bundle(
+            cohort=self.cohort,
+            evaluated=self.evaluated,
+            bundle=bundle,
+            claim_id=self.claim_id,
+            target="submitted",
+            occurred_at=NOW_3,
+            actor="operator@aervind.com",
+            reason="submitted",
+            external_reference="PORTAL-123",
+        )
+        bundle["artifacts"] = [
+            {
+                "claim_id": self.claim_id,
+                "kind": "claim_package",
+                "generated_at": NOW_4,
+                "generated_by": "operator@aervind.com",
+                "content_sha256": "a" * 64,
+                "submission_status": "not_submitted",
+            }
+        ]
+        with self.assertRaisesRegex(ValueError, "while lifecycle is claim_ready"):
+            parse_bundle(bundle)
+
+    def test_fabricated_submitted_event_without_reference_is_rejected(self):
+        bundle = self._to_claim_ready()
+        bundle["records"][0]["lifecycle"] = "submitted"
+        bundle["events"].append(
+            {
+                "claim_id": self.claim_id,
+                "from_state": "claim_ready",
+                "to_state": "submitted",
+                "occurred_at": NOW_3,
+                "actor": "operator@aervind.com",
+                "reason": "fabricated missing reference",
+                "external_reference": None,
+                "settlement_reference": None,
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "requires external reference"):
+            parse_bundle(bundle)
+
     def test_fabricated_non_detected_record_without_audit_trail_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "without audit trail"):
             parse_bundle(
                 {
-                    "schema_version": 1,
+                    "schema_version": CASE_SCHEMA_VERSION,
                     "records": [
                         {
                             "claim_id": self.claim_id,
@@ -185,6 +247,10 @@ class WorkflowCaseTests(unittest.TestCase):
                 }
             )
 
+    def test_old_schema_is_rejected_instead_of_silently_migrated(self):
+        with self.assertRaisesRegex(ValueError, "unsupported workflow schema_version"):
+            parse_bundle({"schema_version": 1, "records": [], "events": [], "artifacts": []})
+
     def test_case_export_preserves_cohort_workflow_and_digest(self):
         bundle = self._to_reviewing()
         exported = build_case_export(
@@ -192,6 +258,7 @@ class WorkflowCaseTests(unittest.TestCase):
             evaluated=self.evaluated,
             workflow_bundle=bundle,
         )
+        self.assertEqual(exported["schema_version"], CASE_SCHEMA_VERSION)
         self.assertEqual(exported["kind"], "aervind_assisted_case")
         self.assertEqual(exported["workflow"]["cohort_digest"], cohort_digest(self.cohort))
         self.assertEqual(exported["cohort"]["claims"][0]["claim_id"], self.claim_id)
