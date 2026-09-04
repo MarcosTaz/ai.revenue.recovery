@@ -1,0 +1,15 @@
+{
+  "add_default_grants": false,
+  "auth_provider": "neon_auth",
+  "branch_id": "br-weathered-fog-ae0bc6g2",
+  "database_name": "neondb",
+  "db_anon_role": "anonymous",
+  "db_max_rows": 100,
+  "db_schemas": ["debtrecover"],
+  "environment": "synthetic-only",
+  "jwt_role_claim_key": ".role",
+  "openapi_mode": "disabled",
+  "project_id": "muddy-night-86769855",
+  "provider": "Neon Data API + Neon Auth",
+  "real_data_authorized": false
+}
