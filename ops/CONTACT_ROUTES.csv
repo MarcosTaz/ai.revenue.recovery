@@ -1,0 +1,6 @@
+priority,account,buyer,role,direct_route,direct_route_type,route_status,fallback,checked_at,send_status
+1,TAP Air Portugal,Renato Inacio,Chief Financial Officer,,NONE_VERIFIED,CORPORATE_ROUTING_REQUIRED,investors@tap.pt / gcrp@tap.pt,2026-09-04,NOT_SENT_PENDING_SENDER_APPROVAL
+2,Norwegian,Hans-Jorgen Wibstad,Chief Financial Officer,https://no.linkedin.com/in/hans-j%C3%B8rgen-wibstad-2482276b,LINKEDIN,DIRECT_PROFESSIONAL_ROUTE_VERIFIED,jesper.hatletveit@norwegian.com / investor.relations@norwegian.com,2026-09-04,NOT_SENT_PENDING_SENDER_APPROVAL
+3,Icelandair Group,Ivar S. Kristinsson,Chief Financial Officer,https://is.linkedin.com/in/ivarkr,LINKEDIN,DIRECT_PROFESSIONAL_ROUTE_VERIFIED,Official Investor Relations routing only,2026-09-04,NOT_SENT_PENDING_SENDER_APPROVAL
+4,Wizz Air,Veronika Spanarova,Chief Financial Officer,https://hu.linkedin.com/in/veronika-%C5%A1pa%C5%88%C3%A1rov%C3%A1-396786181,LINKEDIN,DIRECT_PROFESSIONAL_ROUTE_VERIFIED,DO_NOT_USE_IR_FOR_COLD_COMMERCIAL,2026-09-04,NOT_SENT_PENDING_SENDER_APPROVAL
+5,airBaltic,Erno Hilden,Chief Executive Officer,,MONITOR,MONITOR,Do not spend first-wave routing capacity yet,2026-09-04,MONITOR
