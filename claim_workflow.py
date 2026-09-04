@@ -52,6 +52,7 @@ class ClaimAuditEvent:
     occurred_at: datetime
     actor: str
     reason: str
+    external_reference: str | None = None
     settlement_reference: str | None = None
 
 
@@ -84,6 +85,12 @@ _ALLOWED_TRANSITIONS: dict[ClaimLifecycle, set[ClaimLifecycle]] = {
     ClaimLifecycle.SETTLED: set(),
 }
 
+_EXTERNAL_SOURCE_STATES = {
+    ClaimLifecycle.SUBMITTED,
+    ClaimLifecycle.ACKNOWLEDGED,
+    ClaimLifecycle.DISPUTED,
+}
+
 
 def allowed_transitions(state: ClaimLifecycle) -> tuple[ClaimLifecycle, ...]:
     return tuple(sorted(_ALLOWED_TRANSITIONS[state], key=lambda value: value.value))
@@ -107,6 +114,21 @@ def _validate_record(record: ClaimRecord) -> None:
             raise WorkflowError("verified settled value cannot exceed asserted recovery amount")
 
 
+def _external_reference_required(
+    current: ClaimLifecycle, target: ClaimLifecycle
+) -> bool:
+    if target == ClaimLifecycle.SUBMITTED:
+        return True
+    if current in _EXTERNAL_SOURCE_STATES and target in {
+        ClaimLifecycle.ACKNOWLEDGED,
+        ClaimLifecycle.DISPUTED,
+        ClaimLifecycle.APPROVED,
+        ClaimLifecycle.REJECTED,
+    }:
+        return True
+    return False
+
+
 def transition_claim(
     record: ClaimRecord,
     target: ClaimLifecycle,
@@ -116,6 +138,7 @@ def transition_claim(
     reason: str,
     evaluation_status: Status | None = None,
     externalization_gate_passed: bool = False,
+    external_reference: str | None = None,
     settlement_evidence: SettlementEvidence | None = None,
 ) -> tuple[ClaimRecord, ClaimAuditEvent]:
     _validate_record(record)
@@ -131,6 +154,14 @@ def transition_claim(
     if target not in allowed:
         raise WorkflowError(
             f"invalid transition: {record.lifecycle.value} -> {target.value}"
+        )
+
+    normalized_external_reference = (
+        str(external_reference).strip() if external_reference is not None else ""
+    )
+    if _external_reference_required(record.lifecycle, target) and not normalized_external_reference:
+        raise WorkflowError(
+            f"{target.value} requires an external evidence/reference identifier"
         )
 
     if target == ClaimLifecycle.CLAIM_READY:
@@ -172,6 +203,7 @@ def transition_claim(
         occurred_at=occurred_at,
         actor=actor.strip(),
         reason=reason.strip(),
+        external_reference=normalized_external_reference or None,
         settlement_reference=settlement_reference,
     )
     _validate_record(updated)
