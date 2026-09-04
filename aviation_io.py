@@ -15,6 +15,7 @@ from aviation_recovery import (
     EvaluationResult,
     Status,
     evaluate_portfolio,
+    validate_rule,
 )
 from recovery_truth import summarize_recovery_truth
 
@@ -31,12 +32,12 @@ def _decimal(value: Any, default: str = "0") -> Decimal:
 
 def parse_rule(raw: Mapping[str, Any]) -> EntitlementRule:
     return EntitlementRule(
-        rule_id=str(raw["rule_id"]),
-        entitlement_type=EntitlementType(str(raw["entitlement_type"])),
-        formula=Formula(str(raw["formula"])),
-        currency=str(raw["currency"]),
-        effective_from=_date(str(raw["effective_from"])),
-        effective_to=_date(str(raw["effective_to"])) if raw.get("effective_to") else None,
+        rule_id=str(raw["rule_id"]).strip(),
+        entitlement_type=EntitlementType(str(raw["entitlement_type"]).strip()),
+        formula=Formula(str(raw["formula"]).strip()),
+        currency=str(raw["currency"]).strip().upper(),
+        effective_from=_date(str(raw["effective_from"]).strip()),
+        effective_to=_date(str(raw["effective_to"]).strip()) if raw.get("effective_to") else None,
         contribution_rate=_decimal(raw.get("contribution_rate"), "1"),
         fixed_amount=_decimal(raw["fixed_amount"]) if raw.get("fixed_amount") is not None else None,
         deductible=_decimal(raw.get("deductible"), "0"),
@@ -47,8 +48,12 @@ def parse_rule(raw: Mapping[str, Any]) -> EntitlementRule:
             if raw.get("deadline_days_after_event") is not None
             else None
         ),
-        required_evidence_types=tuple(str(v) for v in raw.get("required_evidence_types", [])),
-        excluded_cost_categories=tuple(str(v) for v in raw.get("excluded_cost_categories", [])),
+        required_evidence_types=tuple(
+            str(v).strip() for v in raw.get("required_evidence_types", [])
+        ),
+        excluded_cost_categories=tuple(
+            str(v).strip() for v in raw.get("excluded_cost_categories", [])
+        ),
         notes=str(raw.get("notes", "")),
     )
 
@@ -56,26 +61,26 @@ def parse_rule(raw: Mapping[str, Any]) -> EntitlementRule:
 def parse_claim(raw: Mapping[str, Any]) -> ClaimInput:
     evidence = tuple(
         EvidenceRef(
-            evidence_id=str(item["evidence_id"]),
-            evidence_type=str(item["evidence_type"]),
-            source_name=str(item["source_name"]),
+            evidence_id=str(item["evidence_id"]).strip(),
+            evidence_type=str(item["evidence_type"]).strip(),
+            source_name=str(item["source_name"]).strip(),
         )
         for item in raw.get("evidence", [])
     )
     return ClaimInput(
-        claim_id=str(raw["claim_id"]),
-        rule_id=str(raw["rule_id"]),
-        event_date=_date(str(raw["event_date"])),
-        evaluation_date=_date(str(raw["evaluation_date"])),
+        claim_id=str(raw["claim_id"]).strip(),
+        rule_id=str(raw["rule_id"]).strip(),
+        event_date=_date(str(raw["event_date"]).strip()),
+        evaluation_date=_date(str(raw["evaluation_date"]).strip()),
         eligible_cost=_decimal(raw.get("eligible_cost"), "0"),
         available_fund=_decimal(raw.get("available_fund"), "0"),
         prior_paid_or_reimbursed=_decimal(raw.get("prior_paid_or_reimbursed"), "0"),
         claimed_to_date=_decimal(raw.get("claimed_to_date"), "0"),
-        cost_categories=tuple(str(v) for v in raw.get("cost_categories", [])),
+        cost_categories=tuple(str(v).strip() for v in raw.get("cost_categories", [])),
         evidence=evidence,
-        source_refs={str(k): str(v) for k, v in raw.get("source_refs", {}).items()},
+        source_refs={str(k).strip(): str(v).strip() for k, v in raw.get("source_refs", {}).items()},
         human_waived_evidence_types=tuple(
-            str(v) for v in raw.get("human_waived_evidence_types", [])
+            str(v).strip() for v in raw.get("human_waived_evidence_types", [])
         ),
     )
 
@@ -125,12 +130,19 @@ def _apply_lineage_gate(
 def evaluate_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     rules = [parse_rule(item) for item in payload.get("rules", [])]
     claims = [parse_claim(item) for item in payload.get("claims", [])]
-    rule_map = {rule.rule_id: rule for rule in rules}
 
+    for rule in rules:
+        validate_rule(rule)
+
+    rule_map = {rule.rule_id: rule for rule in rules}
     if len(rule_map) != len(rules):
         raise ValueError("duplicate rule_id in input")
 
     claim_ids = [claim.claim_id for claim in claims]
+    if any(not claim_id for claim_id in claim_ids):
+        raise ValueError("claim_id is required")
+    if any(not claim.rule_id for claim in claims):
+        raise ValueError("claim rule_id is required")
     if len(set(claim_ids)) != len(claim_ids):
         raise ValueError("duplicate claim_id in input")
 
