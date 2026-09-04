@@ -65,6 +65,35 @@ class AviationIOTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate claim_id"):
             evaluate_payload(payload)
 
+    def test_blank_claim_id_is_rejected_at_ingestion(self):
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        payload["claims"][0]["claim_id"] = "   "
+        with self.assertRaisesRegex(ValueError, "claim_id is required"):
+            evaluate_payload(payload)
+
+    def test_unused_invalid_rule_is_still_rejected(self):
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        invalid_rule = dict(payload["rules"][0])
+        invalid_rule["rule_id"] = "UNUSED-BUT-INVALID"
+        invalid_rule["effective_to"] = "2024-01-01"
+        payload["rules"].append(invalid_rule)
+
+        with self.assertRaisesRegex(ValueError, "effective_to cannot precede effective_from"):
+            evaluate_payload(payload)
+
+    def test_ids_and_currency_are_normalized_at_ingestion(self):
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        payload["rules"][0]["rule_id"] = "  SYNTH-LEASE-001-MR-ENGINE  "
+        payload["rules"][0]["currency"] = " usd "
+        payload["claims"][0]["rule_id"] = "  SYNTH-LEASE-001-MR-ENGINE  "
+        payload["claims"][0]["claim_id"] = "  SYNTH-C-001  "
+
+        evaluated = evaluate_payload(payload)
+        by_id = {item["claim_id"]: item for item in evaluated["results"]}
+
+        self.assertIn("SYNTH-C-001", by_id)
+        self.assertEqual(by_id["SYNTH-C-001"]["currency"], "USD")
+
 
 if __name__ == "__main__":
     unittest.main()
