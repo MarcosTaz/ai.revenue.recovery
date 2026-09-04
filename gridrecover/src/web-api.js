@@ -53,6 +53,8 @@ function resolveCustomerForToken(tokenToCustomer, token) {
 
 function createApi({
   tokenToCustomer = {},
+  authRegistry = null,
+  requireStrongAuth = false,
   store = new CaseStore(),
   audit = new AuditLog(),
   vault = null,
@@ -64,9 +66,30 @@ function createApi({
     const auth = req.headers.authorization || '';
     const match = /^Bearer\s+(.+)$/.exec(auth);
     if (!match) return null;
-    const customerId = resolveCustomerForToken(tokenToCustomer, match[1]);
+    const token = match[1];
+
+    if (authRegistry && typeof authRegistry.resolve === 'function') {
+      const principal = authRegistry.resolve(token, now());
+      if (!principal) return null;
+      return {
+        customer_id: principal.customer_id,
+        user_id: principal.user_id,
+        role: principal.role,
+        token_id: principal.token_id,
+        actor_id: `user:${principal.user_id}`,
+        strong_auth: true
+      };
+    }
+
+    if (requireStrongAuth) return null;
+    const customerId = resolveCustomerForToken(tokenToCustomer, token);
     if (!customerId) return null;
-    return { customer_id: customerId, actor_id: tokenActorId(match[1]) };
+    return { customer_id: customerId, user_id: null, role: 'ADMIN', token_id: null, actor_id: tokenActorId(token), strong_auth: false };
+  }
+
+  function allowed(a, permission) {
+    if (!authRegistry) return true;
+    return typeof authRegistry.can === 'function' && authRegistry.can(a, permission);
   }
 
   async function mutateDurably({ mutate, rollbackExternal = null }) {
@@ -100,26 +123,23 @@ function createApi({
           production_ready: false,
           document_vault: Boolean(vault),
           durable_mutations: typeof persistState === 'function',
-          durability_required: Boolean(requireDurability)
+          durability_required: Boolean(requireDurability),
+          auth_mode: authRegistry ? 'HASHED_TTL_ROLE_REGISTRY' : 'DEV_STATIC_TOKEN_MAP',
+          strong_auth_required: Boolean(requireStrongAuth)
         });
       }
 
+      if (requireStrongAuth && !authRegistry) return json(res, 503, { error: 'AUTH_REGISTRY_REQUIRED' });
       const a = actor(req);
       if (!a) return json(res, 401, { error: 'UNAUTHORIZED' });
 
       if (req.method === 'POST' && url.pathname === '/api/pilot-admission') {
+        if (!allowed(a, 'CASE_WRITE')) return json(res, 403, { error: 'FORBIDDEN' });
         const body = await readJson(req);
         const result = evaluatePilotAdmission(body);
         await mutateDurably({
           mutate: async () => {
-            audit.append({
-              customer_id: a.customer_id,
-              case_id: body.case_id || 'INTAKE',
-              actor_id: a.actor_id,
-              action: 'PILOT_ADMISSION_EVALUATED',
-              at: now(),
-              detail: { outcome: result.outcome }
-            });
+            audit.append({ customer_id: a.customer_id, case_id: body.case_id || 'INTAKE', actor_id: a.actor_id, action: 'PILOT_ADMISSION_EVALUATED', at: now(), detail: { outcome: result.outcome } });
             return result;
           }
         });
@@ -127,22 +147,14 @@ function createApi({
       }
 
       if (req.method === 'POST' && url.pathname === '/api/cases') {
+        if (!allowed(a, 'CASE_WRITE')) return json(res, 403, { error: 'FORBIDDEN' });
         const body = await readJson(req);
-        if (body.customer_id && body.customer_id !== a.customer_id) {
-          return json(res, 403, { error: 'CROSS_TENANT_CREATE_DENIED' });
-        }
+        if (body.customer_id && body.customer_id !== a.customer_id) return json(res, 403, { error: 'CROSS_TENANT_CREATE_DENIED' });
         const record = { ...body, customer_id: a.customer_id };
         const created = await mutateDurably({
           mutate: async () => {
             const result = store.createCase(a, record);
-            audit.append({
-              customer_id: a.customer_id,
-              case_id: result.case_id,
-              actor_id: a.actor_id,
-              action: 'CASE_CREATED',
-              at: now(),
-              detail: { project_id: result.project_id || null }
-            });
+            audit.append({ customer_id: a.customer_id, case_id: result.case_id, actor_id: a.actor_id, action: 'CASE_CREATED', at: now(), detail: { project_id: result.project_id || null } });
             return result;
           }
         });
@@ -151,13 +163,11 @@ function createApi({
 
       const documentUploadMatch = /^\/api\/cases\/([^/]+)\/documents$/.exec(url.pathname);
       if (req.method === 'POST' && documentUploadMatch) {
+        if (!allowed(a, 'DOCUMENT_UPLOAD')) return json(res, 403, { error: 'FORBIDDEN' });
         if (!vault) return json(res, 503, { error: 'DOCUMENT_VAULT_UNAVAILABLE' });
         const caseId = decodeURIComponent(documentUploadMatch[1]);
         try { store.getCase(a, caseId); }
-        catch (e) {
-          if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' });
-          throw e;
-        }
+        catch (e) { if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' }); throw e; }
 
         const documentId = String(req.headers['x-document-id'] || '');
         const documentType = String(req.headers['x-document-type'] || '');
@@ -171,7 +181,6 @@ function createApi({
             const saved = vault.put({ customerId: a.customer_id, documentId, documentType, bytes });
             vaultCreated = true;
             if (saved.source_sha256 !== ingested.source_sha256) throw new Error('VAULT_INGEST_HASH_MISMATCH');
-
             store.appendEvidence(a, caseId, {
               document_id: documentId,
               document_type: documentType,
@@ -183,34 +192,13 @@ function createApi({
               locator_count: ingested.locators.length,
               locators: ingested.locators
             });
-            audit.append({
-              customer_id: a.customer_id,
-              case_id: caseId,
-              actor_id: a.actor_id,
-              action: 'DOCUMENT_INGESTED',
-              at: now(),
-              detail: {
-                document_id: documentId,
-                document_type: documentType,
-                source_sha256: ingested.source_sha256,
-                byte_length: ingested.byte_length
-              }
-            });
-            return {
-              document_id: documentId,
-              document_type: documentType,
-              source_sha256: ingested.source_sha256,
-              byte_length: ingested.byte_length,
-              extraction_method: ingested.extraction_method,
-              locator_count: ingested.locators.length
-            };
+            audit.append({ customer_id: a.customer_id, case_id: caseId, actor_id: a.actor_id, action: 'DOCUMENT_INGESTED', at: now(), detail: { document_id: documentId, document_type: documentType, source_sha256: ingested.source_sha256, byte_length: ingested.byte_length } });
+            return { document_id: documentId, document_type: documentType, source_sha256: ingested.source_sha256, byte_length: ingested.byte_length, extraction_method: ingested.extraction_method, locator_count: ingested.locators.length };
           },
           rollbackExternal: async () => {
             if (!vaultCreated) return;
             try { vault.delete({ customerId: a.customer_id, documentId }); }
-            catch (error) {
-              if (error.message !== 'DOCUMENT_NOT_FOUND') throw error;
-            }
+            catch (error) { if (error.message !== 'DOCUMENT_NOT_FOUND') throw error; }
           }
         });
         return json(res, 201, result);
@@ -218,31 +206,20 @@ function createApi({
 
       const caseMatch = /^\/api\/cases\/([^/]+)$/.exec(url.pathname);
       if (req.method === 'GET' && caseMatch) {
+        if (!allowed(a, 'CASE_READ')) return json(res, 403, { error: 'FORBIDDEN' });
         try { return json(res, 200, store.getCase(a, decodeURIComponent(caseMatch[1]))); }
-        catch (e) {
-          if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' });
-          throw e;
-        }
+        catch (e) { if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' }); throw e; }
       }
 
       if (req.method === 'POST' && url.pathname === '/api/evaluate/network-upgrade') {
+        if (!allowed(a, 'CASE_WRITE')) return json(res, 403, { error: 'FORBIDDEN' });
         const body = await readJson(req);
         try { store.getCase(a, body.case_id); }
-        catch (e) {
-          if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' });
-          throw e;
-        }
+        catch (e) { if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' }); throw e; }
         const result = evaluateNetworkUpgradeRepayment(body.input);
         await mutateDurably({
           mutate: async () => {
-            audit.append({
-              customer_id: a.customer_id,
-              case_id: body.case_id,
-              actor_id: a.actor_id,
-              action: 'NETWORK_UPGRADE_EVALUATED',
-              at: now(),
-              detail: { status: result.status }
-            });
+            audit.append({ customer_id: a.customer_id, case_id: body.case_id, actor_id: a.actor_id, action: 'NETWORK_UPGRADE_EVALUATED', at: now(), detail: { status: result.status } });
             return result;
           }
         });
@@ -250,23 +227,14 @@ function createApi({
       }
 
       if (req.method === 'POST' && url.pathname === '/api/evaluate/cluster-withdrawal') {
+        if (!allowed(a, 'CASE_WRITE')) return json(res, 403, { error: 'FORBIDDEN' });
         const body = await readJson(req);
         try { store.getCase(a, body.case_id); }
-        catch (e) {
-          if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' });
-          throw e;
-        }
+        catch (e) { if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' }); throw e; }
         const result = evaluateClusterWithdrawalCapital(body.input);
         await mutateDurably({
           mutate: async () => {
-            audit.append({
-              customer_id: a.customer_id,
-              case_id: body.case_id,
-              actor_id: a.actor_id,
-              action: 'CLUSTER_WITHDRAWAL_EVALUATED',
-              at: now(),
-              detail: { status: result.status }
-            });
+            audit.append({ customer_id: a.customer_id, case_id: body.case_id, actor_id: a.actor_id, action: 'CLUSTER_WITHDRAWAL_EVALUATED', at: now(), detail: { status: result.status } });
             return result;
           }
         });
@@ -274,32 +242,18 @@ function createApi({
       }
 
       if (req.method === 'POST' && url.pathname === '/api/dossiers') {
+        if (!allowed(a, 'CASE_WRITE')) return json(res, 403, { error: 'FORBIDDEN' });
         const body = await readJson(req);
         let caseRecord;
         try { caseRecord = store.getCase(a, body.case_id); }
-        catch (e) {
-          if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' });
-          throw e;
-        }
+        catch (e) { if (e.message === 'CASE_NOT_FOUND') return json(res, 404, { error: 'CASE_NOT_FOUND' }); throw e; }
         const dossier = buildRecoveryDossier({
           ...body,
-          caseMeta: {
-            ...body.caseMeta,
-            case_id: body.case_id,
-            customer_id: a.customer_id,
-            project_id: body.caseMeta?.project_id || caseRecord.project_id
-          }
+          caseMeta: { ...body.caseMeta, case_id: body.case_id, customer_id: a.customer_id, project_id: body.caseMeta?.project_id || caseRecord.project_id }
         });
         await mutateDurably({
           mutate: async () => {
-            audit.append({
-              customer_id: a.customer_id,
-              case_id: body.case_id,
-              actor_id: a.actor_id,
-              action: 'DOSSIER_GENERATED',
-              at: now(),
-              detail: { status: dossier.status || dossier.finding?.status || null }
-            });
+            audit.append({ customer_id: a.customer_id, case_id: body.case_id, actor_id: a.actor_id, action: 'DOSSIER_GENERATED', at: now(), detail: { status: dossier.status || dossier.finding?.status || null } });
             return dossier;
           }
         });
@@ -323,11 +277,4 @@ function startServer(options = {}, port = 0) {
   return new Promise(resolve => server.listen(port, '127.0.0.1', () => resolve(server)));
 }
 
-module.exports = {
-  createApi,
-  startServer,
-  readJson,
-  readBytes,
-  tokenActorId,
-  resolveCustomerForToken
-};
+module.exports = { createApi, startServer, readJson, readBytes, tokenActorId, resolveCustomerForToken };
