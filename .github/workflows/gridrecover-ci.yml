@@ -59,3 +59,7 @@ jobs:
         run: node gridrecover/test/mutation-transaction.test.js
       - name: Durable API rollback E2E
         run: node gridrecover/test/web-api-durability.test.js
+      - name: Source-bound deadline engine
+        run: node gridrecover/test/deadline-engine.test.js
+      - name: Source drift invalidation sentinel
+        run: node gridrecover/test/source-drift-sentinel.test.js
