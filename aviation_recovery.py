@@ -132,6 +132,10 @@ def validate_rule(rule: EntitlementRule) -> None:
         raise RuleConfigurationError("floor cannot exceed cap")
     if rule.deadline_days_after_event is not None and rule.deadline_days_after_event < 0:
         raise RuleConfigurationError("deadline_days_after_event cannot be negative")
+    if any(not item.strip() for item in rule.required_evidence_types):
+        raise RuleConfigurationError("required_evidence_types cannot contain blank values")
+    if any(not item.strip() for item in rule.excluded_cost_categories):
+        raise RuleConfigurationError("excluded_cost_categories cannot contain blank values")
 
 
 def _base_entitlement(rule: EntitlementRule, claim: ClaimInput) -> tuple[Decimal, list[str]]:
@@ -176,6 +180,18 @@ def _base_entitlement(rule: EntitlementRule, claim: ClaimInput) -> tuple[Decimal
     return _money(max(base, Decimal("0"))), trace
 
 
+def _evidence_integrity_issues(evidence: Sequence[EvidenceRef]) -> tuple[str, ...]:
+    issues: list[str] = []
+    for index, item in enumerate(evidence, start=1):
+        if not item.evidence_id.strip():
+            issues.append(f"evidence_ref_{index}_missing_id")
+        if not item.evidence_type.strip():
+            issues.append(f"evidence_ref_{index}_missing_type")
+        if not item.source_name.strip():
+            issues.append(f"evidence_ref_{index}_missing_source_name")
+    return tuple(issues)
+
+
 def evaluate_claim(rule: EntitlementRule, claim: ClaimInput) -> EvaluationResult:
     validate_rule(rule)
 
@@ -191,13 +207,26 @@ def evaluate_claim(rule: EntitlementRule, claim: ClaimInput) -> EvaluationResult
     warnings: list[str] = []
     trace: list[str] = []
 
+    if not claim.claim_id.strip():
+        blocking.append("claim_id_required")
+    if not claim.rule_id.strip():
+        blocking.append("claim_rule_id_required")
     if claim.rule_id != rule.rule_id:
         blocking.append("claim_rule_mismatch")
+    if claim.evaluation_date < claim.event_date:
+        blocking.append("evaluation_date_precedes_event_date")
 
     if not rule.applies_on(claim.event_date):
         blocking.append("rule_not_effective_on_event_date")
 
-    present_types = {item.evidence_type for item in claim.evidence}
+    evidence_integrity = _evidence_integrity_issues(claim.evidence)
+    blocking.extend(evidence_integrity)
+
+    present_types = {
+        item.evidence_type
+        for item in claim.evidence
+        if item.evidence_id.strip() and item.evidence_type.strip() and item.source_name.strip()
+    }
     waived_types = set(claim.human_waived_evidence_types)
     for required in rule.required_evidence_types:
         if required not in present_types and required not in waived_types:
