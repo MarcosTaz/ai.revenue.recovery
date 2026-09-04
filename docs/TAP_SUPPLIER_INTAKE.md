@@ -74,7 +74,7 @@ Indicative assisted-pilot ranges already approved in the Aviation Recovery comme
 - optional success component only when separately agreed and defined against **verified recovered value**;
 - monitoring after a successful pilot: **EUR 2,500–10,000+/month**.
 
-A procurement submission should use a fixed bounded scope where possible rather than presenting all price bands at once.
+For TAP supplier intake, lead with a **fixed-scope Recovery Scan** rather than the full price ladder. The preferred first commercial proposal is a defined cohort, explicit document boundary, fixed deliverables and fixed fee.
 
 ## Security / confidentiality baseline
 
@@ -114,6 +114,28 @@ Avoid:
 - legal advice or entitlement guarantees;
 - airworthiness or maintenance-certification claims.
 
+## TAP registration route
+
+TAP's supplier FAQ publishes a supplier self-registration route through SAP Ariba:
+
+- `https://tap.supplier-eu.ariba.com/ad/selfRegistration/_c_/C2`
+
+The same TAP supplier materials publish `suppliersupport@tap.pt` for general supplier / procurement-process questions and state that a supplier registration request is routed to Procurement.
+
+The current TAP supplier site confirms that supplier onboarding and SAP Ariba remain part of the collaboration / procure-to-order process.
+
+## Submission sequence
+
+1. Confirm the legal supplier identity to be registered.
+2. Assemble the legal / tax / banking / compliance fields listed below.
+3. Prepare the one-page Aviation Recovery capability statement.
+4. Register through the TAP supplier onboarding route.
+5. Select / describe the primary category as **Professional and Financial Services** and note the M&E adjacency without claiming maintenance certification.
+6. Complete the supplier questionnaire using only verified company facts.
+7. If the intake needs clarification, use the published supplier-support route rather than passenger support or IR.
+8. Preserve the registration acknowledgement and any TAP supplier / Ariba identifiers in the commercial operating log.
+9. Do not submit a claim, customer data, or real lease evidence during vendor registration; the first goal is supplier qualification and a scoped Recovery Scan conversation.
+
 ## Information that must come from the supplier/legal entity before submission
 
 Do not fabricate these fields:
@@ -145,6 +167,10 @@ Official pages:
 - https://www.tapairportugal.com/en/about-us/suppliers/about-tap-for-suppliers
 - https://www.tapairportugal.com/en/about-us/suppliers/how-we-do-business/working-together
 
+TAP supplier FAQ used for the published self-registration / support route:
+
+- https://www.tapairportugal.com/pt/-/media/Institucional/Sobre-nos/Suppliers/Suppliers-FAQs-PT.pdf
+
 ## Submission gate
 
-This pack is **ready for procurement preparation**, not automatically authorized for submission. Complete only verified legal-entity fields and use the official TAP onboarding workflow when the supplier identity and submission are approved.
+This pack is **ready for procurement submission preparation**, not automatically authorized for submission. The only remaining non-product inputs are the actual supplier/legal-entity facts and the explicit side-effect approval to submit the registration.
