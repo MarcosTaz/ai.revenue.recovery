@@ -1,0 +1,84 @@
+name: DebtRecover Neon JWT Canary
+
+on:
+  push:
+    branches: [debtrecover-v0.4.1]
+    paths:
+      - '.github/workflows/debtrecover-neon-jwt-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-jwt-signature:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install pinned runtime dependencies
+        run: |
+          set -euo pipefail
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund @neondatabase/auth jose >/dev/null
+      - name: Issue and cryptographically verify synthetic Neon Auth JWT
+        env:
+          AUTH_BASE: https://ep-frosty-moon-b105xh57.neonauth.c-5.eu-central-1.aws.neon.tech/neondb/auth
+          JWKS_URL: https://ep-frosty-moon-b105xh57.neonauth.c-5.eu-central-1.aws.neon.tech/neondb/auth/.well-known/jwks.json
+        run: |
+          node --input-type=module <<'JS'
+          import { randomBytes } from 'node:crypto';
+          import { createInternalNeonAuth } from '@neondatabase/auth';
+          import { createRemoteJWKSet, decodeJwt, decodeProtectedHeader, jwtVerify } from 'jose';
+
+          const auth = createInternalNeonAuth(process.env.AUTH_BASE);
+          const email = `debtrecover.jwt.${process.env.GITHUB_RUN_ID}.${Date.now()}@example.com`;
+          const password = `${randomBytes(24).toString('base64url')}Aa1!`;
+
+          const signup = await auth.adapter.signUp.email({
+            email,
+            password,
+            name: 'DebtRecover JWT Canary'
+          });
+          if (signup?.error) throw new Error(`signup failed: ${signup.error.code || signup.error.message || 'unknown'}`);
+
+          let token = await auth.getJWTToken();
+          if (!token) {
+            const signin = await auth.adapter.signIn.email({ email, password });
+            if (signin?.error) throw new Error(`signin failed: ${signin.error.code || signin.error.message || 'unknown'}`);
+            token = await auth.getJWTToken();
+          }
+          if (!token) throw new Error('authenticated JWT unavailable after signup/signin');
+
+          const header = decodeProtectedHeader(token);
+          const unverified = decodeJwt(token);
+          if (header.alg !== 'EdDSA') throw new Error(`unexpected alg ${header.alg}`);
+          if (!header.kid) throw new Error('JWT kid missing');
+          if (!unverified.sub) throw new Error('JWT sub missing');
+          if (!unverified.iat || !unverified.exp) throw new Error('JWT temporal claims missing');
+
+          const JWKS = createRemoteJWKSet(new URL(process.env.JWKS_URL));
+          const { payload, protectedHeader } = await jwtVerify(token, JWKS, {
+            algorithms: ['EdDSA']
+          });
+          if (payload.sub !== unverified.sub) throw new Error('verified sub mismatch');
+          if (protectedHeader.kid !== header.kid) throw new Error('verified kid mismatch');
+
+          const now = Math.floor(Date.now()/1000);
+          if (payload.exp <= now) throw new Error('verified token expired');
+          if (payload.iat > now + 60) throw new Error('verified token issued in future');
+
+          console.log(JSON.stringify({
+            marker: 'DEBTRECOVER_NEON_JWT_V045',
+            verified: true,
+            alg: protectedHeader.alg,
+            kid_present: Boolean(protectedHeader.kid),
+            sub_present: Boolean(payload.sub),
+            issuer: payload.iss ?? null,
+            audience: payload.aud ?? null,
+            role: payload.role ?? null,
+            tenant_claim_present: Object.prototype.hasOwnProperty.call(payload, 'tenant'),
+            roles_claim_present: Object.prototype.hasOwnProperty.call(payload, 'roles'),
+            exp_after_iat: Number(payload.exp) > Number(payload.iat)
+          }));
+          console.log('DEBTRECOVER_NEON_JWT_SIGNATURE=PASS');
+          JS
