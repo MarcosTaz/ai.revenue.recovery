@@ -1,0 +1,2 @@
+asset_id,lease_id,counterparty,entitlement_family,event_id,event_date,document_type,document_name,source_reference,currency,amount,notes
+EXAMPLE-ONLY,,,,,,,,,,,Delete this example row before customer use
