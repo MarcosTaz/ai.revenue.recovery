@@ -1,0 +1,30 @@
+{
+  "branch_id": "br-weathered-fog-ae0bc6g2",
+  "environment": "synthetic-only",
+  "limitations": [
+    "request.jwt.claims was injected only to exercise PostgREST/RLS policy semantics",
+    "this probe does not validate JWT signature, issuer, audience, expiry or JWKS",
+    "OIDC_TOKEN_JWKS_VERIFY remains a separate mandatory FAIL/INCOMPLETE probe"
+  ],
+  "observations": {
+    "anon_db_role": "anonymous",
+    "anonymous_case_insert": false,
+    "anonymous_case_select": false,
+    "anonymous_schema_usage": false,
+    "authenticated_role_bypass_rls": false,
+    "authenticated_role_can_login": false,
+    "authenticated_without_jwt_tenant_a_access": false,
+    "authenticated_without_jwt_visible_case_count": 0,
+    "cross_tenant_case_insert": "RLS_REJECTED",
+    "data_api_active": true,
+    "simulated_claim_tenant_a_access": true,
+    "simulated_claim_tenant_b_access": false,
+    "simulated_claim_visible_external_refs": ["SYN-A"],
+    "simulated_postgrest_claim_sub": "1aeacb4a-445c-435e-a684-fef5d9949e9c"
+  },
+  "payload_hash": "9cc1962b68a6a8f147670158d8b25891fa2ed19ec650907677c4ed57768d0ecf",
+  "probe_type": "DATA_API_RLS_POLICY_SIMULATION",
+  "project_id": "muddy-night-86769855",
+  "result": "PASS",
+  "version": "0.4.4"
+}
