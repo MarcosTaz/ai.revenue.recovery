@@ -280,17 +280,35 @@ def evaluate_portfolio(
 
 
 def summarize_recovery(results: Sequence[EvaluationResult]) -> dict[str, object]:
+    """Return a conservative status-aware portfolio summary.
+
+    `net_recoverable` is retained for backwards compatibility, but now means only
+    claim-ready economic value. Blocked and review-required amounts are exposed
+    separately and must not be reported as recovered/ready value.
+    """
     currencies = {result.currency for result in results if result.currency != "UNKNOWN"}
     if len(currencies) > 1:
         raise ValueError("portfolio summary requires a single currency or prior FX normalization")
 
-    recoverable = sum((result.net_recoverable for result in results), Decimal("0"))
+    claim_ready = [result for result in results if result.status == Status.CLAIM_READY]
+    review_required = [result for result in results if result.status == Status.REVIEW_REQUIRED]
+    blocked = [result for result in results if result.status == Status.BLOCKED]
+
+    claim_ready_value = sum((result.net_recoverable for result in claim_ready), Decimal("0"))
+    review_value = sum((result.net_recoverable for result in review_required), Decimal("0"))
+    blocked_value = sum((result.net_recoverable for result in blocked), Decimal("0"))
+
     return {
         "currency": next(iter(currencies), "UNKNOWN"),
         "candidate_count": len(results),
-        "claim_ready_count": sum(result.status == Status.CLAIM_READY for result in results),
-        "review_required_count": sum(result.status == Status.REVIEW_REQUIRED for result in results),
-        "blocked_count": sum(result.status == Status.BLOCKED for result in results),
+        "claim_ready_count": len(claim_ready),
+        "review_required_count": len(review_required),
+        "blocked_count": len(blocked),
         "zero_entitlement_count": sum(result.status == Status.ZERO_ENTITLEMENT for result in results),
-        "net_recoverable": _money(recoverable),
+        "net_recoverable": _money(claim_ready_value),
+        "review_required_pipeline": _money(review_value),
+        "blocked_potential": _money(blocked_value),
+        "total_identified_before_status_filter": _money(
+            claim_ready_value + review_value + blocked_value
+        ),
     }
