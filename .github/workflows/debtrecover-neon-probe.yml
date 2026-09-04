@@ -1,0 +1,53 @@
+name: DebtRecover Neon Provider Canary
+
+on:
+  push:
+    branches: [debtrecover-v0.4.1]
+    paths:
+      - '.github/workflows/debtrecover-neon-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-provider-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invoke isolated DebtRecover Neon function
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --max-time 30 \
+            'https://br-polished-block-b1c1p62e-drprobe.compute.c-5.eu-central-1.aws.neon.tech/' \
+            -o probe.json
+          cat probe.json
+      - name: Validate synthetic provider response
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('probe.json'))
+          assert p.get('marker') == 'DRPROBE_V045', p
+          assert p.get('synthetic') is True, p
+          assert p.get('auth_jwks',{}).get('reachable') is True, p
+          assert (p.get('auth_jwks',{}).get('key_count') or 0) >= 1, p
+          assert p.get('data_api',{}).get('reachable') is True, p
+          assert p.get('storage_put',{}).get('ok') is True, p
+          assert p.get('storage_get',{}).get('ok') is True, p
+          assert p.get('storage_get',{}).get('exact') is True, p
+          print('DEBTRECOVER_NEON_PROVIDER_CANARY=PASS')
+          PY
+      - name: Inspect Neon Auth JWKS compatibility
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 \
+            'https://ep-frosty-moon-b105xh57.neonauth.c-5.eu-central-1.aws.neon.tech/neondb/auth/.well-known/jwks.json' \
+            -o jwks.json
+          python - <<'PY'
+          import json
+          jwks=json.load(open('jwks.json'))
+          keys=jwks.get('keys') or []
+          assert keys, jwks
+          for i,k in enumerate(keys):
+              print(f"JWKS_KEY_{i}=kty:{k.get('kty')},alg:{k.get('alg')},crv:{k.get('crv')},kid_present:{bool(k.get('kid'))}")
+          PY

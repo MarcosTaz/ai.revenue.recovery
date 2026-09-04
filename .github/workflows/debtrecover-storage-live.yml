@@ -1,0 +1,39 @@
+name: DebtRecover Synthetic Storage Integrity
+
+on:
+  push:
+    branches: [debtrecover-v0.4.1]
+    paths:
+      - '.github/workflows/debtrecover-storage-live.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storage-roundtrip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invoke isolated storage probe
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --max-time 30 \
+            'https://br-polished-block-b1c1p62e-drstorageprobe.compute.c-5.eu-central-1.aws.neon.tech/' \
+            -o probe.json
+          cat probe.json
+      - name: Validate byte exactness
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('probe.json'))
+          assert p.get('marker') == 'DEBTRECOVER_STORAGE_V045', p
+          assert p.get('synthetic') is True, p
+          assert p.get('put_status') in (200, 204), p
+          assert p.get('get_status') == 200, p
+          assert p.get('bytes') == p.get('expected_bytes'), p
+          assert p.get('actual_sha256') == p.get('expected_sha256'), p
+          assert p.get('exact') is True, p
+          assert p.get('pass') is True, p
+          print('DEBTRECOVER_SYNTHETIC_STORAGE=PASS')
+          PY
