@@ -4,14 +4,20 @@ function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function freezeRecord(record) { return Object.freeze(clone(record)); }
 function tenantCaseKey(customerId, caseId) { return `${customerId}\u0000${caseId}`; }
 
+function normalizeRecord(record) {
+  const version = Number.isInteger(record._version) && record._version >= 1 ? record._version : 1;
+  return { ...record, _version: version };
+}
+
 function buildMap(initialRecords) {
   if (!Array.isArray(initialRecords)) throw new Error('CASE_STATE_INVALID');
   const next = new Map();
   for (const record of initialRecords) {
     if (!record || !record.case_id || !record.customer_id) throw new Error('CASE_STATE_INVALID');
-    const key = tenantCaseKey(record.customer_id, record.case_id);
+    const normalized = normalizeRecord(record);
+    const key = tenantCaseKey(normalized.customer_id, normalized.case_id);
     if (next.has(key)) throw new Error('CASE_STATE_DUPLICATE_ID');
-    next.set(key, freezeRecord(record));
+    next.set(key, freezeRecord(normalized));
   }
   return next;
 }
@@ -43,7 +49,7 @@ class CaseStore {
     if (record.customer_id !== actor.customer_id) throw new Error('CROSS_TENANT_CREATE_DENIED');
     const key = tenantCaseKey(actor.customer_id, record.case_id);
     if (this.cases.has(key)) throw new Error('CASE_ID_EXISTS');
-    const frozen = freezeRecord(record);
+    const frozen = freezeRecord(normalizeRecord(record));
     this.cases.set(key, frozen);
     return clone(frozen);
   }
@@ -60,15 +66,31 @@ class CaseStore {
     return [...this.cases.values()].filter(r => r.customer_id === actor.customer_id).map(clone);
   }
 
+  updateCase(actor, caseId, updater, expectedVersion = null) {
+    if (!actor || !actor.customer_id) throw new Error('AUTH_REQUIRED');
+    if (typeof updater !== 'function') throw new Error('CASE_UPDATER_REQUIRED');
+    const current = this.getCase(actor, caseId);
+    if (expectedVersion != null && expectedVersion !== current._version) throw new Error('CASE_VERSION_CONFLICT');
+    const proposed = updater(clone(current));
+    if (!proposed || typeof proposed !== 'object') throw new Error('CASE_UPDATE_INVALID');
+    if (proposed.case_id !== current.case_id || proposed.customer_id !== current.customer_id) throw new Error('CASE_IDENTITY_IMMUTABLE');
+    const next = normalizeRecord({ ...proposed, _version: current._version + 1 });
+    const frozen = freezeRecord(next);
+    this.cases.set(tenantCaseKey(actor.customer_id, caseId), frozen);
+    return clone(frozen);
+  }
+
   appendEvidence(actor, caseId, evidence) {
-    const record = this.getCase(actor, caseId);
     if (!evidence || !evidence.document_id || !evidence.sha256) throw new Error('EVIDENCE_PROVENANCE_REQUIRED');
-    const current = Array.isArray(record.evidence) ? record.evidence : [];
-    if (current.some(e => e.document_id === evidence.document_id)) throw new Error('EVIDENCE_ID_EXISTS');
-    const updated = freezeRecord({ ...record, evidence: [...current, freezeRecord(evidence)] });
-    this.cases.set(tenantCaseKey(actor.customer_id, caseId), updated);
-    return clone(updated);
+    let output;
+    this.updateCase(actor, caseId, current => {
+      const evidenceList = Array.isArray(current.evidence) ? current.evidence : [];
+      if (evidenceList.some(e => e.document_id === evidence.document_id)) throw new Error('EVIDENCE_ID_EXISTS');
+      output = { ...current, evidence: [...evidenceList, freezeRecord(evidence)] };
+      return output;
+    });
+    return this.getCase(actor, caseId);
   }
 }
 
-module.exports = { CaseStore, tenantCaseKey };
+module.exports = { CaseStore, tenantCaseKey, normalizeRecord };
