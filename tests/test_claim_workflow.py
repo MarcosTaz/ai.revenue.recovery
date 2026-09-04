@@ -70,7 +70,63 @@ class ClaimWorkflowTests(unittest.TestCase):
                 occurred_at=NOW,
                 actor="claims@example.com",
                 reason="submit claim",
+                external_reference="PORTAL-1",
             )
+
+    def test_submission_requires_external_reference(self):
+        record = self._record(ClaimLifecycle.CLAIM_READY)
+        with self.assertRaisesRegex(WorkflowError, "external evidence/reference"):
+            transition_claim(
+                record,
+                ClaimLifecycle.SUBMITTED,
+                occurred_at=NOW,
+                actor="claims@example.com",
+                reason="real submission occurred",
+            )
+
+        updated, event = transition_claim(
+            record,
+            ClaimLifecycle.SUBMITTED,
+            occurred_at=NOW,
+            actor="claims@example.com",
+            reason="real submission occurred",
+            external_reference="LESSOR-PORTAL-123",
+        )
+        self.assertEqual(updated.lifecycle, ClaimLifecycle.SUBMITTED)
+        self.assertEqual(event.external_reference, "LESSOR-PORTAL-123")
+
+    def test_external_counterparty_state_requires_reference(self):
+        record = self._record(ClaimLifecycle.SUBMITTED)
+        with self.assertRaisesRegex(WorkflowError, "external evidence/reference"):
+            transition_claim(
+                record,
+                ClaimLifecycle.APPROVED,
+                occurred_at=NOW,
+                actor="claims@example.com",
+                reason="lessor approved",
+            )
+
+        updated, event = transition_claim(
+            record,
+            ClaimLifecycle.APPROVED,
+            occurred_at=NOW,
+            actor="claims@example.com",
+            reason="lessor approved",
+            external_reference="LESSOR-APPROVAL-456",
+        )
+        self.assertEqual(updated.lifecycle, ClaimLifecycle.APPROVED)
+        self.assertEqual(event.external_reference, "LESSOR-APPROVAL-456")
+
+    def test_internal_rejection_from_review_does_not_fake_external_reference(self):
+        updated, event = transition_claim(
+            self._record(ClaimLifecycle.REVIEWING),
+            ClaimLifecycle.REJECTED,
+            occurred_at=NOW,
+            actor="reviewer@example.com",
+            reason="candidate disproved internally",
+        )
+        self.assertEqual(updated.lifecycle, ClaimLifecycle.REJECTED)
+        self.assertIsNone(event.external_reference)
 
     def test_settled_requires_economic_evidence(self):
         record = self._record(ClaimLifecycle.APPROVED)
@@ -170,6 +226,7 @@ class ClaimWorkflowTests(unittest.TestCase):
                 occurred_at=NOW,
                 actor="claims@example.com",
                 reason="approved",
+                external_reference="LESSOR-APPROVAL-1",
                 settlement_evidence=SettlementEvidence(
                     settlement_type=SettlementType.CASH_RECEIPT,
                     amount=Decimal("10"),
