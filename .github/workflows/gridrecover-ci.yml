@@ -77,3 +77,9 @@ jobs:
         run: node gridrecover/test/auth-registry.test.js
       - name: Strong-auth API roles and tenant isolation
         run: node gridrecover/test/web-api-auth.test.js
+      - name: Incident response lifecycle
+        run: node gridrecover/test/incident-response.test.js
+      - name: Privacy-safe observability
+        run: node gridrecover/test/observability.test.js
+      - name: Pilot readiness gate
+        run: node gridrecover/test/pilot-readiness.test.js
