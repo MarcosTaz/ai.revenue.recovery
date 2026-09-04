@@ -1,16 +1,22 @@
 # Aviation Recovery
 
-Recovery-first software for airline/lessee aircraft-lease entitlements.
+Recovery-first software and assisted recovery operations for airline/lessee aircraft-lease entitlements.
 
 ## Current status
 
-**ASSISTED PILOT COMMERCIAL-READY**
+**FIRST PAID PILOT READY — EXTERNAL EXECUTION GATE**
 
-The current product is suitable for bounded, human-reviewed recovery engagements. It is **not yet positioned as self-service enterprise SaaS**. The commercial unit is an assisted Recovery Scan / Forensic Reconciliation / Claim Dossier engagement with deterministic calculations, evidence lineage, red-team review, claim lifecycle tracking and settlement-truth reporting.
+The product is ready for a bounded, human-reviewed paid airline Recovery Scan. It is **not positioned as self-service enterprise SaaS** yet.
+
+Core product, recovery-truth controls, evidence lineage, claim workflow, synthetic E2E, buyer mapping, compliant channel strategy, TAP procurement preparation, capability statement and meeting-ready synthetic proof are complete for the first assisted engagement.
+
+The remaining gate is external, not architectural: a real supplier legal identity, truthful procurement declarations, an authorized signatory where required, and explicit approval to register/contact/submit through the selected airline channel.
+
+Canonical external milestone: GitHub issue **#15 — FIRST PAID AIRLINE PILOT — external execution gate**.
 
 ## Initial wedge
 
-Recover value that is already contractually available but missed, under-claimed, delayed, or poorly evidenced:
+Recover and prove value already available under lease economics:
 
 1. Maintenance-reserve reimbursements
 2. Lessor maintenance contributions / cost-sharing
@@ -22,6 +28,14 @@ The product is deliberately **not** a generic lease-management system. It recons
 ## Canonical workflow
 
 `lease -> clause/rule version -> asset/component -> maintenance event -> invoice/workscope evidence -> reserve/contribution ledger -> entitlement calculation -> exceptions/red-team -> human review -> claim package -> submission -> settlement -> recovery audit trail`
+
+## Recovery-truth vocabulary
+
+These states are intentionally distinct:
+
+`identified -> blocked / review_required -> claim_ready -> submitted / approved -> settled / recovered`
+
+Only evidence-backed settlement is reported as recovered value. Blocked, review-required, submitted or approved amounts must never inflate recovered value.
 
 ## Product gates
 
@@ -46,12 +60,10 @@ An external claim package requires the evidence-lineage gate to pass. A claim ca
 - `claim_package.py` — external claim-package renderer after gate approval.
 - `claim_workflow.py` — claim lifecycle from detection through verified settlement.
 - `aviation_io.py` — JSON ingestion/evaluation pipeline.
-- `executive_report.py` — executive recovery truth reporting.
+- `executive_report.py` — executive recovery-truth reporting.
 - `cli.py` — assisted operator entrypoint.
 
-## Quickstart — synthetic pilot
-
-Run the complete synthetic evaluation and executive-report flow:
+## Quickstart — core synthetic pilot
 
 ```bash
 python cli.py examples/pilot.json \
@@ -59,36 +71,79 @@ python cli.py examples/pilot.json \
   --report executive.md
 ```
 
+## Quickstart — first-airline meeting demo
+
+The TAP-shaped scenario is **100% synthetic** and must never be presented as TAP data or findings.
+
+```bash
+python cli.py examples/tap_synthetic_demo.json \
+  --output tap_demo_evaluated.json \
+  --report tap_demo_executive.md
+```
+
+Expected synthetic truth:
+
+- claim-ready: **EUR 1,260,000**;
+- review-required: **EUR 187,500**;
+- blocked potential: **EUR 200,000**;
+- settled/recovered: **EUR 0**.
+
 Run all automated tests:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-The synthetic pilot intentionally includes both claim-ready value and a blocked candidate so reporting semantics can be verified.
+## First commercial execution queue
 
-## Commercial positioning
+1. **TAP Air Portugal** — preferred first reference; supplier onboarding / SAP Ariba path prepared.
+2. **Norwegian** — CFO + Finance, Control & Fleet; direct professional route and corporate B2B routing mapped.
+3. **Icelandair Group** — CFO + Technical & Maintenance / aircraft-leasing ownership mapped.
+4. **Wizz Air** — high-value, harder-sale account; CFO + procurement/supply-chain route; IR excluded for cold commercial.
+5. **airBaltic** — monitor/qualify rather than lead the first paid reference.
 
-Primary buyer: airline CFO/Finance, Fleet/Asset Management, Engineering Finance, Procurement, Lease Management and internal audit teams managing leased aircraft or engines.
+No target signal is evidence that an airline has missed claims.
 
-Initial assisted offer:
+## Commercial operating material
 
-- **Recovery Scan** — portfolio/lease triage to locate high-probability missed claims.
-- **Forensic Reconciliation** — reconstruct eligible amount, reserve balance, contribution mechanics and time-bar status.
-- **Claim Dossier** — calculation, clause map, source evidence, exceptions and submission package.
-- **Recovery Monitoring** — recurring detection of new maintenance events and approaching contractual deadlines.
-
-Commercial operating material lives in:
+Product / delivery:
 
 - `docs/PILOT_SOW.md`
 - `docs/PILOT_DATA_REQUEST.md`
 - `docs/OPERATOR_RUNBOOK.md`
 - `docs/CLAIM_DOSSIER.md`
 - `docs/SECURITY_AND_CONFIDENTIALITY.md`
+- `docs/READINESS.md`
+
+Commercial execution:
+
 - `docs/GTM.md`
 - `docs/OUTBOUND_PLAYBOOK.md`
-- `docs/READINESS.md`
+- `docs/TARGET_ACCOUNTS.md`
+- `docs/BUYER_MAP.md`
+- `docs/PROSPECT_EVIDENCE.md`
+- `docs/CONTACT_ROUTES.md`
+- `docs/CHANNEL_STRATEGY.md`
+
+First-reference / procurement:
+
+- `docs/CAPABILITY_STATEMENT.md`
+- `docs/TAP_SUPPLIER_INTAKE.md`
+- `docs/PROCUREMENT_READINESS.md`
+- `docs/TAP_SYNTHETIC_DEMO.md`
+- `ops/CONTACT_ROUTES.csv`
+- `ops/OUTBOUND_QUEUE.csv`
+
+## External execution boundary
+
+Do not fabricate or infer formal supplier facts such as legal entity name, registered address, VAT/tax number, company registration number, banking details, insurance, certifications, beneficial ownership or authorized signatory.
+
+Do not use guessed buyer emails or prohibited cold-commercial infrastructure. Under the current setup, Primitive is not the Aviation Recovery cold-prospecting channel.
+
+Do not represent Aviation Recovery as legal counsel, statutory auditor, MRO or airworthiness authority.
 
 ## Boundary of the current milestone
 
-The current milestone proves a sellable assisted recovery workflow. Enterprise SaaS capabilities such as tenant administration, SSO, deep ERP/M&E integrations, customer self-service and formal external security assurance belong to the post-pilot scale phase; they are not required to sell or execute the bounded assisted pilot defined here.
+The assisted product can now be sold and executed as a bounded paid pilot. The next proof is **real airline contract/evidence data and a paid cohort**, not another internal architecture cycle.
+
+Enterprise SaaS capabilities such as tenant administration, SSO, deep ERP/M&E integrations, customer self-service, automated multi-tenant billing and formal external security assurance remain post-pilot scale items unless a real buyer makes one a prerequisite.
