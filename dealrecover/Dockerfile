@@ -6,6 +6,7 @@ RUN base64 -d /tmp/managed-src.tgz.b64 > /tmp/managed-src.tgz \
  && tar -xzf /tmp/managed-src.tgz -C /app \
  && rm -f /tmp/managed-src.tgz /tmp/managed-src.tgz.b64
 COPY package.json ./
+COPY src/postgresProvider.js ./src/postgresProvider.js
 COPY src/managedBootstrap.js ./src/managedBootstrap.js
 COPY src/managedHttpApi.js ./src/managedHttpApi.js
 COPY src/opaqueSessionAuth.js ./src/opaqueSessionAuth.js
