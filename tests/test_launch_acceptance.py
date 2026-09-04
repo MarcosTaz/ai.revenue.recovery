@@ -11,6 +11,8 @@ class AervindLaunchAcceptanceTests(unittest.TestCase):
         Path("docs/PILOT_SOW.md"),
         Path("docs/PILOT_DATA_REQUEST.md"),
         Path("docs/CLIENT_INTAKE_README.md"),
+        Path("docs/GTM.md"),
+        Path("docs/OUTBOUND_PLAYBOOK.md"),
     )
 
     @classmethod
@@ -20,6 +22,7 @@ class AervindLaunchAcceptanceTests(unittest.TestCase):
         }
         cls.launch = Path("docs/LAUNCH_CHECKLIST.md").read_text(encoding="utf-8")
         cls.email_ops = Path("docs/EMAIL_OPERATIONS.md").read_text(encoding="utf-8")
+        cls.readme = Path("README.md").read_text(encoding="utf-8")
 
     def test_canonical_first_scan_price_is_consistent(self):
         for path, text in self.buyer_text.items():
@@ -62,10 +65,13 @@ class AervindLaunchAcceptanceTests(unittest.TestCase):
 
     def test_first_scan_does_not_require_live_customer_system_access(self):
         key_files = (
+            Path("README.md"),
             Path("index.html"),
             Path("docs/CAPABILITY_STATEMENT.md"),
             Path("docs/FIRST_PAID_RECOVERY_SCAN_PROPOSAL.md"),
             Path("docs/PILOT_DATA_REQUEST.md"),
+            Path("docs/GTM.md"),
+            Path("docs/OUTBOUND_PLAYBOOK.md"),
         )
         for path in key_files:
             lowered = self.buyer_text[path].lower()
@@ -80,14 +86,18 @@ class AervindLaunchAcceptanceTests(unittest.TestCase):
         self.assertIn("aervind.com", self.launch)
         self.assertIn("registered through Porkbun", self.launch)
         self.assertIn("[x] Purchase **aervind.com**", self.launch)
+        self.assertIn("registered through Porkbun", self.readme)
 
     def test_real_outreach_hold_is_fail_closed(self):
         launch = self.launch.upper()
         mail = self.email_ops.upper()
+        readme = self.readme.upper()
         self.assertIn("NO REAL OUTREACH", launch)
         self.assertIn("NO REAL EXTERNAL SEND", mail)
         self.assertIn("DO NOT SEND", mail)
         self.assertIn("EXPLICITLY LIFTS THIS HOLD", launch)
+        self.assertIn("REAL OUTREACH: HOLD ACTIVE", readme)
+        self.assertNotIn("COMMERCIAL OUTREACH OPEN", readme)
 
     def test_dns_verification_is_separate_from_real_recipient_test(self):
         self.assertIn("DNS-verified", self.email_ops)
