@@ -71,3 +71,9 @@ jobs:
         run: node gridrecover/test/review-gate.test.js
       - name: Verified recovery lifecycle
         run: node gridrecover/test/recovery-lifecycle.test.js
+      - name: Success-fee billing lifecycle
+        run: node gridrecover/test/billing-lifecycle.test.js
+      - name: Hashed auth registry
+        run: node gridrecover/test/auth-registry.test.js
+      - name: Strong-auth API roles and tenant isolation
+        run: node gridrecover/test/web-api-auth.test.js
