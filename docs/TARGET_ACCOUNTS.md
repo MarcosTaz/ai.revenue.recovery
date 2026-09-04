@@ -25,7 +25,7 @@ This is a qualification list, not an assertion that any airline has missed claim
 
 **Public buyer anchor:**
 
-- Gonçalo Pires — Chief Financial Officer.
+- Renato Inácio — Chief Financial Officer since February 2026; previously TAP Senior Director of Corporate Finance and Risk, with prior Deloitte Financial Advisory and private-equity experience.
 
 **Best opening:** finance/control-oriented recovery scan proving whether every eligible lease-linked maintenance reimbursement, lessor contribution or redelivery adjustment in a selected event cohort has been captured, evidenced and settled correctly.
 
