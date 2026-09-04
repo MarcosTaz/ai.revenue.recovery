@@ -37,3 +37,17 @@ jobs:
           assert p.get('storage_get',{}).get('exact') is True, p
           print('DEBTRECOVER_NEON_PROVIDER_CANARY=PASS')
           PY
+      - name: Inspect Neon Auth JWKS compatibility
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 \
+            'https://ep-frosty-moon-b105xh57.neonauth.c-5.eu-central-1.aws.neon.tech/neondb/auth/.well-known/jwks.json' \
+            -o jwks.json
+          python - <<'PY'
+          import json
+          jwks=json.load(open('jwks.json'))
+          keys=jwks.get('keys') or []
+          assert keys, jwks
+          for i,k in enumerate(keys):
+              print(f"JWKS_KEY_{i}=kty:{k.get('kty')},alg:{k.get('alg')},crv:{k.get('crv')},kid_present:{bool(k.get('kid'))}")
+          PY
