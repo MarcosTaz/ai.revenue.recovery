@@ -130,7 +130,9 @@ def parse_bundle(
 ) -> tuple[list[ClaimRecord], list[ClaimAuditEvent], list[dict[str, Any]], str | None]:
     if raw is None:
         return [], [], [], None
-    version = int(raw.get("schema_version", CASE_SCHEMA_VERSION))
+    if "schema_version" not in raw:
+        raise ValueError("workflow schema_version is required")
+    version = int(raw["schema_version"])
     if version != CASE_SCHEMA_VERSION:
         raise ValueError(f"unsupported workflow schema_version: {version}")
     records = [parse_record(item) for item in raw.get("records", [])]
