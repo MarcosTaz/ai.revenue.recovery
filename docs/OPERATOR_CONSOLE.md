@@ -2,19 +2,38 @@
 
 Status: **READY FOR ASSISTED PILOT USE**
 
-The Operator Console is a thin browser interface over the deterministic AERVIND recovery engine. It is intentionally an **operator tool**, not a customer-facing multi-tenant SaaS product.
+The Operator Console is the controlled browser workspace for AERVIND assisted Recovery Scans. It sits directly on the deterministic recovery engine and lifecycle controls. It is an operator tool for a professional engagement, not a public multi-tenant SaaS product.
 
-## Purpose
+## What the customer must provide
 
-The console makes the first paid Recovery Scan operational without requiring a customer to adopt new software or grant access to ERP, M&E, lease-management or banking systems.
+The first engagement does **not** require live ERP, M&E, lease-management, banking or airline-system access.
 
-The customer supplies a bounded exported evidence cohort. AERVIND loads the normalized JSON representation, evaluates the entitlement rules, exposes blockers and lineage gaps, produces a candidate register and executive report, and can generate an external-ready claim package for an eligible candidate after an explicit human release confirmation.
+The customer supplies a bounded evidence cohort through an agreed transfer/storage route. Typical source material includes:
 
-Canonical chain:
+- governing lease and amendments;
+- maintenance reserve / contribution statements;
+- maintenance-event evidence, invoices and workscope;
+- prior claim/submission records;
+- prior reimbursement / settlement records;
+- any other evidence specifically required by the governing entitlement terms.
 
-`lease rule -> maintenance event -> financial inputs -> evidence -> entitlement calculation -> blocker/review gate -> candidate register -> human release -> claim package`
+PDFs, spreadsheets and controlled exports are sufficient for the first Recovery Scan. Source files stay in the engagement-approved evidence repository; the console works with a normalized JSON cohort and source references.
 
-Package generation is **not submission**. External sending/submission remains a separate customer-approved human action.
+## Canonical operating chain
+
+`source cohort -> deterministic evaluation -> blockers / review -> human review -> claim_ready -> claim package -> real external submission -> counterparty process -> verified settlement -> executive closeout`
+
+Economic status and lifecycle are separate controls.
+
+Economic status:
+
+`blocked / review_required / claim_ready / zero_entitlement`
+
+External lifecycle:
+
+`detected -> reviewing -> claim_ready -> submitted -> acknowledged / disputed / approved / rejected -> settled`
+
+Only evidence-backed settlement is recovered value.
 
 ## Start
 
@@ -30,118 +49,131 @@ Then open:
 http://127.0.0.1:8080
 ```
 
-Optional binding:
+The server binds to localhost by default. Do not expose it publicly without an engagement-specific deployment and security design.
 
-```bash
-python operator_app.py --host 127.0.0.1 --port 8090
-```
+## Recovery Scan workflow
 
-Do not bind the assisted console to a public interface unless an engagement-specific deployment/security design has been approved.
+1. Load the normalized customer cohort or the explicitly synthetic demo.
+2. Evaluate the cohort through the canonical `aviation_io.evaluate_payload` path.
+3. Review management recovery truth and candidate ranking.
+4. Open each candidate and inspect blockers, warnings, evidence, source lineage and calculation trace.
+5. Start the auditable lifecycle at `detected -> reviewing`.
+6. Move a candidate to workflow `claim_ready` only when the economic evaluator and source-lineage gate still pass.
+7. Generate a claim package only from workflow `claim_ready` and after explicit human confirmation.
+8. Store/export the portable AERVIND case file in the approved engagement location.
+9. Submit externally through the customer-approved real channel outside this console.
+10. Record `submitted` only after the real submission exists and capture its external reference.
+11. Record acknowledgement, dispute, approval or rejection only from real counterparty evidence.
+12. Record `settled` only with cash, credit memo, refund or contractually valid offset evidence.
+13. Export the final executive report and case audit file.
 
-## Operator workflow
+## Portable case file
 
-1. Load a customer-normalized Recovery Scan JSON cohort, or the synthetic example for demonstration.
-2. Evaluate the cohort.
-3. Review the recovery-truth summary.
-4. Inspect each candidate's blockers, warnings, evidence references, lineage gaps and calculation trace.
-5. Export the evaluated JSON and executive Markdown report where useful.
-6. Resolve evidence gaps or contract-review questions outside the console.
-7. Re-run the cohort after controlled changes.
-8. For a `claim_ready` candidate, complete human review and use **Generate claim package · does not submit**.
-9. Confirm the explicit human release prompt.
-10. The server re-evaluates the current cohort and re-checks claim-ready, blocker and lineage gates before rendering the package.
-11. Review the downloaded Markdown package before any external use.
-12. Any actual submission, counterparty response, approval and settlement remains in the canonical claim workflow.
+The console has no hidden server-side persistence. Durable assisted-pilot state is carried in an operator-exported AERVIND case file.
 
-## Human release gate
+A case file contains:
 
-Claim-package generation has two independent protections:
+- the normalized cohort;
+- a SHA-256 binding to the reviewed cohort revision;
+- claim lifecycle records;
+- append-only audit events;
+- external references for submission/counterparty events;
+- settlement evidence reference and verified amount;
+- generated claim-package artifact hashes.
 
-- the browser requires an explicit human confirmation; and
-- the server re-evaluates the supplied cohort from scratch rather than trusting a stale browser result.
+The case file can be reopened in the console to resume the engagement.
 
-The package endpoint rejects:
+### Revision integrity
 
-- missing human confirmation;
-- a candidate that no longer exists in the current cohort;
-- any status other than `claim_ready`;
-- unresolved blockers; or
-- unresolved source-lineage gaps.
+Before release, a reviewing case may be rebound to a corrected/revised cohort and then re-reviewed.
 
-A successful response is explicitly marked `submission_status: not_submitted`.
+Once any claim reaches a released lifecycle state (`claim_ready`, submitted, counterparty process or settled), the existing workflow is bound to that cohort digest. Silent source changes are rejected. A material source revision then requires a new reviewed case revision rather than rewriting the prior audit history.
 
-The console contains **no endpoint or button that sends a package to a lessor, airline, counterparty, mailbox or external system**.
+## Claim-package integrity
 
-## What the console does
+The claim-package action:
 
-- evaluates the same `aviation_io.evaluate_payload` path used by the CLI;
-- preserves deterministic calculation and recovery-truth rules;
-- exposes claim-ready, review-required and blocked values separately;
-- renders a candidate register;
-- opens a detailed review view per candidate;
-- exposes evidence IDs, source-lineage gaps and calculation trace;
-- invalidates displayed results if the source cohort changes;
-- exports the evaluated payload;
-- renders/exports the executive recovery report;
-- generates a human-gated external-ready claim package for eligible candidates;
-- revalidates all economic and lineage gates at package-generation time;
-- includes a synthetic example loader for safe demonstrations.
+- requires workflow state `claim_ready`;
+- re-evaluates the current cohort from source inputs;
+- re-checks blockers and source-lineage gaps;
+- requires an accountable human actor;
+- renders the canonical external package;
+- records SHA-256 of the generated artifact in the case file;
+- always returns `submission_status = not_submitted`.
 
-## What the console deliberately does not do
+Package generation never emails, uploads or submits the claim to a lessor or any external system.
 
-- no customer login;
-- no tenant administration;
-- no SSO/MFA;
-- no cloud persistence;
-- no automatic document extraction;
-- no automatic legal interpretation;
-- no external claim submission;
-- no automatic email/transmission of packages;
-- no automatic settlement recognition;
-- no direct ERP/M&E/bank access;
-- no hidden background synchronization.
+## External lifecycle evidence
 
-Those are deliberate boundaries. They keep the first paid engagement bounded and reduce customer security/procurement friction until real buyer evidence justifies scale work.
+The console distinguishes internal review decisions from real external events.
 
-## Data handling
+- `submitted` requires an external submission evidence/reference identifier.
+- acknowledgement, dispute, approval and external rejection require the corresponding counterparty evidence/reference.
+- `settled` requires positive settlement evidence, currency, amount and reference.
+- verified settlement cannot exceed the currently asserted claim amount; a larger settlement requires the claim economics to be revised and re-reviewed instead of silently inflating recovery.
 
-The standard server binds to `127.0.0.1` and processes request payloads in memory. It does not write submitted customer payloads to disk and sends `Cache-Control: no-store` on responses.
+Every transition records actor, reason and timezone-aware timestamp.
 
-The operator remains responsible for the approved engagement-specific storage/transfer method for source documents, normalized cohorts and downloaded outputs. Do not treat the console itself as a document repository.
+## Management truth
 
-Request bodies are limited to 2 MB. Large source documents should remain in the approved evidence repository and be represented by controlled source references in the normalized payload rather than embedded in JSON.
+The executive report uses mutually exclusive economic buckets:
 
-## Recovery truth
+- verified settled recovery;
+- claim-ready, not yet submitted;
+- submitted / acknowledged / disputed / approved, unsettled;
+- workflow review / rejected;
+- review-required pipeline;
+- blocked potential.
 
-The UI intentionally displays **Verified recovered = 0** for a scan evaluation unless settlement evidence is separately represented through the canonical claim workflow.
+One candidate cannot appear simultaneously as settled recovery and claim-ready or unsettled external value.
 
-Claim-ready value is not recovered cash.
-Review-required value is not recovered cash.
-Blocked potential is not recovered cash.
-Submitted or approved value is not recovered cash.
-A generated claim package is not recovered cash.
+## Security / data handling
 
-Only evidence-backed economic settlement may be reported as recovered.
+The standard console:
+
+- binds to `127.0.0.1`;
+- processes request bodies in memory;
+- does not log request bodies;
+- does not write submitted cohorts to disk;
+- emits `Cache-Control: no-store`;
+- uses restrictive CSP, frame, referrer, cross-origin and browser permissions headers;
+- has no analytics, third-party JS, advertising or telemetry;
+- limits API bodies to 2 MB;
+- never treats the browser console as the evidence repository.
+
+The exported case file is **not encrypted by the application**. It may contain customer-normalized financial/evidence metadata and must therefore be stored/transferred only using the engagement-approved secure location.
 
 ## Synthetic demonstration
 
 `Load synthetic example` reads `examples/pilot.json`.
 
-The UI labels it as synthetic. It must never be represented as airline data, a discovered customer leakage amount or proof that a target account has missed entitlements.
+It is clearly synthetic and must never be described as airline data, discovered leakage or proof that a target account missed an entitlement.
 
-## Acceptance gate
+## Real-data acceptance gate
 
-Before using the console on real airline data:
+Before the first real cohort is loaded:
 
-- confidentiality/commercial terms are in place;
-- the scoped asset/event population is agreed;
-- the customer-approved data transfer/storage route is known;
-- the governing lease/amendment set is available;
-- an accountable human reviewer is named;
-- no public network exposure is introduced by convenience;
-- exports are stored only in the agreed engagement location;
-- external claim use remains customer-approved.
+- signed commercial/confidentiality terms exist;
+- customer legal entity and scope are known;
+- assets/events/entitlement families are bounded;
+- approved data-transfer and storage route is known;
+- governing lease/amendment set is available;
+- accountable AERVIND reviewer is named;
+- customer owner/reviewer is known;
+- source evidence is indexed with stable references;
+- case exports have an approved storage location;
+- the operator understands that external submission remains a separate real-world action.
 
-## Scale trigger
+## Deliberate non-features before scale
 
-Do not turn this console into self-service enterprise SaaS by default. Add persistence, tenancy, RBAC, SSO, document ingestion or deep integrations only when a real paid engagement demonstrates repeatable value or a buyer makes the capability a procurement requirement.
+- no public customer login;
+- no multi-tenancy;
+- no SSO/MFA;
+- no cloud persistence;
+- no automatic legal interpretation;
+- no direct airline-system integration;
+- no automatic claim submission;
+- no automatic settlement recognition;
+- no hidden synchronization.
+
+Add persistence, tenancy, SSO, document extraction or deep integrations only when a real paid buyer requires them or repeatable pilot evidence justifies the scale investment.
