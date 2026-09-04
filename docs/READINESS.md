@@ -1,83 +1,102 @@
-# Aviation Recovery — Commercial Readiness
+# AERVIND — Commercial & Operational Readiness
 
-_Status basis: assisted, human-reviewed pilot; not self-service enterprise SaaS._
+_Last reviewed: 2026-09-05_
+
+_Status basis: assisted, human-reviewed service; not self-service enterprise SaaS._
 
 ## Readiness verdict
 
-**ASSISTED PILOT COMMERCIAL-READY**
+**PRODUCT / DELIVERY: ASSISTED PILOT READY**
 
-A bounded customer engagement can be sold and executed with the current product when customer contract/evidence inputs are supplied under agreed confidentiality/data-handling terms and material contract interpretation remains human-reviewed.
+**REAL OUTREACH: HOLD ACTIVE — NO REAL EXTERNAL SEND**
 
-The assisted operator product now closes the operational path from source cohort through deterministic evaluation, human review, claim package, external-lifecycle evidence recording and verified settlement reporting. It does not require live access to airline systems for the first scan.
+**PUBLIC SITE: TEMPORARY VERCEL HOST LIVE; `aervind.com` CUSTOM ROUTING PENDING**
+
+**BRANDED EMAIL: DNS CONFIGURATION PENDING**
+
+A bounded Recovery Scan can be executed with the current product once a real engagement is authorized, contracted and supplied with evidence under agreed confidentiality/data-handling terms. Product readiness does not authorize real prospect contact while `docs/REAL_OUTREACH_HOLD.md` is active.
 
 ## Gate matrix
 
-| Capability | Status | Evidence in repository |
-|---|---|---|
-| Deterministic entitlement calculation | READY | `aviation_recovery.py`, engine tests |
+| Capability | Status | Evidence / boundary |
+| --- | --- | --- |
+| Deterministic entitlement calculation | READY | `aviation_recovery.py` + regression tests |
 | Maintenance-reserve reimbursement wedge | READY | engine formulas + synthetic pilot |
-| Lessor contribution / cost-sharing | READY | entitlement types/formulas + tests |
-| Deposit/prepaid-rent/EOL extensibility | READY FOR RULE-CONFIGURED PILOTS | entitlement taxonomy; lease-specific rules remain source-configured |
-| Rule/version effective dates | READY | `EntitlementRule.effective_from/effective_to` |
+| Lessor contribution / cost-sharing | READY | configured entitlement types + tests |
+| Deposit/prepaid-rent/EOL extensibility | RULE-CONFIGURED PILOT | lease-specific rules remain source-grounded |
+| Rule/version effective dates | READY | engine |
 | Caps/floors/deductibles/rates | READY | engine + tests |
-| Deadline/time-bar controls | READY | engine + deadline tests |
+| Deadline/time-bar controls | READY | engine + tests |
 | Required-evidence controls | READY | engine + dossier tests |
-| Input chronology / malformed evidence fail-conservative controls | READY | engine + IO regression tests |
-| Source lineage | READY | `aviation_dossier.py`, IO lineage gate |
-| Source-revision binding after release | READY | `workflow_case.py` cohort SHA-256 binding |
+| Malformed/chronologically invalid input | FAIL-CONSERVATIVE | IO/engine regression tests |
+| Source lineage | READY | dossier + IO lineage gate |
+| Cohort revision binding | READY | SHA-256 binding in `workflow_case.py` |
 | Human review before externalization | READY | lifecycle + dossier gates |
-| False-positive red team | READY AS OPERATING STANDARD | Claim Dossier + operator runbook |
-| Prior-payment / prior-claim offsets | READY | engine + tests |
+| False-positive / duplicate-recovery controls | READY | engine + operating runbook |
 | Recovery-truth reporting | READY | `recovery_truth.py`, `executive_report.py` |
-| Mutually exclusive management buckets | READY | workflow-aware executive reporting |
-| Claim package | READY | package renderer + audited console generation |
-| Package artifact hash / generation audit | READY | portable case workflow artifacts |
-| Submission / dispute / approval workflow | READY FOR ASSISTED RECORDING | `claim_workflow.py`, operator console; console records but never performs external submission |
-| External submission/reference evidence | READY | lifecycle transition gate |
-| Settlement truth | READY | positive economic-evidence gate + amount/currency/reference controls |
-| Audit-event model | READY FOR ASSISTED PILOT | actor, reason, time, external refs, settlement refs, contiguous lifecycle checks |
-| Portable durable case state | READY FOR ASSISTED PILOT | operator-exported AERVIND case file; no hidden server persistence |
-| Synthetic E2E demonstration | READY | `examples/pilot.json`, TAP-shaped synthetic demo |
-| Automated regression gate | READY | GitHub Actions + unittest suite |
-| Pilot data request | READY | `docs/PILOT_DATA_REQUEST.md` |
-| Security/confidentiality baseline | READY FOR ASSISTED PILOT | `docs/SECURITY_AND_CONFIDENTIALITY.md`, local console headers/boundary |
-| Operator runbook | READY | `docs/OPERATOR_RUNBOOK.md`, `docs/OPERATOR_CONSOLE.md` |
-| Pilot SOW / commercial structure | READY | `docs/PILOT_SOW.md`, first paid proposal |
-| Public first-engagement explanation | READY | no-system-access and bounded-scan site positioning |
-| ICP / discovery / account routing | READY | GTM, target accounts, buyer map, channel strategy |
-| Branded operational email | CONFIGURATION GATE | domain registered; Primitive custom-domain DNS verification still required before branded mail is claimed live |
-| Public marketing site at `aervind.com` | DEPLOYMENT GATE | static site ready; domain routing/deployment must be completed before claiming it is live |
-| Portuguese activity/tax suitability for first invoice | EXTERNAL FACTUAL GATE | verify real supplier activity classification and customer-specific invoicing/VAT treatment |
-| Self-service customer UI | POST-PILOT | not required for assisted-pilot milestone |
-| SSO / enterprise RBAC / tenant admin | POST-PILOT | scale-phase, buyer-driven |
-| Deep M&E / ERP integrations | POST-PILOT | scale only after value proof / buyer requirement |
-| Formal external security certification | POST-PILOT | never claim before obtained |
+| Mutually exclusive management buckets | READY | workflow-aware reporting |
+| Claim package | READY | human-gated renderer |
+| Package artifact hash / audit | READY | portable-case artifact audit |
+| Submission/dispute/approval lifecycle | READY FOR ASSISTED RECORDING | console records evidence; it never submits externally |
+| Settlement truth | READY | amount/currency/reference evidence gate |
+| Portable case state | READY FOR ASSISTED PILOT | export/reopen; no hidden server persistence |
+| Synthetic E2E | READY | `examples/pilot.json`, TAP-shaped synthetic demo |
+| Automated regression suite | READY | GitHub Actions + unittest |
+| Customer data request / intake | READY | minimum-necessary evidence model |
+| Local console network boundary | HARDENED | loopback-only bind, local client/Host, same-authority browser POST Origin |
+| Request-body controls | HARDENED | 2 MB cap, timeout, no transfer encoding, incomplete/complex JSON rejection |
+| Security/confidentiality baseline | READY FOR ASSISTED PILOT | truthful non-certification baseline |
+| Commercial offer | READY | EUR 9,500 / 5 assets / 1 family / 12 months / 10 business days |
+| Private buyer preparation | READY | 10 researched account briefs and route register; unsent |
+| Real outbound | HOLD | explicit founder no-send instruction |
+| Temporary technical site | LIVE | `aervind.vercel.app`, canonical static page, HTTPS/security headers |
+| Official `aervind.com` website | ROUTING GATE | domain registered; custom-domain attach/DNS still pending |
+| Branded `@aervind.com` email | DNS GATE | Primitive claim exists; MX/ownership/SPF/DKIM/DMARC/TLS-RPT not yet valid |
+| Portuguese activity/tax suitability | EXTERNAL FACTUAL GATE | verify real activity and customer-specific invoicing/VAT before paid delivery |
+| Self-service customer UI | POST-PILOT | not required for assisted milestone |
+| SSO / enterprise RBAC / tenant admin | POST-PILOT | buyer-driven scale capability |
+| Deep M&E / ERP integrations | POST-PILOT | only after proof / buyer requirement |
+| Formal external security certification | NOT HELD | never claim before actually obtained |
 
-## Commercial acceptance test
+## Commercial acceptance test before receiving real airline evidence
 
-Before accepting real airline data, confirm:
+All must pass:
 
-1. Signed commercial/confidentiality terms exist.
-2. Real customer legal entity is known.
-3. Scope is bounded by assets/events/entitlement families and review period.
-4. Customer and AERVIND accountable reviewers are named.
-5. Permitted data-transfer/storage method and case-file location are agreed.
-6. Governing lease/amendment documents exist for the selected cohort.
-7. Prior claims/reimbursements/settlements can be reconciled in scope.
-8. External claim submission remains customer-approved and human-controlled.
-9. Any success-fee definition uses evidence-backed settlement rather than identified or approved value.
-10. Supplier activity/tax/invoicing treatment is verified for that customer.
+1. the active real-outreach hold has been explicitly lifted for the real commercial process;
+2. real customer legal entity is known;
+3. signed commercial/confidentiality terms exist;
+4. scope is bounded to the agreed assets/events/entitlement family and review period;
+5. customer and AERVIND accountable reviewers are named;
+6. permitted transfer/storage route and case-file location are agreed;
+7. governing lease/amendment material exists for the cohort;
+8. prior claims/reimbursements/settlements can be reconciled in scope;
+9. external claim submission remains customer-approved and human-controlled;
+10. supplier activity/tax/invoicing treatment is verified for that customer.
 
 These are engagement prerequisites, not missing recovery-engine features.
 
 ## What the first paid pilot must prove
 
-1. **Truth:** governing economic entitlements can be reconstructed without inventing missing terms.
-2. **Recovery:** the scoped population contains either claim-ready/resolvable value or defensible assurance that the tested controls close.
-3. **Control:** the customer can see exactly why each candidate passes, fails, returns to review or settles.
-4. **Evidence:** source lineage, submission events and settlement states remain auditable.
-5. **Commercial value:** verified recovery or assurance justifies expansion beyond the bounded scan.
+1. **Truth** — governing economics can be reconstructed without inventing missing terms.
+2. **Control** — every candidate's status and calculation are explainable and source-grounded.
+3. **Evidence** — lineage, workflow and settlement states remain auditable.
+4. **Outcome** — the cohort either produces supportable exceptions/value or defensible assurance that the tested control closes.
+5. **Commercial value** — the outcome justifies or rejects expansion based on evidence, not optimism.
+
+A pilot does not need a positive recovery claim to be valid.
+
+## Current external blockers
+
+The remaining pre-market gates are intentionally narrow:
+
+- attach and verify `aervind.com` as the official web domain;
+- publish/verify Primitive mail DNS records in Porkbun;
+- keep any real-recipient mail test disabled while the no-send hold is active;
+- verify actual Portuguese activity/tax status before paid delivery;
+- later satisfy real buyer-specific procurement/security requirements truthfully.
+
+None of these justify rebuilding the core product.
 
 ## Deliberate scale boundary
 
-Do not delay first revenue for SaaS features. Add persistent multi-customer storage, tenant isolation, RBAC, SSO/MFA, document extraction, deep system integrations and formal external security assurance only after a paid engagement demonstrates repeatable value or a real buyer makes a capability a procurement requirement.
+Do not add hosted multi-customer persistence, tenant administration, SSO/RBAC, document extraction, deep integrations, automated billing or formal security-certification claims merely to look larger. Add them only after a real buyer requirement or paid proof makes the capability economically necessary.
