@@ -10,7 +10,7 @@ Recovery-first software and assisted recovery operations for airline/lessee airc
 - Product descriptor: **Aviation Lease Entitlement Recovery**
 - Initial legal supplier model: the operator's existing Portuguese individual-professional activity, using the operator's real legal name / tax identity and trading commercially as **AERVIND**.
 - Future scale vehicle: **AERVIND, Unipessoal Lda.**, only when revenue, liability, procurement or accounting complexity justifies incorporation.
-- Preferred primary domain: **aervind.com** (rechecked available on 2026-09-04 at USD 11.25/year; purchase not yet executed).
+- Primary domain: **aervind.com** — registered on 2026-09-04 via Porkbun.
 
 Do not represent AERVIND as an already incorporated company while it operates through the individual professional supplier. Contracts and invoices must preserve the legally required supplier name, tax number and address. Never invent NIPC/VAT, registered office, banking, insurance or signatory facts.
 
@@ -22,7 +22,7 @@ See `docs/SOLE_TRADER_LAUNCH.md`.
 
 The product is ready for a bounded, human-reviewed paid airline Recovery Scan. It is **not positioned as self-service enterprise SaaS** yet.
 
-Core product, recovery-truth controls, evidence lineage, claim workflow, synthetic E2E, buyer mapping, compliant channel strategy, TAP procurement preparation, capability statement and meeting-ready synthetic proof are complete for the first assisted engagement.
+Core product, assisted browser operator console, recovery-truth controls, evidence lineage, claim workflow, synthetic E2E, buyer mapping, compliant channel strategy, procurement preparation, capability statement and meeting-ready synthetic proof are complete for the first assisted engagement.
 
 Company incorporation is **not** a global prerequisite for first revenue. The remaining first-sale gates are external and factual: verify that the operator's Portuguese individual-professional activity covers the service, use the real legal/tax supplier identity, apply the correct customer-specific invoicing/VAT treatment, satisfy any buyer-specific procurement requirements, and obtain explicit approval for external registration/contact/submission side effects where required.
 
@@ -75,7 +75,26 @@ An external claim package requires the evidence-lineage gate to pass. A claim ca
 - `claim_workflow.py` — claim lifecycle from detection through verified settlement.
 - `aviation_io.py` — JSON ingestion/evaluation pipeline.
 - `executive_report.py` — executive recovery-truth reporting.
-- `cli.py` — assisted operator entrypoint.
+- `cli.py` — command-line assisted operator entrypoint.
+- `operator_app.py` + `operator_ui/` — browser-based assisted operator console over the same deterministic engine.
+
+## Quickstart — assisted operator console
+
+The first paid Recovery Scan can be run through the browser console without installing third-party Python packages:
+
+```bash
+python operator_app.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8080
+```
+
+The console supports cohort JSON upload/paste, deterministic evaluation, recovery-truth summary, candidate drill-down, evidence/lineage review, calculation trace and exports.
+
+It binds to localhost by default, processes payloads in memory and does not persist submitted customer cohorts. See `docs/OPERATOR_CONSOLE.md` before using real customer data.
 
 ## Quickstart — core synthetic pilot
 
@@ -127,6 +146,7 @@ Product / delivery:
 - `docs/PILOT_SOW.md`
 - `docs/PILOT_DATA_REQUEST.md`
 - `docs/OPERATOR_RUNBOOK.md`
+- `docs/OPERATOR_CONSOLE.md`
 - `docs/CLAIM_DOSSIER.md`
 - `docs/SECURITY_AND_CONFIDENTIALITY.md`
 - `docs/READINESS.md`
@@ -140,6 +160,7 @@ Commercial execution:
 - `docs/PROSPECT_EVIDENCE.md`
 - `docs/CONTACT_ROUTES.md`
 - `docs/CHANNEL_STRATEGY.md`
+- `docs/EMAIL_OPERATIONS.md`
 
 First-reference / procurement:
 
