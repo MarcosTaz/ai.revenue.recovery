@@ -15,11 +15,12 @@ from claim_workflow import (
     SettlementType,
     WorkflowError,
     allowed_transitions,
+    external_reference_required,
     transition_claim,
 )
 
 
-CASE_SCHEMA_VERSION = 1
+CASE_SCHEMA_VERSION = 2
 _RELEASED_STATES = {
     ClaimLifecycle.CLAIM_READY,
     ClaimLifecycle.SUBMITTED,
@@ -164,6 +165,17 @@ def serialize_bundle(
     return payload
 
 
+def _state_at_time(
+    claim_events: Sequence[ClaimAuditEvent], when: datetime
+) -> ClaimLifecycle:
+    state = ClaimLifecycle.DETECTED
+    for event in claim_events:
+        if event.occurred_at > when:
+            break
+        state = event.to_state
+    return state
+
+
 def validate_bundle(
     records: Sequence[ClaimRecord],
     events: Sequence[ClaimAuditEvent],
@@ -186,9 +198,22 @@ def validate_bundle(
             raise ValueError(
                 f"invalid workflow audit transition: {event.from_state.value} -> {event.to_state.value}"
             )
+        if (
+            external_reference_required(event.from_state, event.to_state)
+            and not event.external_reference
+        ):
+            raise ValueError(
+                f"workflow audit event {event.to_state.value} requires external reference"
+            )
+        if event.to_state == ClaimLifecycle.SETTLED and not event.settlement_reference:
+            raise ValueError("settled audit event requires settlement reference")
+        if event.to_state != ClaimLifecycle.SETTLED and event.settlement_reference:
+            raise ValueError("settlement reference is valid only on settled audit event")
         events_by_claim.setdefault(event.claim_id, []).append(event)
 
     for claim_id, record in record_map.items():
+        if record.asserted_recovery_amount < 0 or record.verified_settled_amount < 0:
+            raise ValueError("workflow record amounts cannot be negative")
         claim_events = events_by_claim.get(claim_id, [])
         if not claim_events:
             if record.lifecycle != ClaimLifecycle.DETECTED:
@@ -213,19 +238,22 @@ def validate_bundle(
         if record.lifecycle != claim_events[-1].to_state:
             raise ValueError(f"workflow record state does not match audit trail for {claim_id}")
         if record.lifecycle == ClaimLifecycle.SETTLED:
-            last_event = claim_events[-1]
-            if not last_event.settlement_reference:
-                raise ValueError("settled audit trail requires settlement reference")
             if record.verified_settled_amount <= 0:
                 raise ValueError("settled workflow record requires positive settled amount")
+            if record.verified_settled_amount > record.asserted_recovery_amount:
+                raise ValueError("verified settled amount exceeds asserted recovery amount")
         elif record.verified_settled_amount != 0:
             raise ValueError("unsettled workflow record cannot contain settlement value")
 
     for artifact in artifacts:
-        if str(artifact.get("claim_id", "")) not in record_map:
+        claim_id = str(artifact.get("claim_id", ""))
+        if claim_id not in record_map:
             raise ValueError("workflow artifact references unknown claim_id")
         if artifact.get("kind") != "claim_package":
             raise ValueError("unsupported workflow artifact kind")
+        when = _dt(str(artifact["generated_at"]))
+        if _state_at_time(events_by_claim.get(claim_id, []), when) != ClaimLifecycle.CLAIM_READY:
+            raise ValueError("claim package artifact must be generated while lifecycle is claim_ready")
 
 
 def _evaluation_index(evaluated: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
@@ -273,7 +301,11 @@ def bind_or_validate_cohort_revision(
     existing_digest: str | None,
 ) -> str:
     current = cohort_digest(cohort)
-    if existing_digest is None or existing_digest == current:
+    if existing_digest is None:
+        if any(record.lifecycle in _RELEASED_STATES for record in records):
+            raise ValueError("released workflow is missing its bound cohort digest")
+        return current
+    if existing_digest == current:
         return current
     if any(record.lifecycle in _RELEASED_STATES for record in records):
         raise ValueError(
@@ -431,6 +463,7 @@ def workflow_view(bundle: Mapping[str, Any] | None) -> dict[str, Any]:
         claim_id = str(artifact["claim_id"])
         artifact_counts[claim_id] = artifact_counts.get(claim_id, 0) + 1
     return {
+        "schema_version": CASE_SCHEMA_VERSION,
         "cohort_digest": digest,
         "records": [
             {
