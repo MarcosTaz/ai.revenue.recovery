@@ -44,10 +44,10 @@ def _workflow_index(
     return indexed
 
 
-def render_executive_markdown(
+def summarize_management_truth(
     evaluated: Mapping[str, Any],
     workflow_records: Sequence[ClaimRecord] = (),
-) -> str:
+) -> dict[str, object]:
     summary = evaluated.get("summary", {})
     currency = str(summary.get("currency", "UNKNOWN"))
     results = list(evaluated.get("results", []))
@@ -90,6 +90,42 @@ def render_executive_markdown(
         elif workflow.lifecycle == ClaimLifecycle.SETTLED:
             settled_value += workflow.verified_settled_amount
 
+    return {
+        "currency": currency,
+        "verified_settled_recovery": settled_value,
+        "claim_ready_not_submitted": claim_ready_unsubmitted,
+        "external_unsettled": external_unsettled,
+        "workflow_review_or_rejected": workflow_review_or_rejected,
+        "review_required_pipeline": review_pipeline,
+        "blocked_potential": blocked_potential,
+        "candidate_count": int(summary.get("candidate_count", len(results))),
+    }
+
+
+def jsonify_management_truth(summary: Mapping[str, object]) -> dict[str, object]:
+    return {
+        key: str(value) if isinstance(value, Decimal) else value
+        for key, value in summary.items()
+    }
+
+
+def render_executive_markdown(
+    evaluated: Mapping[str, Any],
+    workflow_records: Sequence[ClaimRecord] = (),
+) -> str:
+    base_summary = evaluated.get("summary", {})
+    currency = str(base_summary.get("currency", "UNKNOWN"))
+    results = list(evaluated.get("results", []))
+    workflows = _workflow_index(results, workflow_records, currency)
+    management = summarize_management_truth(evaluated, workflow_records)
+
+    claim_ready_unsubmitted = _decimal(management["claim_ready_not_submitted"])
+    external_unsettled = _decimal(management["external_unsettled"])
+    workflow_review_or_rejected = _decimal(management["workflow_review_or_rejected"])
+    settled_value = _decimal(management["verified_settled_recovery"])
+    review_pipeline = _decimal(management["review_required_pipeline"])
+    blocked_potential = _decimal(management["blocked_potential"])
+
     blockers: Counter[str] = Counter()
     warnings: Counter[str] = Counter()
     for result in results:
@@ -113,7 +149,7 @@ def render_executive_markdown(
         f"- **Workflow review / rejected:** {_money(workflow_review_or_rejected, currency)}",
         f"- **Review-required pipeline:** {_money(review_pipeline, currency)}",
         f"- **Blocked potential:** {_money(blocked_potential, currency)}",
-        f"- **Candidates evaluated:** {summary.get('candidate_count', len(results))}",
+        f"- **Candidates evaluated:** {management['candidate_count']}",
         "",
         "> A candidate appears in only one workflow-economic bucket. Settled recovery requires cash, credit, refund or contractually valid offset evidence. Submitted or approved value remains unsettled until that evidence exists.",
         "",
