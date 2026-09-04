@@ -33,6 +33,32 @@ class AviationIOTests(unittest.TestCase):
         self.assertEqual(dossier_by_id["SYNTH-C-001"]["lineage_gaps"], [])
         self.assertEqual(dossier_by_id["SYNTH-C-002"]["lineage_gaps"], [])
 
+    def test_missing_lineage_cannot_inflate_claim_ready_summary(self):
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        payload["claims"][0]["source_refs"] = {}
+
+        evaluated = evaluate_payload(payload)
+        summary = evaluated["summary"]
+        by_id = {item["claim_id"]: item for item in evaluated["results"]}
+        dossier_by_id = {
+            item["claim"]["claim_id"]: item for item in evaluated["dossiers"]
+        }
+
+        self.assertEqual(summary["claim_ready_count"], 1)
+        self.assertEqual(summary["blocked_count"], 2)
+        self.assertEqual(summary["verified_claim_ready_recovery"], "225000.00")
+        self.assertEqual(summary["blocked_potential"], "1120000.00")
+        self.assertEqual(by_id["SYNTH-C-001"]["status"], "blocked")
+        self.assertIn(
+            "missing_source_ref:rule_source",
+            by_id["SYNTH-C-001"]["blocking_issues"],
+        )
+        self.assertEqual(dossier_by_id["SYNTH-C-001"]["claim"]["status"], "blocked")
+        self.assertIn(
+            "missing_source_ref:eligible_cost",
+            dossier_by_id["SYNTH-C-001"]["lineage_gaps"],
+        )
+
     def test_duplicate_claim_ids_are_rejected(self):
         payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
         payload["claims"].append(dict(payload["claims"][0]))

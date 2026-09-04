@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 from typing import Any, Mapping
@@ -12,6 +13,7 @@ from aviation_recovery import (
     EvidenceRef,
     Formula,
     EvaluationResult,
+    Status,
     evaluate_portfolio,
 )
 from recovery_truth import summarize_recovery_truth
@@ -100,6 +102,26 @@ def _jsonify_summary(summary: Mapping[str, object]) -> dict[str, object]:
     return rendered
 
 
+def _apply_lineage_gate(
+    result: EvaluationResult,
+    dossier: Mapping[str, Any],
+) -> EvaluationResult:
+    """Prevent untraceable candidates from inflating claim-ready/review value.
+
+    Source lineage is an externalization prerequisite. The deterministic economic
+    engine intentionally does not know dossier/source-reference semantics, so the
+    IO boundary applies the gate before portfolio recovery truth is summarized.
+    """
+    gaps = tuple(str(item) for item in dossier.get("lineage_gaps", []))
+    if not gaps:
+        return result
+    if result.status not in {Status.CLAIM_READY, Status.REVIEW_REQUIRED}:
+        return result
+
+    blocking = tuple(dict.fromkeys((*result.blocking_issues, *gaps)))
+    return replace(result, status=Status.BLOCKED, blocking_issues=blocking)
+
+
 def evaluate_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     rules = [parse_rule(item) for item in payload.get("rules", [])]
     claims = [parse_claim(item) for item in payload.get("claims", [])]
@@ -112,14 +134,18 @@ def evaluate_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     if len(set(claim_ids)) != len(claim_ids):
         raise ValueError("duplicate claim_id in input")
 
-    results = evaluate_portfolio(rule_map, claims)
-    result_map = {result.claim_id: result for result in results}
+    preliminary_results = evaluate_portfolio(rule_map, claims)
+    preliminary_map = {result.claim_id: result for result in preliminary_results}
 
     dossiers: list[dict[str, Any]] = []
+    final_results: list[EvaluationResult] = []
+
     for claim in claims:
         rule = rule_map.get(claim.rule_id)
-        result = result_map[claim.claim_id]
+        result = preliminary_map[claim.claim_id]
+
         if rule is None:
+            final_results.append(result)
             dossiers.append(
                 {
                     "claim": {"claim_id": claim.claim_id, "rule_id": claim.rule_id},
@@ -128,12 +154,19 @@ def evaluate_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
                 }
             )
             continue
-        dossiers.append(build_internal_review_dossier(rule, claim, result))
 
-    summary = summarize_recovery_truth(results)
+        dossier = build_internal_review_dossier(rule, claim, result)
+        gated_result = _apply_lineage_gate(result, dossier)
+        if gated_result is not result:
+            dossier = build_internal_review_dossier(rule, claim, gated_result)
+
+        final_results.append(gated_result)
+        dossiers.append(dossier)
+
+    summary = summarize_recovery_truth(final_results)
 
     return {
         "summary": _jsonify_summary(summary),
-        "results": [serialize_result(result) for result in results],
+        "results": [serialize_result(result) for result in final_results],
         "dossiers": dossiers,
     }
