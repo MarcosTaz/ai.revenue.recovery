@@ -1,0 +1,42 @@
+name: DebtRecover Neon Authenticated RLS Canary
+
+on:
+  push:
+    branches: [debtrecover-v0.4.1]
+    paths:
+      - '.github/workflows/debtrecover-neon-auth-rls-live.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authenticated-jwt-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invoke isolated DebtRecover authenticated canary
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --max-time 30 \
+            'https://br-polished-block-b1c1p62e-drprobe.compute.c-5.eu-central-1.aws.neon.tech/' \
+            -o probe.json
+          cat probe.json
+      - name: Validate authenticated JWT and cross-tenant RLS
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('probe.json'))
+          assert p.get('marker') == 'DEBTRECOVER_AUTH_RLS_V045', p
+          assert p.get('synthetic') is True, p
+          assert p.get('pass') is True, p
+          assert p.get('token_present') is True, p
+          assert p.get('signature_verified') is True, p
+          assert p.get('alg') == 'EdDSA', p
+          assert p.get('sub_matches_user_a') is True, p
+          assert p.get('role') == 'authenticated', p
+          assert p.get('visible_org_a_only') is True, p
+          assert p.get('visible_external_refs') == ['SYN-A'], p
+          assert p.get('cross_tenant_insert_rejected') is True, p
+          print('DEBTRECOVER_NEON_AUTHENTICATED_RLS=PASS')
+          PY
