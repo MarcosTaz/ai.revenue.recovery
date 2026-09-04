@@ -113,7 +113,7 @@ Rules:
 
 ## 9. Minimum-complete dataset gate
 
-The 10-business-day target begins only when the agreed minimum cohort is sufficiently complete to perform the contracted scan.
+The **10 business days** target begins only when the agreed minimum cohort is sufficiently complete to perform the contracted scan.
 
 For the selected entitlement family, the minimum normally requires:
 

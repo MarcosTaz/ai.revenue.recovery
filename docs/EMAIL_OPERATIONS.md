@@ -2,6 +2,21 @@
 
 Status: configuration in progress (custom domain claimed in Primitive; DNS verification pending).
 
+## Active execution hold
+
+**NO REAL EXTERNAL SEND is currently authorized.**
+
+Until the founder explicitly lifts this hold:
+
+- do not send from `@aervind.com` to any real person, company, airline, partner or supplier;
+- do not use any **real external recipient** or real external mailbox for a delivery test;
+- do not submit contact forms or LinkedIn messages;
+- do not enroll real contacts in automated sequences;
+- inbound monitoring, classification and reply drafting are allowed, but the reply remains unsent;
+- DNS verification and other infrastructure checks that do not message a real recipient are allowed.
+
+This rule is fail-closed and overrides older outreach language elsewhere in the repository.
+
 ## Canonical mail architecture
 
 - Domain / DNS registrar: Porkbun (`aervind.com`)
@@ -15,24 +30,27 @@ Do not create fake departmental mailboxes. AERVIND should present one accountabl
 
 ## Operating model
 
-Primitive custom domains are address/route based rather than separate paid mailboxes. Once the domain is verified, inbound messages can be stored and read through the connected Primitive tooling and outbound mail can be sent from addresses on the verified domain subject to Primitive recipient gates and acceptable-use rules.
+Primitive custom domains are address/route based rather than separate paid mailboxes. Once the domain is verified, inbound messages can be stored and read through the connected Primitive tooling and outbound mail can technically be sent from addresses on the verified domain subject to Primitive recipient gates and acceptable-use rules.
 
-Assistant workflow:
+Technical sendability is not commercial authorization.
+
+Assistant workflow while the no-send hold is active:
 
 1. detect/read new inbound mail;
 2. recover the full thread;
 3. classify sender, account, request, urgency and risk;
 4. draft the recommended response in AERVIND's aviation-advisory tone;
 5. surface material decisions to Marcos;
-6. send only when sending is explicitly authorized;
-7. preserve threading and inspect delivery status;
-8. continue follow-up until the commercial thread is resolved.
+6. **do not send**;
+7. preserve the draft and thread context for later explicit authorization.
 
-An hourly condition watch is configured to surface only new/material AERVIND inbound messages and prepare a recommended reply. It must not send autonomously without explicit authorization.
+The AERVIND inbox condition watch may surface new/material inbound messages and prepare a recommended reply. It must not send autonomously.
 
-## Commercial sending rule
+## Commercial sending rule after the hold is lifted
 
-The primary branded domain is not a bulk-cold-email domain. Do not use it for unsolicited bulk/commercial blasts or high-volume sequence automation. First-touch acquisition should remain selective, account-specific and compliant with the sending platform and applicable law. Once a recipient has engaged, the ongoing relationship moves to `marcos@aervind.com`.
+The primary branded domain is not a bulk-cold-email domain. Do not use it for unsolicited bulk/commercial blasts or high-volume sequence automation. First-touch acquisition should remain selective, account-specific and compliant with the sending platform and applicable law. Once a recipient has engaged, the ongoing relationship can move to `marcos@aervind.com`.
+
+Lifting the current no-send hold is necessary before this section becomes actionable.
 
 ## DNS records required by Primitive
 
@@ -51,16 +69,21 @@ Porkbun root host is blank (rather than `@`) when its UI requests a Host value. 
 
 ## Verification gate
 
-Do not claim branded email is live until all of the following pass:
+The branded domain may be considered **DNS-verified** when all of the following pass:
 
-- ownership TXT
-- MX
-- SPF
-- DKIM
-- DMARC
-- TLS-RPT
-- inbound test to `marcos@aervind.com`
-- reply test preserving thread
-- outbound delivery test from `marcos@aervind.com`
+- ownership TXT;
+- MX;
+- SPF;
+- DKIM;
+- DMARC;
+- TLS-RPT.
+
+The branded mailbox may be considered **externally delivery-tested** only after the founder lifts the no-send hold and separately authorizes a test involving a **real external recipient**. At that point validate:
+
+- inbound delivery to `marcos@aervind.com`;
+- reply threading;
+- outbound delivery from `marcos@aervind.com`.
+
+Do not collapse DNS verification and real-recipient delivery testing into one gate while the hold is active.
 
 No private credentials, API keys, tax identifiers or banking data belong in this repository.

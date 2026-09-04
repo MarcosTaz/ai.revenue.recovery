@@ -1,6 +1,6 @@
 # AERVIND — Recovery Scan Client Intake Guide
 
-_For the canonical first Recovery Scan: EUR 9,500 · up to 5 aircraft/engines · 1 primary entitlement family · up to 12 months of selected events._
+_For the canonical first Recovery Scan: EUR 9,500 · up to 5 aircraft/engines · 1 primary entitlement family · up to 12 months of selected events · target 10 business days after the complete agreed minimum dataset._
 
 ## Objective
 
@@ -101,7 +101,7 @@ Provide notice mechanics, prior notices/submissions, portal/email evidence and e
 
 ## Minimum completeness
 
-The 10-business-day target starts when the minimum dataset required by the agreed entitlement family is complete enough to perform the contracted scan.
+The **10 business days** target starts when the minimum dataset required by the agreed entitlement family is complete enough to perform the contracted scan.
 
 AERVIND can begin intake/triage with partial material, but material gaps remain explicit and may block claim-ready release.
 
