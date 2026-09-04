@@ -14,6 +14,7 @@ store.createCase(b, { case_id: 'CASE-A1', customer_id: 'CUSTOMER-B', project_id:
 assert.equal(store.listCases(a).length, 1);
 assert.equal(store.listCases(b).length, 2);
 assert.equal(store.getCase(a, 'CASE-A1').project_id, 'PA');
+assert.equal(store.getCase(a, 'CASE-A1')._version, 1);
 assert.equal(store.getCase(b, 'CASE-A1').project_id, 'PB-SAME-ID');
 assert.notEqual(store.getCase(a, 'CASE-A1').project_id, store.getCase(b, 'CASE-A1').project_id);
 assert.throws(() => store.getCase(a, 'CASE-B1'), /CASE_NOT_FOUND/);
@@ -21,9 +22,19 @@ assert.throws(() => store.createCase(a, { case_id: 'CASE-X', customer_id: 'CUSTO
 assert.throws(() => store.createCase(a, { case_id: 'CASE-A1', customer_id: 'CUSTOMER-A' }), /CASE_ID_EXISTS/);
 assert.throws(() => store.getCase(null, 'CASE-A1'), /AUTH_REQUIRED/);
 
+const updated = store.updateCase(a, 'CASE-A1', current => ({ ...current, project_name: 'Project Alpha', next_action: 'Verify Attachment FF' }), 1);
+assert.equal(updated._version, 2);
+assert.equal(updated.project_name, 'Project Alpha');
+assert.equal(store.getCase(a, 'CASE-A1').next_action, 'Verify Attachment FF');
+assert.throws(() => store.updateCase(a, 'CASE-A1', current => ({ ...current, next_action: 'stale overwrite' }), 1), /CASE_VERSION_CONFLICT/);
+assert.throws(() => store.updateCase(a, 'CASE-A1', current => ({ ...current, customer_id: 'CUSTOMER-B' }), 2), /CASE_IDENTITY_IMMUTABLE/);
+assert.throws(() => store.updateCase(a, 'CASE-A1', current => ({ ...current, case_id: 'OTHER' }), 2), /CASE_IDENTITY_IMMUTABLE/);
+assert.throws(() => store.updateCase(b, 'CASE-B1', null), /CASE_UPDATER_REQUIRED/);
+
 store.appendEvidence(a, 'CASE-A1', { document_id: 'DOC-1', sha256: 'sha256:doc1', locator: 'p1' });
 store.appendEvidence(b, 'CASE-A1', { document_id: 'DOC-B', sha256: 'sha256:docb', locator: 'pB' });
 assert.equal(store.getCase(a, 'CASE-A1').evidence.length, 1);
+assert.equal(store.getCase(a, 'CASE-A1')._version, 3);
 assert.equal(store.getCase(b, 'CASE-A1').evidence.length, 1);
 assert.equal(store.getCase(a, 'CASE-A1').evidence[0].document_id, 'DOC-1');
 assert.equal(store.getCase(b, 'CASE-A1').evidence[0].document_id, 'DOC-B');
@@ -40,6 +51,7 @@ assert.equal(state.version, 1);
 assert.equal(state.cases.length, 3);
 const restarted = CaseStore.fromState(state);
 assert.equal(restarted.getCase(a, 'CASE-A1').project_id, 'PA');
+assert.equal(restarted.getCase(a, 'CASE-A1')._version, 3);
 assert.equal(restarted.getCase(b, 'CASE-A1').project_id, 'PB-SAME-ID');
 assert.equal(restarted.getCase(a, 'CASE-A1').evidence[0].document_id, 'DOC-1');
 assert.equal(restarted.getCase(b, 'CASE-A1').evidence[0].document_id, 'DOC-B');
@@ -61,4 +73,4 @@ assert.equal(sameIdDifferentTenant.getCase({ customer_id: 'B' }, 'DUP').project_
 state.cases[0].project_id = 'STATE_TAMPER_AFTER_RESTORE';
 assert.equal(restarted.getCase(a, 'CASE-A1').project_id, 'PA');
 
-console.log('GRIDRECOVER case store security/restart: 29/29 PASS');
+console.log('GRIDRECOVER case store security/versioning/restart: 39/39 PASS');
