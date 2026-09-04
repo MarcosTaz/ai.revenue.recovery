@@ -6,7 +6,10 @@ from typing import Any
 
 
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
-_MARKDOWN_SPECIALS = re.compile(r"([\\`*_{}\[\]()#+.!|])")
+# Newlines/control characters are collapsed first. These remaining characters are
+# enough to neutralize inline links/images, emphasis, code and Markdown table cells
+# while preserving normal evidence references such as Lease.pdf#MR and dates.
+_MARKDOWN_SPECIALS = re.compile(r"([\\`*_\[\]|])")
 
 
 def markdown_plain_text(value: Any, default: str = "UNKNOWN") -> str:
@@ -14,8 +17,8 @@ def markdown_plain_text(value: Any, default: str = "UNKNOWN") -> str:
 
     External claim/report artifacts are Markdown, but values come from customer or
     operator-controlled evidence. Collapse control/newline characters, neutralize raw
-    HTML and escape Markdown punctuation so a value cannot create headings, links,
-    table columns, emphasis or other document structure.
+    HTML and escape structural Markdown punctuation so a value cannot create links,
+    emphasis, code, extra table columns or document sections.
     """
     if value is None:
         raw = default
