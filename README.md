@@ -8,20 +8,23 @@ Recovery-first software and assisted recovery operations for airline/lessee airc
 
 - Canonical brand: **AERVIND**
 - Product descriptor: **Aviation Lease Entitlement Recovery**
-- Preferred legal-company form: **AERVIND, Unipessoal Lda.**, subject to formal Portuguese company-name admissibility and incorporation.
-- Preferred primary domain: **aervind.com** (checked available on 2026-09-04; purchase not yet executed).
+- Initial legal supplier model: the operator's existing Portuguese individual-professional activity, using the operator's real legal name / tax identity and trading commercially as **AERVIND**.
+- Future scale vehicle: **AERVIND, Unipessoal Lda.**, only when revenue, liability, procurement or accounting complexity justifies incorporation.
+- Preferred primary domain: **aervind.com** (rechecked available on 2026-09-04 at USD 11.25/year; purchase not yet executed).
 
-Until incorporation is complete, do not represent AERVIND as an already registered Portuguese company or invent NIPC/VAT, registered office, banking, insurance or signatory facts.
+Do not represent AERVIND as an already incorporated company while it operates through the individual professional supplier. Contracts and invoices must preserve the legally required supplier name, tax number and address. Never invent NIPC/VAT, registered office, banking, insurance or signatory facts.
+
+See `docs/SOLE_TRADER_LAUNCH.md`.
 
 ## Current status
 
-**FIRST PAID PILOT READY — EXTERNAL EXECUTION GATE**
+**FIRST PAID PILOT READY — COMMERCIAL OUTREACH OPEN**
 
 The product is ready for a bounded, human-reviewed paid airline Recovery Scan. It is **not positioned as self-service enterprise SaaS** yet.
 
 Core product, recovery-truth controls, evidence lineage, claim workflow, synthetic E2E, buyer mapping, compliant channel strategy, TAP procurement preparation, capability statement and meeting-ready synthetic proof are complete for the first assisted engagement.
 
-The remaining gate is external, not architectural: incorporation/selection of the real supplier legal identity, truthful procurement declarations, an authorized signatory where required, and explicit approval to register/contact/submit through the selected airline channel.
+Company incorporation is **not** a global prerequisite for first revenue. The remaining first-sale gates are external and factual: verify that the operator's Portuguese individual-professional activity covers the service, use the real legal/tax supplier identity, apply the correct customer-specific invoicing/VAT treatment, satisfy any buyer-specific procurement requirements, and obtain explicit approval for external registration/contact/submission side effects where required.
 
 Canonical external milestone: GitHub issue **#15 — FIRST PAID AIRLINE PILOT — external execution gate**.
 
@@ -107,11 +110,13 @@ python -m unittest discover -s tests -v
 
 ## First commercial execution queue
 
-1. **TAP Air Portugal** — preferred first reference; supplier onboarding / SAP Ariba path prepared.
+1. **TAP Air Portugal** — preferred reference account; supplier onboarding / SAP Ariba path prepared, but live supplier-type acceptance must be verified before submission.
 2. **Norwegian** — CFO + Finance, Control & Fleet; direct professional route and corporate B2B routing mapped.
 3. **Icelandair Group** — CFO + Technical & Maintenance / aircraft-leasing ownership mapped.
 4. **Wizz Air** — high-value, harder-sale account; CFO + procurement/supply-chain route; IR excluded for cold commercial.
 5. **airBaltic** — monitor/qualify rather than lead the first paid reference.
+
+The first actual paid client does **not** need to be TAP. Prefer the first qualified airline/operator that accepts a bounded Recovery Scan and can contract with the real initial supplier model without unnecessary overhead.
 
 No target signal is evidence that an airline has missed claims.
 
@@ -144,12 +149,15 @@ First-reference / procurement:
 - `docs/PROCUREMENT_READINESS.md`
 - `docs/TAP_SYNTHETIC_DEMO.md`
 - `docs/BRAND_AND_ENTITY.md`
+- `docs/SOLE_TRADER_LAUNCH.md`
 - `ops/CONTACT_ROUTES.csv`
 - `ops/OUTBOUND_QUEUE.csv`
 
 ## External execution boundary
 
-Do not fabricate or infer formal supplier facts such as registered legal entity status, registered address, VAT/tax number, company registration number, banking details, insurance, certifications, beneficial ownership or authorized signatory.
+Do not fabricate or infer formal supplier facts such as incorporated-company status, registered address, VAT/tax number, company registration number, banking details, insurance, certifications, beneficial ownership or authorized signatory.
+
+When operating through the initial individual-professional model, do not hide or replace the legal supplier identity with the AERVIND brand on documents that require the legal name/tax identity.
 
 Do not use guessed buyer emails or prohibited cold-commercial infrastructure. Under the current setup, Primitive is not the AERVIND cold-prospecting channel.
 
@@ -157,6 +165,6 @@ Do not represent AERVIND as legal counsel, statutory auditor, MRO or airworthine
 
 ## Boundary of the current milestone
 
-The assisted product can now be sold and executed as a bounded paid pilot. The next proof is **real airline contract/evidence data and a paid cohort**, not another internal architecture cycle.
+The assisted product can now be marketed and sold as a bounded paid pilot. The next proof is **real airline contract/evidence data and a paid cohort**, not another internal architecture cycle.
 
-Enterprise SaaS capabilities such as tenant administration, SSO, deep ERP/M&E integrations, customer self-service, automated multi-tenant billing and formal external security assurance remain post-pilot scale items unless a real buyer makes one a prerequisite.
+Enterprise SaaS capabilities such as tenant administration, SSO, deep ERP/M&E integrations, customer self-service, automated multi-tenant billing, formal external security assurance and Portuguese company incorporation remain post-pilot / buyer-driven scale items unless a real buyer makes one a prerequisite.
