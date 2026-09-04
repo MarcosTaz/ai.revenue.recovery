@@ -37,14 +37,15 @@ class AervindGovernanceRuntimeTests(unittest.TestCase):
         self.assertIn("host", lowered)
         self.assertIn("origin", lowered)
         self.assertIn("2 mb", lowered)
-        self.assertIn("does not currently claim", lowered)
+        self.assertIn("claims we do not make", lowered)
         self.assertIn("soc 2", lowered)
         self.assertIn("iso 27001", lowered)
 
     def test_launch_truth_does_not_claim_official_domain_or_mail_live(self):
-        self.assertIn("technical temporary host", self.launch)
-        self.assertIn("must **not** be described as live or verified", self.launch)
-        self.assertIn("Attach **aervind.com**", self.launch)
+        lowered = self.launch.lower()
+        self.assertIn("technical temporary host", lowered)
+        self.assertIn("must therefore **not** be described as live or verified", lowered)
+        self.assertIn("attach **aervind.com**", lowered)
 
     def test_temporary_host_is_noindex_until_custom_domain_launch(self):
         headers = []
