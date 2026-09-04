@@ -1,4 +1,4 @@
-# Aviation Recovery — Assisted Pilot Scope of Work
+# AERVIND — Assisted Pilot Scope of Work
 
 ## 1. Purpose
 
@@ -72,9 +72,9 @@ Customer provides:
 - review and approval before any claim package is sent externally;
 - settlement/payment evidence required to verify recovered value.
 
-## 5. Aviation Recovery responsibilities
+## 5. AERVIND responsibilities
 
-Aviation Recovery will:
+AERVIND will:
 
 - preserve source lineage for material inputs;
 - make unknown or missing information explicit rather than infer favorable terms;
@@ -130,7 +130,13 @@ A pilot is accepted when:
 
 The pilot can be successful even when no claim is ultimately recoverable if the work provides evidence-based assurance that the scoped entitlement population has been reconciled and explains why candidates fail.
 
-## 9. Scale decision
+## 9. Supplier identity during launch
+
+AERVIND is the commercial brand. Until a separate company is incorporated, the legal supplier named in the signed proposal/SOW and invoice must be the real Portuguese individual-professional supplier, using the actual legal name, tax identity and professional address.
+
+If a customer requires a registered company as a procurement condition, that requirement must be resolved before signature; no corporate identity may be invented or implied.
+
+## 10. Scale decision
 
 At closeout the customer can choose to:
 
