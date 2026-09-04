@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="GRIDRECOVER — evidence-first interconnection capital recovery assurance" />
+  <title>GRIDRECOVER</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">G</div>
+        <div>
+          <strong>GRIDRECOVER</strong>
+          <span>Interconnection Capital Assurance</span>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <button class="nav-item active" data-view="command"><span>⌁</span>Command Center</button>
+        <button class="nav-item" data-view="cases"><span>▦</span>Cases</button>
+        <button class="nav-item" data-view="evidence"><span>◇</span>Evidence</button>
+        <button class="nav-item" data-view="exceptions"><span>△</span>Exceptions</button>
+        <button class="nav-item" data-view="readiness"><span>✓</span>Readiness</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="security-chip"><span class="pulse"></span> Evidence-first workspace</div>
+        <button id="disconnectBtn" class="ghost-button">Disconnect session</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">MISO 2026 · Network Upgrade Repayment</p>
+          <h1 id="pageTitle">Command Center</h1>
+        </div>
+        <div class="topbar-actions">
+          <div class="truth-chip" id="truthChip">Commercial truth · unverified</div>
+          <button class="primary-button" id="newCaseBtn">+ New case</button>
+        </div>
+      </header>
+
+      <section id="view-command" class="view active" aria-labelledby="pageTitle">
+        <div class="metric-grid" id="metricGrid">
+          <article class="metric-card"><span>Active cases</span><strong id="metricCases">—</strong><small>tenant scoped</small></article>
+          <article class="metric-card"><span>Candidate cash</span><strong id="metricCandidate">—</strong><small>not recovered</small></article>
+          <article class="metric-card"><span>Verified recovered cash</span><strong id="metricRecovered">—</strong><small>payment evidence required</small></article>
+          <article class="metric-card"><span>Critical exceptions</span><strong id="metricCritical">—</strong><small>deadline or source drift</small></article>
+        </div>
+
+        <div class="content-grid">
+          <article class="panel wide">
+            <div class="panel-head">
+              <div><p class="eyebrow">Priority queue</p><h2>Where capital needs attention</h2></div>
+              <button class="text-button" data-view-jump="cases">Open all cases →</button>
+            </div>
+            <div id="priorityTable" class="table-wrap"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><p class="eyebrow">Integrity</p><h2>Truth boundaries</h2></div></div>
+            <ul class="truth-list">
+              <li><span class="ok-dot"></span>Candidate ≠ recovered cash</li>
+              <li><span class="ok-dot"></span>Security release ≠ cash</li>
+              <li><span class="ok-dot"></span>Approval ≠ payment</li>
+              <li><span class="ok-dot"></span>Source drift invalidates findings</li>
+              <li><span class="ok-dot"></span>Four-eyes review before action</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-cases" class="view">
+        <div class="panel">
+          <div class="panel-head">
+            <div><p class="eyebrow">Portfolio</p><h2>Cases</h2></div>
+            <div class="search-wrap"><input id="caseSearch" type="search" placeholder="Search project, queue or case…" autocomplete="off" /></div>
+          </div>
+          <div id="casesTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <section id="view-evidence" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Evidence vault</p><h2>Source-bound documents</h2></div></div>
+          <div id="evidenceOverview" class="empty-state">Select a case to inspect source documents and provenance.</div>
+        </div>
+      </section>
+
+      <section id="view-exceptions" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Exceptions</p><h2>Deadline & source integrity</h2></div></div>
+          <div id="exceptionsTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <section id="view-readiness" class="view">
+        <div class="readiness-grid">
+          <article class="panel">
+            <div class="panel-head"><div><p class="eyebrow">Product gate</p><h2>Technical readiness</h2></div></div>
+            <div class="readiness-stack">
+              <div class="readiness-row"><span>Strong role-based auth</span><b>Required</b></div>
+              <div class="readiness-row"><span>Durable mutations</span><b>Required</b></div>
+              <div class="readiness-row"><span>Encrypted document vault</span><b>Required</b></div>
+              <div class="readiness-row"><span>Source drift invalidation</span><b>Required</b></div>
+              <div class="readiness-row"><span>Incident response</span><b>Required</b></div>
+              <div class="readiness-row"><span>Exact-head CI</span><b>Required</b></div>
+            </div>
+          </article>
+          <article class="panel warning-panel">
+            <div class="panel-head"><div><p class="eyebrow">Commercial gate</p><h2>Not inferred from software</h2></div></div>
+            <p>Customer pilot readiness requires verified business identity, support route, privacy/data-processing terms, engagement terms and pricing. Technical readiness never equals market validation.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="sessionDialog" class="dialog" aria-labelledby="sessionTitle">
+    <form method="dialog" id="sessionForm">
+      <p class="eyebrow">Secure session</p>
+      <h2 id="sessionTitle">Connect to GRIDRECOVER</h2>
+      <p class="muted">Enter a temporary access token. It is kept in memory only and is never written to localStorage or sessionStorage.</p>
+      <label>Access token<input id="tokenInput" type="password" autocomplete="off" spellcheck="false" required /></label>
+      <div id="sessionError" class="form-error" role="alert"></div>
+      <button class="primary-button full" value="default">Connect</button>
+    </form>
+  </dialog>
+
+  <dialog id="caseDialog" class="dialog wide-dialog" aria-labelledby="caseDialogTitle">
+    <div class="dialog-head">
+      <div><p class="eyebrow">Case workspace</p><h2 id="caseDialogTitle">Case</h2></div>
+      <button class="icon-button" id="closeCaseDialog" aria-label="Close">×</button>
+    </div>
+    <div id="caseDetail" class="case-detail"></div>
+  </dialog>
+
+  <dialog id="newCaseDialog" class="dialog" aria-labelledby="newCaseTitle">
+    <form method="dialog" id="newCaseForm">
+      <p class="eyebrow">New recovery workspace</p>
+      <h2 id="newCaseTitle">Create case</h2>
+      <div class="form-grid">
+        <label>Case ID<input name="case_id" required maxlength="80" /></label>
+        <label>Project ID<input name="project_id" required maxlength="120" /></label>
+        <label class="full-span">Project name<input name="project_name" required maxlength="200" /></label>
+        <label>Transmission provider<input name="transmission_provider" value="MISO" maxlength="120" /></label>
+        <label>Queue / interconnection ID<input name="queue_or_interconnection_id" maxlength="120" /></label>
+      </div>
+      <div id="newCaseError" class="form-error" role="alert"></div>
+      <div class="dialog-actions"><button type="button" class="ghost-button" id="cancelNewCase">Cancel</button><button class="primary-button" value="default">Create case</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
