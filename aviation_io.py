@@ -13,8 +13,8 @@ from aviation_recovery import (
     Formula,
     EvaluationResult,
     evaluate_portfolio,
-    summarize_recovery,
 )
+from recovery_truth import summarize_recovery_truth
 
 
 def _date(value: str) -> date:
@@ -93,6 +93,13 @@ def serialize_result(result: EvaluationResult) -> dict[str, Any]:
     }
 
 
+def _jsonify_summary(summary: Mapping[str, object]) -> dict[str, object]:
+    rendered: dict[str, object] = {}
+    for key, value in summary.items():
+        rendered[key] = str(value) if isinstance(value, Decimal) else value
+    return rendered
+
+
 def evaluate_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     rules = [parse_rule(item) for item in payload.get("rules", [])]
     claims = [parse_claim(item) for item in payload.get("claims", [])]
@@ -100,6 +107,10 @@ def evaluate_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
 
     if len(rule_map) != len(rules):
         raise ValueError("duplicate rule_id in input")
+
+    claim_ids = [claim.claim_id for claim in claims]
+    if len(set(claim_ids)) != len(claim_ids):
+        raise ValueError("duplicate claim_id in input")
 
     results = evaluate_portfolio(rule_map, claims)
     result_map = {result.claim_id: result for result in results}
@@ -119,14 +130,10 @@ def evaluate_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             continue
         dossiers.append(build_internal_review_dossier(rule, claim, result))
 
-    summary = summarize_recovery(results)
-    summary_json = {
-        **summary,
-        "net_recoverable": str(summary["net_recoverable"]),
-    }
+    summary = summarize_recovery_truth(results)
 
     return {
-        "summary": summary_json,
+        "summary": _jsonify_summary(summary),
         "results": [serialize_result(result) for result in results],
         "dossiers": dossiers,
     }
