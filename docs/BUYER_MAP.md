@@ -23,12 +23,12 @@ The default buying motion is:
 
 **Economic buyer**
 
-- Gonçalo Pires — Chief Financial Officer.
+- Renato Inácio — Chief Financial Officer since February 2026. Before becoming CFO he was TAP's Senior Director of Corporate Finance and Risk; earlier he was a Deloitte Financial Advisory partner and later worked in private equity.
 
 **Operational co-owner**
 
 - target current COO / Maintenance & Engineering leadership after role verification;
-- avoid relying on stale fleet-role data.
+- avoid relying on stale fleet-role data because TAP's operations leadership has recently changed.
 
 **Public route**
 
