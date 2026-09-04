@@ -23,7 +23,6 @@ def _workflow_index(
 ) -> dict[str, ClaimRecord]:
     result_by_id = {str(item.get("claim_id", "")): item for item in results}
     indexed: dict[str, ClaimRecord] = {}
-
     for record in workflow_records:
         if record.claim_id in indexed:
             raise ValueError(f"duplicate workflow record for claim {record.claim_id}")
@@ -34,34 +33,26 @@ def _workflow_index(
             raise ValueError("workflow settlement currency differs from evaluation summary currency")
         if record.asserted_recovery_amount < 0 or record.verified_settled_amount < 0:
             raise ValueError("workflow amounts cannot be negative")
-
         evaluated_amount = _decimal(result.get("net_recoverable", "0"))
         if record.asserted_recovery_amount != evaluated_amount:
-            raise ValueError(
-                f"workflow asserted amount differs from current evaluation for {record.claim_id}"
-            )
+            raise ValueError(f"workflow asserted amount differs from current evaluation for {record.claim_id}")
         indexed[record.claim_id] = record
-
     return indexed
 
 
 def summarize_management_truth(
-    evaluated: Mapping[str, Any],
-    workflow_records: Sequence[ClaimRecord] = (),
+    evaluated: Mapping[str, Any], workflow_records: Sequence[ClaimRecord] = ()
 ) -> dict[str, object]:
     summary = evaluated.get("summary", {})
     currency = str(summary.get("currency", "UNKNOWN"))
     results = list(evaluated.get("results", []))
     workflows = _workflow_index(results, workflow_records, currency)
-
     review_pipeline = _decimal(summary.get("review_required_pipeline", "0"))
     blocked_potential = _decimal(summary.get("blocked_potential", "0"))
-
     claim_ready_unsubmitted = Decimal("0")
     external_unsettled = Decimal("0")
     workflow_review_or_rejected = Decimal("0")
     settled_value = Decimal("0")
-
     external_unsettled_states = {
         ClaimLifecycle.SUBMITTED,
         ClaimLifecycle.ACKNOWLEDGED,
@@ -73,15 +64,12 @@ def summarize_management_truth(
         ClaimLifecycle.REVIEWING,
         ClaimLifecycle.REJECTED,
     }
-
     for result in results:
         if str(result.get("status", "")) != "claim_ready":
             continue
-
         claim_id = str(result.get("claim_id", ""))
         amount = _decimal(result.get("net_recoverable", "0"))
         workflow = workflows.get(claim_id)
-
         if workflow is None or workflow.lifecycle == ClaimLifecycle.CLAIM_READY:
             claim_ready_unsubmitted += amount
         elif workflow.lifecycle in external_unsettled_states:
@@ -90,7 +78,6 @@ def summarize_management_truth(
             workflow_review_or_rejected += workflow.asserted_recovery_amount
         elif workflow.lifecycle == ClaimLifecycle.SETTLED:
             settled_value += workflow.verified_settled_amount
-
     return {
         "currency": currency,
         "verified_settled_recovery": settled_value,
@@ -104,22 +91,17 @@ def summarize_management_truth(
 
 
 def jsonify_management_truth(summary: Mapping[str, object]) -> dict[str, object]:
-    return {
-        key: str(value) if isinstance(value, Decimal) else value
-        for key, value in summary.items()
-    }
+    return {key: str(value) if isinstance(value, Decimal) else value for key, value in summary.items()}
 
 
 def render_executive_markdown(
-    evaluated: Mapping[str, Any],
-    workflow_records: Sequence[ClaimRecord] = (),
+    evaluated: Mapping[str, Any], workflow_records: Sequence[ClaimRecord] = ()
 ) -> str:
     base_summary = evaluated.get("summary", {})
     currency = str(base_summary.get("currency", "UNKNOWN"))
     results = list(evaluated.get("results", []))
     workflows = _workflow_index(results, workflow_records, currency)
     management = summarize_management_truth(evaluated, workflow_records)
-
     claim_ready_unsubmitted = _decimal(management["claim_ready_not_submitted"])
     external_unsettled = _decimal(management["external_unsettled"])
     workflow_review_or_rejected = _decimal(management["workflow_review_or_rejected"])
@@ -166,11 +148,10 @@ def render_executive_markdown(
         claim_id_raw = str(result.get("claim_id", "UNKNOWN"))
         claim_id = markdown_plain_text(claim_id_raw)
         workflow = workflows.get(claim_id_raw)
-        workflow_state = markdown_plain_text(
-            workflow.lifecycle.value if workflow is not None else "—",
-            "—",
-        )
-        status = markdown_plain_text(result.get("status", "unknown"), "unknown")
+        # These two values are controlled by AERVIND engine enums/state logic rather
+        # than customer free text, so keep their canonical machine spelling literal.
+        workflow_state = workflow.lifecycle.value if workflow is not None else "—"
+        status = str(result.get("status", "unknown"))
         result_currency = str(result.get("currency", currency))
         lines.append(
             f"| {claim_id} | {status} | {workflow_state} | "
@@ -194,16 +175,14 @@ def render_executive_markdown(
                 lines.append(f"- {markdown_plain_text(warning, 'unknown')}: {count}")
             lines.append("")
 
-    lines.extend(
-        [
-            "## Management interpretation",
-            "",
-            "- Prioritize claim-ready, not-yet-submitted items by deadline and value.",
-            "- Track submitted, acknowledged, disputed and approved claims separately until economic settlement evidence exists.",
-            "- Resolve evidence gaps on blocked high-value candidates before expanding scope.",
-            "- Re-open rejected/disputed items into review rather than silently retaining them as claim-ready.",
-            "- Never combine blocked potential or unsettled counterparty value with verified recovery.",
-            "",
-        ]
-    )
+    lines.extend([
+        "## Management interpretation",
+        "",
+        "- Prioritize claim-ready, not-yet-submitted items by deadline and value.",
+        "- Track submitted, acknowledged, disputed and approved claims separately until economic settlement evidence exists.",
+        "- Resolve evidence gaps on blocked high-value candidates before expanding scope.",
+        "- Re-open rejected/disputed items into review rather than silently retaining them as claim-ready.",
+        "- Never combine blocked potential or unsettled counterparty value with verified recovery.",
+        "",
+    ])
     return "\n".join(lines)
