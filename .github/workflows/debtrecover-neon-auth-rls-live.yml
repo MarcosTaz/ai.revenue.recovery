@@ -30,13 +30,19 @@ jobs:
           assert p.get('marker') == 'DEBTRECOVER_AUTH_RLS_V045', p
           assert p.get('synthetic') is True, p
           assert p.get('pass') is True, p
+          assert p.get('signed_session_cookie_present') is True, p
           assert p.get('token_present') is True, p
           assert p.get('signature_verified') is True, p
           assert p.get('alg') == 'EdDSA', p
-          assert p.get('sub_matches_user_a') is True, p
+          assert p.get('authenticated_sub') == '7f05676f-7e8f-4262-ae70-c681094e2491', p
           assert p.get('role') == 'authenticated', p
+          assert p.get('tenant_claim_present') is False, p
+          assert p.get('roles_claim_present') is False, p
+          assert p.get('data_api_get_status') == 200, p
           assert p.get('visible_org_a_only') is True, p
           assert p.get('visible_external_refs') == ['SYN-A'], p
+          assert p.get('cross_tenant_insert_status') == 403, p
           assert p.get('cross_tenant_insert_rejected') is True, p
+          assert p.get('provider_signout_status') == 200, p
           print('DEBTRECOVER_NEON_AUTHENTICATED_RLS=PASS')
           PY
