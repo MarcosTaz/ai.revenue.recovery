@@ -12,7 +12,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,5 +24,38 @@ jobs:
         run: |
           node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgia-network-upgrade-repayment.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/ferc-lgip-cluster-withdrawal-capital.json','utf8'))"
-      - name: Run full GRIDRECOVER deterministic + E2E suite
-        run: cd gridrecover && npm test
+          node -e "JSON.parse(require('fs').readFileSync('gridrecover/rules/miso-gia-network-upgrade-repayment-2026.json','utf8'))"
+      - name: Economics core
+        run: node gridrecover/test/gridrecover-core.test.js
+      - name: Project provenance model
+        run: node gridrecover/test/project-model.test.js
+      - name: Cluster withdrawal engine
+        run: node gridrecover/test/cluster-withdrawal.test.js
+      - name: Synthetic case pack
+        run: node gridrecover/test/synthetic-case-pack.test.js
+      - name: Dossier truth boundary
+        run: node gridrecover/test/dossier.test.js
+      - name: Tenant case store
+        run: node gridrecover/test/case-store.test.js
+      - name: Audit chain
+        run: node gridrecover/test/audit-log.test.js
+      - name: Pilot admission gate
+        run: node gridrecover/test/pilot-admission.test.js
+      - name: Web API and encrypted document upload
+        run: node gridrecover/test/web-api.test.js
+      - name: Encrypted snapshot
+        run: node gridrecover/test/encrypted-snapshot.test.js
+      - name: Operational restart
+        run: node gridrecover/test/state-manager.test.js
+      - name: Document provenance extraction
+        run: node gridrecover/test/document-ingest.test.js
+      - name: MISO applicability
+        run: node gridrecover/test/miso-applicability.test.js
+      - name: MISO assisted case E2E
+        run: node gridrecover/test/miso-case-runner.test.js
+      - name: Tenant document vault
+        run: node gridrecover/test/document-vault.test.js
+      - name: Mutation rollback transaction
+        run: node gridrecover/test/mutation-transaction.test.js
+      - name: Durable API rollback E2E
+        run: node gridrecover/test/web-api-durability.test.js
