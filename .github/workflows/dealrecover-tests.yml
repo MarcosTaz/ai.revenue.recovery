@@ -1,0 +1,162 @@
+name: DealRecover Release Gates
+
+on:
+  pull_request:
+    paths:
+      - 'dealrecover/**'
+      - '.github/workflows/dealrecover-tests.yml'
+  push:
+    branches:
+      - main
+      - 'dealrecover-release-*'
+    paths:
+      - 'dealrecover/**'
+      - '.github/workflows/dealrecover-tests.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dealrecover-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dealrecover_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d dealrecover_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+
+      - name: Verify and reconstruct managed runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUNTIME="$RUNNER_TEMP/dealrecover-runtime"
+          BUNDLE="$RUNNER_TEMP/dealrecover-runtime.tgz"
+          mkdir -p "$RUNTIME"
+          base64 -d dealrecover/managed-src-v0.7.2.tgz.b64 > "$BUNDLE"
+          echo "1016ebb297cd0efe14bc80f1e0e2b0e759fe55e7c393428b5ada92b1bb646673  $BUNDLE" | sha256sum -c -
+          tar -xzf "$BUNDLE" -C "$RUNTIME"
+          test -f "$RUNTIME/managed-server.mjs"
+          test -f "$RUNTIME/src/ppa.js"
+          test -f "$RUNTIME/src/externalIdentity.js"
+          test -f "$RUNTIME/src/remoteDocumentVault.js"
+          cp dealrecover/package.json "$RUNTIME/package.json"
+          cp dealrecover/src/*.js "$RUNTIME/src/"
+          cd "$RUNTIME"
+          npm install --omit=dev --ignore-scripts --no-audit --no-fund
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -type f \( -name '*.js' -o -name '*.mjs' \) -print0)
+
+      - name: Provision least-privilege platform roles
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U postgres -d dealrecover_ci -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE dealrecover_rls NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+          CREATE ROLE dealrecover_runtime LOGIN PASSWORD 'ci-runtime' NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+          GRANT dealrecover_rls TO dealrecover_runtime;
+          SQL
+
+      - name: Apply canonical database baseline
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U postgres -d dealrecover_ci -v ON_ERROR_STOP=1 -f dealrecover/db/001_baseline.sql
+          psql -h 127.0.0.1 -U postgres -d dealrecover_ci -v ON_ERROR_STOP=1 -f dealrecover/db/verify.sql
+
+      - name: Seed synthetic identities only
+        shell: bash
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          TOKEN_A="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          TOKEN_B="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+          HASH_A="$(printf '%s' "$TOKEN_A" | sha256sum | awk '{print $1}')"
+          HASH_B="$(printf '%s' "$TOKEN_B" | sha256sum | awk '{print $1}')"
+          TENANT_A="78020070-e6ab-4c52-8157-32739c7fbf5d"
+          TENANT_B="54001a6e-77bb-49cb-8fe8-6443b29e6d33"
+          USER_A="75160cb1-8593-45a4-935f-58ee552ef301"
+          USER_B="2a81dbe6-e90a-42bd-a50c-151f3458cd2e"
+          psql -h 127.0.0.1 -U postgres -d dealrecover_ci -v ON_ERROR_STOP=1 \
+            -v tenant_a="$TENANT_A" -v tenant_b="$TENANT_B" -v user_a="$USER_A" -v user_b="$USER_B" -v hash_a="$HASH_A" -v hash_b="$HASH_B" <<'SQL'
+          INSERT INTO public.tenants(id,name) VALUES(:'tenant_a','Synthetic Tenant A'),(:'tenant_b','Synthetic Tenant B');
+          INSERT INTO public.memberships(tenant_id,user_id,role) VALUES(:'tenant_a',:'user_a','OWNER'),(:'tenant_b',:'user_b','OWNER');
+          INSERT INTO public.api_sessions(tenant_id,token_hash,user_id,expires_at,verification_ref)
+          VALUES(:'tenant_a',:'hash_a',:'user_a',now()+interval '1 day','ci-verification-a'),(:'tenant_b',:'hash_b',:'user_b',now()+interval '1 day','ci-verification-b');
+          SQL
+          {
+            echo "TOKEN_A=$TOKEN_A"
+            echo "TOKEN_B=$TOKEN_B"
+            echo "TENANT_A=$TENANT_A"
+            echo "TENANT_B=$TENANT_B"
+          } >> "$GITHUB_ENV"
+
+      - name: Start managed runtime as restricted login
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUNTIME="$RUNNER_TEMP/dealrecover-runtime"
+          export DATABASE_URL='postgresql://dealrecover_runtime:ci-runtime@127.0.0.1:5432/dealrecover_ci?sslmode=disable'
+          export DEALRECOVER_DB_RUNTIME_ROLE='dealrecover_rls'
+          export DEALRECOVER_DEPLOY_MODE='managed'
+          export DEALRECOVER_MANAGED_BOOTSTRAP_MODULE='./src/managedBootstrap.js'
+          export DEALRECOVER_VAULT_KEY_B64="$(openssl rand -base64 32 | tr -d '\n')"
+          export NODE_ENV='production'
+          export HOST='127.0.0.1'
+          export PORT='3000'
+          cd "$RUNTIME"
+          node managed-server.mjs > "$RUNNER_TEMP/dealrecover-app.log" 2>&1 &
+          echo "APP_PID=$!" >> "$GITHUB_ENV"
+          ready=0
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/ready >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat "$RUNNER_TEMP/dealrecover-app.log"; exit 1; fi
+          curl -fsS http://127.0.0.1:3000/health
+          curl -fsS http://127.0.0.1:3000/ready
+
+      - name: Run 32-gate customer E2E
+        env:
+          TARGET_BASE: http://127.0.0.1:3000
+          E2E_ONESHOT: '1'
+        run: node dealrecover/e2e/e2e.mjs
+
+      - name: Build production Docker image
+        run: docker build --pull -t dealrecover:${{ github.sha }} dealrecover
+
+      - name: Stop runtime
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "${APP_PID:-}" ]; then kill "$APP_PID" 2>/dev/null || true; fi
+          if [ -f "$RUNNER_TEMP/dealrecover-app.log" ]; then tail -n 200 "$RUNNER_TEMP/dealrecover-app.log"; fi
