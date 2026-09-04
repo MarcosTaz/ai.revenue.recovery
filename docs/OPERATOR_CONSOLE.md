@@ -2,19 +2,19 @@
 
 Status: **READY FOR ASSISTED PILOT USE**
 
-The Operator Console is a thin browser interface over the existing deterministic AERVIND recovery engine. It is intentionally an **operator tool**, not a customer-facing multi-tenant SaaS product.
+The Operator Console is a thin browser interface over the deterministic AERVIND recovery engine. It is intentionally an **operator tool**, not a customer-facing multi-tenant SaaS product.
 
 ## Purpose
 
 The console makes the first paid Recovery Scan operational without requiring a customer to adopt new software or grant access to ERP, M&E, lease-management or banking systems.
 
-The customer supplies a bounded exported evidence cohort. AERVIND loads the normalized JSON representation, evaluates the entitlement rules, exposes blockers and lineage gaps, and produces a candidate register plus executive report.
+The customer supplies a bounded exported evidence cohort. AERVIND loads the normalized JSON representation, evaluates the entitlement rules, exposes blockers and lineage gaps, produces a candidate register and executive report, and can generate an external-ready claim package for an eligible candidate after an explicit human release confirmation.
 
 Canonical chain:
 
-`lease rule -> maintenance event -> financial inputs -> evidence -> entitlement calculation -> blocker/review gate -> candidate register -> executive report`
+`lease rule -> maintenance event -> financial inputs -> evidence -> entitlement calculation -> blocker/review gate -> candidate register -> human release -> claim package`
 
-External claim submission remains a separate human-approved step.
+Package generation is **not submission**. External sending/submission remains a separate customer-approved human action.
 
 ## Start
 
@@ -44,22 +44,47 @@ Do not bind the assisted console to a public interface unless an engagement-spec
 2. Evaluate the cohort.
 3. Review the recovery-truth summary.
 4. Inspect each candidate's blockers, warnings, evidence references, lineage gaps and calculation trace.
-5. Export the evaluated JSON and executive Markdown report.
+5. Export the evaluated JSON and executive Markdown report where useful.
 6. Resolve evidence gaps or contract-review questions outside the console.
 7. Re-run the cohort after controlled changes.
-8. Externalize only claim-ready items that pass the existing dossier/human-release gates.
-9. Track submission, approval and settlement in the canonical claim workflow.
+8. For a `claim_ready` candidate, complete human review and use **Generate claim package · does not submit**.
+9. Confirm the explicit human release prompt.
+10. The server re-evaluates the current cohort and re-checks claim-ready, blocker and lineage gates before rendering the package.
+11. Review the downloaded Markdown package before any external use.
+12. Any actual submission, counterparty response, approval and settlement remains in the canonical claim workflow.
+
+## Human release gate
+
+Claim-package generation has two independent protections:
+
+- the browser requires an explicit human confirmation; and
+- the server re-evaluates the supplied cohort from scratch rather than trusting a stale browser result.
+
+The package endpoint rejects:
+
+- missing human confirmation;
+- a candidate that no longer exists in the current cohort;
+- any status other than `claim_ready`;
+- unresolved blockers; or
+- unresolved source-lineage gaps.
+
+A successful response is explicitly marked `submission_status: not_submitted`.
+
+The console contains **no endpoint or button that sends a package to a lessor, airline, counterparty, mailbox or external system**.
 
 ## What the console does
 
 - evaluates the same `aviation_io.evaluate_payload` path used by the CLI;
 - preserves deterministic calculation and recovery-truth rules;
 - exposes claim-ready, review-required and blocked values separately;
-- renders a sortable candidate register;
+- renders a candidate register;
 - opens a detailed review view per candidate;
 - exposes evidence IDs, source-lineage gaps and calculation trace;
+- invalidates displayed results if the source cohort changes;
 - exports the evaluated payload;
 - renders/exports the executive recovery report;
+- generates a human-gated external-ready claim package for eligible candidates;
+- revalidates all economic and lineage gates at package-generation time;
 - includes a synthetic example loader for safe demonstrations.
 
 ## What the console deliberately does not do
@@ -71,19 +96,20 @@ Do not bind the assisted console to a public interface unless an engagement-spec
 - no automatic document extraction;
 - no automatic legal interpretation;
 - no external claim submission;
+- no automatic email/transmission of packages;
 - no automatic settlement recognition;
 - no direct ERP/M&E/bank access;
 - no hidden background synchronization.
 
-Those are not accidental omissions. They keep the first paid engagement bounded and reduce customer security/procurement friction until real buyer evidence justifies scale work.
+Those are deliberate boundaries. They keep the first paid engagement bounded and reduce customer security/procurement friction until real buyer evidence justifies scale work.
 
 ## Data handling
 
 The standard server binds to `127.0.0.1` and processes request payloads in memory. It does not write submitted customer payloads to disk and sends `Cache-Control: no-store` on responses.
 
-The operator remains responsible for the approved engagement-specific storage/transfer method for source documents and normalized cohorts. Do not treat the console itself as a document repository.
+The operator remains responsible for the approved engagement-specific storage/transfer method for source documents, normalized cohorts and downloaded outputs. Do not treat the console itself as a document repository.
 
-Request bodies are limited to 2 MB. Large source documents should remain in the approved evidence repository and be represented by controlled source references in the normalized payload rather than embedded in the JSON.
+Request bodies are limited to 2 MB. Large source documents should remain in the approved evidence repository and be represented by controlled source references in the normalized payload rather than embedded in JSON.
 
 ## Recovery truth
 
@@ -93,6 +119,7 @@ Claim-ready value is not recovered cash.
 Review-required value is not recovered cash.
 Blocked potential is not recovered cash.
 Submitted or approved value is not recovered cash.
+A generated claim package is not recovered cash.
 
 Only evidence-backed economic settlement may be reported as recovered.
 
@@ -112,7 +139,8 @@ Before using the console on real airline data:
 - the governing lease/amendment set is available;
 - an accountable human reviewer is named;
 - no public network exposure is introduced by convenience;
-- exports are stored only in the agreed engagement location.
+- exports are stored only in the agreed engagement location;
+- external claim use remains customer-approved.
 
 ## Scale trigger
 
