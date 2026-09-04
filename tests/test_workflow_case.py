@@ -251,6 +251,10 @@ class WorkflowCaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unsupported workflow schema_version"):
             parse_bundle({"schema_version": 1, "records": [], "events": [], "artifacts": []})
 
+    def test_unversioned_workflow_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "schema_version is required"):
+            parse_bundle({"records": [], "events": [], "artifacts": []})
+
     def test_case_export_preserves_cohort_workflow_and_digest(self):
         bundle = self._to_reviewing()
         exported = build_case_export(
