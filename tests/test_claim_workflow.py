@@ -9,6 +9,7 @@ from claim_workflow import (
     SettlementEvidence,
     SettlementType,
     WorkflowError,
+    allowed_transitions,
     transition_claim,
 )
 
@@ -120,6 +121,63 @@ class ClaimWorkflowTests(unittest.TestCase):
                 settlement_evidence=evidence,
             )
 
+    def test_settlement_cannot_exceed_asserted_amount(self):
+        record = self._record(ClaimLifecycle.APPROVED)
+        evidence = SettlementEvidence(
+            settlement_type=SettlementType.CASH_RECEIPT,
+            amount=Decimal("900001"),
+            currency="USD",
+            reference="BANK-OVER",
+        )
+        with self.assertRaisesRegex(WorkflowError, "exceeds asserted"):
+            transition_claim(
+                record,
+                ClaimLifecycle.SETTLED,
+                occurred_at=NOW,
+                actor="finance@example.com",
+                reason="cash received",
+                settlement_evidence=evidence,
+            )
+
+    def test_unsettled_record_cannot_contain_settlement_value(self):
+        record = ClaimRecord(
+            claim_id="C-001",
+            lifecycle=ClaimLifecycle.APPROVED,
+            currency="USD",
+            asserted_recovery_amount=Decimal("900000"),
+            verified_settled_amount=Decimal("1"),
+        )
+        with self.assertRaisesRegex(WorkflowError, "unsettled"):
+            transition_claim(
+                record,
+                ClaimLifecycle.SETTLED,
+                occurred_at=NOW,
+                actor="finance@example.com",
+                reason="cash received",
+                settlement_evidence=SettlementEvidence(
+                    settlement_type=SettlementType.CASH_RECEIPT,
+                    amount=Decimal("900000"),
+                    currency="USD",
+                    reference="BANK-001",
+                ),
+            )
+
+    def test_settlement_evidence_rejected_on_non_settlement_transition(self):
+        with self.assertRaisesRegex(WorkflowError, "only for a settled transition"):
+            transition_claim(
+                self._record(ClaimLifecycle.SUBMITTED),
+                ClaimLifecycle.APPROVED,
+                occurred_at=NOW,
+                actor="claims@example.com",
+                reason="approved",
+                settlement_evidence=SettlementEvidence(
+                    settlement_type=SettlementType.CASH_RECEIPT,
+                    amount=Decimal("10"),
+                    currency="USD",
+                    reference="BANK-001",
+                ),
+            )
+
     def test_rejected_claim_can_return_to_review(self):
         record = self._record(ClaimLifecycle.REJECTED)
         updated, _ = transition_claim(
@@ -140,6 +198,13 @@ class ClaimWorkflowTests(unittest.TestCase):
                 actor="reviewer@example.com",
                 reason="start review",
             )
+
+    def test_allowed_transitions_are_exposed_without_mutating_graph(self):
+        self.assertEqual(
+            set(allowed_transitions(ClaimLifecycle.APPROVED)),
+            {ClaimLifecycle.SETTLED},
+        )
+        self.assertEqual(allowed_transitions(ClaimLifecycle.SETTLED), ())
 
 
 if __name__ == "__main__":
