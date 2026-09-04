@@ -2,122 +2,151 @@
 
 _Last reviewed: 2026-09-04_
 
-## What AERVIND does
+## AERVIND
 
-**AERVIND** is an assisted, evidence-led recovery and financial-control service for airlines and aircraft lessees.
+**Aviation Lease Entitlement Recovery**
 
-It reconstructs lease-linked economic entitlements from governing contract terms, maintenance-event evidence, financial records and prior settlements, then separates unsupported potential from claim-ready value and verified recovered value.
+AERVIND is an assisted, evidence-led recovery and financial-control service for airlines and aircraft/engine lessees. It reconstructs lease-linked economic entitlements from governing contract terms, maintenance-event evidence, financial records and prior settlements, then separates unsupported potential from claim-ready value and verified recovered value.
 
-Product descriptor: **Aviation Lease Entitlement Recovery**.
+AERVIND does **not** assume leakage exists. A clean result is a valid control outcome when the evidence proves the tested cohort reconciles correctly.
 
 ## Initial recovery scope
 
 - maintenance-reserve reimbursements;
-- lessor maintenance contributions;
-- contractual maintenance cost-sharing;
+- lessor maintenance contributions / contractual cost-sharing;
 - security-deposit and prepaid-rent releases;
 - selected end-of-lease / redelivery adjustments.
 
-## The problem addressed
+## Control chain
 
-Lease-linked maintenance economics can span multiple contract versions, technical records, MRO invoices, reserve statements, lessor correspondence, deadlines and prior payments. AERVIND provides a bounded independent control that reconciles those sources into one reproducible economic view.
+`governing lease / amendments -> entitlement rule -> event -> eligible cost -> reserve / contribution position -> prior claims / settlements -> deterministic calculation -> evidence lineage -> human review -> claim package -> real external lifecycle -> verified settlement`
 
-It does **not** assume leakage exists. A clean result is still a valuable control outcome when the evidence proves the cohort was handled correctly.
+## Why the first engagement is procurement-light
 
-## How the service works
+The standard first Recovery Scan does **not** require AERVIND to log into the airline's live ERP, M&E, lease-management or banking systems.
 
-**governing lease / amendments -> entitlement rule -> maintenance event -> cost / workscope evidence -> reserve or contribution ledger -> prior claims and settlements -> deterministic calculation -> false-positive challenge -> human review -> claim-ready dossier -> settlement evidence**
+The customer supplies a bounded evidence cohort using PDFs, spreadsheets and controlled exports through the agreed transfer/storage route. This allows an airline to test AERVIND's control method before considering any deeper integration.
 
-## Core control principles
+## Canonical first paid engagement
 
-- deterministic calculation;
-- rule/effective-date versioning;
-- source-level evidence lineage;
-- explicit caps, floors, deductibles, exclusions and deadlines;
-- prior-payment reconciliation to prevent double recovery;
-- human review before any external claim package;
-- blocked and review-required value never reported as recovered;
-- settlement recorded only when supported by evidence.
+### Recovery Scan — EUR 9,500
 
-## Recommended first engagement
+Standard launch scope:
 
-### Recovery Scan
+- up to **5 aircraft and/or engines**;
+- **1 primary entitlement family**;
+- up to **12 months** of selected events;
+- target **10 business days** after receipt of the complete agreed minimum dataset.
 
-A bounded assisted pilot designed to prove value without enterprise integration.
+Typical customer inputs:
 
-Typical initial scope:
+- governing lease/amendments;
+- reserve or contribution statements;
+- maintenance-event evidence, invoices and workscope;
+- scoped finance/payment evidence where required by the entitlement;
+- known prior claim/reimbursement/settlement records.
 
-- 3–10 aircraft and/or engines;
-- one event family;
-- 1–3 entitlement families;
-- 12–24 months of selected evidence where appropriate.
+Deliverables:
 
-Typical deliverables:
-
-1. entitlement / contract-rule map;
-2. evidence and lineage inventory;
+1. scope/source inventory;
+2. entitlement / contract-rule map;
 3. deterministic reconciliation;
 4. candidate register with status separation;
-5. false-positive challenge log;
-6. claim-ready dossiers where supported;
-7. executive closeout and control findings.
+5. evidence / lineage gap register;
+6. deadline and false-positive controls;
+7. claim-ready dossier/package where gates pass;
+8. executive closeout;
+9. portable audit/case export where the assisted console is used.
+
+A no-claim result is still a completed, useful engagement when the evidence proves the tested control closes correctly.
+
+## Recovery-truth controls
+
+- deterministic calculation;
+- contract-rule/effective-date versioning;
+- source-level evidence lineage;
+- explicit caps, floors, deductibles, exclusions and deadlines;
+- prior-payment reconciliation to reduce duplicate recovery;
+- malformed evidence / impossible chronology fail-conservative controls;
+- human lifecycle review before claim-package release;
+- generated packages remain `not_submitted` until a real submission occurs;
+- external submission/counterparty states require real references;
+- verified settlement requires positive economic evidence;
+- management buckets are mutually exclusive to prevent double counting.
+
+## Assisted operating model
+
+AERVIND is initially delivered as a specialist professional service supported by a controlled operator application.
+
+The standard Operator Console:
+
+- binds locally by default;
+- processes normalized cohorts in memory;
+- does not require customer system credentials for the first scan;
+- supports auditable candidate lifecycle tracking;
+- hashes generated claim packages into the portable case audit;
+- records settlement only with evidence;
+- does not autonomously submit claims externally.
 
 ## Information-security baseline
 
 - minimum-necessary data collection;
-- synthetic demo data by default;
-- source preservation and auditability;
-- need-to-know access model for assisted engagements;
+- approved transfer/storage route before real data intake;
+- synthetic demonstration data by default;
+- source preservation and evidence lineage;
+- need-to-know assisted-engagement access;
 - customer data not used for model training;
-- human externalization gate;
-- retention / deletion terms agreed per engagement;
-- settlement evidence required for recovered-value reporting.
+- no third-party analytics/telemetry in the local console;
+- retention/deletion expectations agreed per engagement;
+- exported case files treated as confidential work product.
 
-## Commercial structure
+This is an operating baseline, not a claim of external security certification.
 
-AERVIND is initially sold as an assisted professional service, not as a self-service SaaS subscription.
+## Commercial expansion after proof
 
-Indicative commercial framework:
+The fixed EUR 9,500 Recovery Scan is the canonical launch offer. After the first bounded scan, a customer may separately scope:
 
-- bounded Recovery Scan: EUR 7,500–15,000;
-- deeper forensic reconciliation / dossier scope: EUR 15,000–50,000+;
-- optional success component only when separately agreed and tied to verified recovered value;
-- post-pilot monitoring available after repeatable value is established.
+- additional aircraft/engines or review periods;
+- additional entitlement families;
+- deeper forensic reconciliation / claim support;
+- recurring recovery monitoring;
+- buyer-required integrations or enterprise controls.
 
-The preferred procurement format is a fixed-fee first cohort with explicit assumptions, evidence boundary and acceptance criteria.
+Any success component is separately agreed and must be tied to **verified settled recovery**, never merely identified, submitted or approved value.
 
 ## What AERVIND is not
 
 AERVIND does not provide:
 
 - legal opinions or representation as legal counsel;
-- statutory or external audit opinions;
+- statutory/external audit opinions;
 - tax advice;
 - airworthiness determinations;
 - maintenance certification;
 - guaranteed recovery outcomes;
-- autonomous submission of claims without customer approval.
+- autonomous external claim submission.
 
 ## First-pilot acceptance standard
 
-A successful pilot proves that:
+A successful first Recovery Scan demonstrates that:
 
-- contract logic is reproducible;
+- governing contract logic is reproducible;
 - economic calculations can be independently rerun;
-- each material input has traceable source evidence;
+- each material input has traceable source evidence or an explicit gap;
 - unsupported candidates are blocked;
-- prior settlements are reconciled;
-- claim-ready items can withstand human review;
+- prior claims/settlements are reconciled within the supplied scope;
+- claim-ready items survive economic, evidence and human-review gates;
+- external lifecycle events are evidence-backed;
 - recovered value is recognized only when settlement evidence exists.
 
 ## Procurement classification
 
 Best-fit category: **Professional and Financial Services**, with aviation M&E / fleet-finance subject-matter adjacency.
 
-The engagement should be evaluated as a specialist financial-control / recovery service, not as an MRO, legal service, accounting audit or airworthiness service.
+The engagement should be evaluated as a specialist financial-control / recovery service, not as an MRO, legal service, statutory audit or airworthiness service.
 
 ## Supplier identity
 
-During the initial launch phase, AERVIND is the commercial brand of the real Portuguese individual-professional supplier identified in each proposal, contract and invoice. Customer-facing documents must retain the actual legal supplier name, tax identity and professional address where required.
+During the initial launch phase, AERVIND is the commercial brand of the real Portuguese individual-professional supplier identified in each proposal, contract and invoice. Customer documents must retain the actual legal supplier name, tax identity and professional address where required.
 
-A future **AERVIND, Unipessoal Lda.** may be created when buyer procurement, revenue, liability or operating complexity justifies it. No corporate registration, NIPC, banking, insurance or signatory facts may be inferred or fabricated before that occurs.
+A future **AERVIND, Unipessoal Lda.** may be created when buyer procurement, revenue, liability or operating complexity justifies it. No corporate registration, NIPC, banking, insurance or certification facts may be inferred or fabricated before they exist.
