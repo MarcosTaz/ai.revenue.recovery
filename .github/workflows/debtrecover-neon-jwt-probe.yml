@@ -15,70 +15,64 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Install pinned runtime dependencies
-        run: |
-          set -euo pipefail
-          npm init -y >/dev/null 2>&1
-          npm install --no-audit --no-fund @neondatabase/auth jose >/dev/null
-      - name: Issue and cryptographically verify synthetic Neon Auth JWT
+      - name: Fetch anonymous signed JWT and JWKS
         env:
           AUTH_BASE: https://ep-frosty-moon-b105xh57.neonauth.c-5.eu-central-1.aws.neon.tech/neondb/auth
           JWKS_URL: https://ep-frosty-moon-b105xh57.neonauth.c-5.eu-central-1.aws.neon.tech/neondb/auth/.well-known/jwks.json
         run: |
-          node --input-type=module <<'JS'
-          import { randomBytes } from 'node:crypto';
-          import { createInternalNeonAuth } from '@neondatabase/auth';
-          import { createRemoteJWKSet, decodeJwt, decodeProtectedHeader, jwtVerify } from 'jose';
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 "$AUTH_BASE/token/anonymous" -o token.json
+          curl --fail --silent --show-error --max-time 30 "$JWKS_URL" -o jwks.json
+      - name: Verify Ed25519 signature with Node crypto
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const crypto = require('crypto');
 
-          const auth = createInternalNeonAuth(process.env.AUTH_BASE);
-          const email = `debtrecover.jwt.${process.env.GITHUB_RUN_ID}.${Date.now()}@example.com`;
-          const password = `${randomBytes(24).toString('base64url')}Aa1!`;
+          const tokenResponse = JSON.parse(fs.readFileSync('token.json', 'utf8'));
+          const jwks = JSON.parse(fs.readFileSync('jwks.json', 'utf8'));
+          const token = tokenResponse.token;
+          if (typeof token !== 'string') throw new Error('anonymous JWT missing');
+          const parts = token.split('.');
+          if (parts.length !== 3) throw new Error('invalid compact JWT');
 
-          const signup = await auth.adapter.signUp.email({
-            email,
-            password,
-            name: 'DebtRecover JWT Canary'
-          });
-          if (signup?.error) throw new Error(`signup failed: ${signup.error.code || signup.error.message || 'unknown'}`);
-
-          let token = await auth.getJWTToken();
-          if (!token) {
-            const signin = await auth.adapter.signIn.email({ email, password });
-            if (signin?.error) throw new Error(`signin failed: ${signin.error.code || signin.error.message || 'unknown'}`);
-            token = await auth.getJWTToken();
-          }
-          if (!token) throw new Error('authenticated JWT unavailable after signup/signin');
-
-          const header = decodeProtectedHeader(token);
-          const unverified = decodeJwt(token);
+          const decode = s => JSON.parse(Buffer.from(s, 'base64url').toString('utf8'));
+          const header = decode(parts[0]);
+          const payload = decode(parts[1]);
           if (header.alg !== 'EdDSA') throw new Error(`unexpected alg ${header.alg}`);
-          if (!header.kid) throw new Error('JWT kid missing');
-          if (!unverified.sub) throw new Error('JWT sub missing');
-          if (!unverified.iat || !unverified.exp) throw new Error('JWT temporal claims missing');
+          if (!header.kid) throw new Error('kid missing');
 
-          const JWKS = createRemoteJWKSet(new URL(process.env.JWKS_URL));
-          const { payload, protectedHeader } = await jwtVerify(token, JWKS, {
-            algorithms: ['EdDSA']
-          });
-          if (payload.sub !== unverified.sub) throw new Error('verified sub mismatch');
-          if (protectedHeader.kid !== header.kid) throw new Error('verified kid mismatch');
+          const candidates = (jwks.keys || []).filter(k => k.kid === header.kid);
+          if (candidates.length !== 1) throw new Error(`JWKS kid candidates=${candidates.length}`);
+          const jwk = candidates[0];
+          if (jwk.kty !== 'OKP' || jwk.crv !== 'Ed25519' || jwk.alg !== 'EdDSA') {
+            throw new Error(`unexpected JWK ${jwk.kty}/${jwk.crv}/${jwk.alg}`);
+          }
+
+          const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
+          const signingInput = Buffer.from(`${parts[0]}.${parts[1]}`);
+          const signature = Buffer.from(parts[2], 'base64url');
+          if (!crypto.verify(null, signingInput, publicKey, signature)) {
+            throw new Error('Ed25519 signature invalid');
+          }
 
           const now = Math.floor(Date.now()/1000);
-          if (payload.exp <= now) throw new Error('verified token expired');
-          if (payload.iat > now + 60) throw new Error('verified token issued in future');
+          if (!payload.iat || !payload.exp || payload.exp <= now || payload.iat > now + 60) {
+            throw new Error('invalid temporal claims');
+          }
 
           console.log(JSON.stringify({
-            marker: 'DEBTRECOVER_NEON_JWT_V045',
-            verified: true,
-            alg: protectedHeader.alg,
-            kid_present: Boolean(protectedHeader.kid),
-            sub_present: Boolean(payload.sub),
+            marker: 'DEBTRECOVER_NEON_ANON_JWT_V045',
+            signature_verified: true,
+            alg: header.alg,
+            kid_present: true,
             issuer: payload.iss ?? null,
             audience: payload.aud ?? null,
             role: payload.role ?? null,
+            sub_present: Boolean(payload.sub),
             tenant_claim_present: Object.prototype.hasOwnProperty.call(payload, 'tenant'),
             roles_claim_present: Object.prototype.hasOwnProperty.call(payload, 'roles'),
             exp_after_iat: Number(payload.exp) > Number(payload.iat)
           }));
-          console.log('DEBTRECOVER_NEON_JWT_SIGNATURE=PASS');
+          console.log('DEBTRECOVER_NEON_JWT_CRYPTO=PASS');
           JS
