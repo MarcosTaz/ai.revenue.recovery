@@ -4,83 +4,98 @@ _Last reviewed: 2026-09-04_
 
 ## Targeting logic
 
-Prioritize airlines where Aviation Recovery's recovery-first wedge is most plausible:
+Prioritize airlines where Aviation Recovery's recovery-first wedge is both economically plausible **and commercially buyable now**:
 
-- meaningful leased fleet / lease complexity;
-- engine/heavy-maintenance exposure;
-- multiple counterparties / amendments;
-- enough scale for material leakage but not so much internal infrastructure that a bounded external scan is automatically redundant;
-- identifiable finance/fleet/lease leadership;
-- a narrow pilot can be scoped without asking for the whole enterprise stack.
+- meaningful leased fleet / leased-engine exposure;
+- engine/heavy-maintenance or redelivery economics;
+- multiple counterparties / amendments / settlement records;
+- enough scale for material recovery value;
+- identifiable finance/fleet/technical ownership;
+- a bounded pilot can be scoped without replacing enterprise systems;
+- sufficient financial/procurement capacity to buy a first paid pilot;
+- reference-account value.
 
 This is a qualification list, not an assertion that any airline has missed claims.
 
-## Tier 1
-
-### Wizz Air
-
-**Why now:** large, fast-growing European airline with a complex fleet and publicly identifiable finance/operations leadership. Strong fit for a bounded maintenance-reserve / lessor-contribution control review.
-
-**Public buyer anchors:**
-
-- Veronika Spanarova — Chief Financial Officer
-- Michael Berlouis — Financial Operations Officer
-- Diarmuid O'Conghaile — Chief Operations Officer
-- Julia Brix — Supply Chain Officer
-
-**Best opening:** independent reconciliation of a defined engine/heavy-maintenance cohort against governing lease terms, reserve/contribution statements, MRO evidence and prior settlements.
-
-**Pilot shape:** 3–10 aircraft/engines; recent maintenance events; maintenance reserve + lessor contribution only.
+## Tier 1 — immediate first-pilot targets
 
 ### TAP Air Portugal
 
-**Why now:** strategically attractive home-market reference account with direct relevance to the European leased-aircraft market. A successful TAP pilot would materially strengthen credibility for Iberian and European expansion.
+**Why now:** home-market reference value, material lease/redelivery-maintenance obligations, major fleet and engine commitments, identifiable CFO, and the ability to deliver in Portuguese/English.
 
 **Public buyer anchor:**
 
-- Gonçalo Pires — Chief Financial Officer
+- Gonçalo Pires — Chief Financial Officer.
 
-**Best opening:** finance/control-oriented recovery scan rather than generic software replacement. Position around evidencing that every eligible lease entitlement arising from selected maintenance events has been captured, reconciled and settled correctly.
+**Best opening:** finance/control-oriented recovery scan proving whether every eligible lease-linked maintenance reimbursement, lessor contribution or redelivery adjustment in a selected event cohort has been captured, evidenced and settled correctly.
 
-**Pilot shape:** one defined fleet/engine cohort and one recent event family; Portuguese/English delivery supported.
-
-### airBaltic
-
-**Why now:** aviation-focused management team undergoing leadership evolution; CEO Erno Hildén brings deep airline finance background, including prior Group CFO experience at SAS. This creates a strong top-down finance/control entry point.
-
-**Public buyer anchor:**
-
-- Erno Hildén — Chief Executive Officer (effective 1 Dec 2025), former Group CFO of SAS
-
-**Best opening:** working-capital/recovery assurance on lease-linked maintenance economics, using a small event cohort and no system replacement requirement.
-
-## Tier 2
-
-### Icelandair Group
-
-**Why fit:** public structure includes Finance, Operations and Aircraft Leasing & Consulting leadership, which makes the ownership problem unusually legible.
-
-**Public buyer anchors:**
-
-- Ívar S. Kristinsson — Chief Financial Officer
-- Bogi Nils Bogason — President & CEO
-- Árni Hermannsson — Managing Director, Aircraft Leasing & Consulting
-
-**Best opening:** recovery/control layer for a selected aircraft/engine population; emphasize independence from existing lease-management systems.
+**Pilot shape:** 3–10 aircraft/engines; one recent maintenance/redelivery event family; maintenance reserve + lessor contribution + selected redelivery economics.
 
 ### Norwegian
 
-**Why fit:** meaningful European airline scale and lease exposure make the use case plausible, especially where fleet/finance/technical evidence crosses systems and teams.
+**Why now:** 2025 annual reporting places aircraft asset management inside **Finance, Control & Fleet** through Arctic Aviation Assets DAC and reports 87 leased aircraft at year-end 2025. This gives both material exposure and unusually clear functional ownership.
 
-**Buyer roles to identify:** CFO, Head/Director Fleet, Lease Management, Engineering Finance, Procurement.
+**Public buyer anchors:**
 
-**Best opening:** one-event-cohort recovery scan tied to recent engine/heavy-maintenance activity.
+- Hans-Jørgen Wibstad — Chief Financial Officer;
+- Henrik Fjeld — Chief Operations Officer;
+- Finance, Control & Fleet / Arctic Aviation Assets DAC — functional owner.
+
+**Best opening:** independent recovery-control scan across a bounded leased-aircraft cohort, complementary to existing asset-management processes.
+
+**Pilot shape:** recent lease events involving maintenance accruals, lessor/manufacturer payments, amendments, or return economics.
+
+### Icelandair Group
+
+**Why now:** 2025 financial statements reported approximately USD 534m of aircraft lease liabilities and additional A321LR lease commitments. Management combines finance, fleet history, technical maintenance and aircraft-leasing expertise.
+
+**Public buyer anchors:**
+
+- Ívar S. Kristinsson — Chief Financial Officer; previously Managing Director of Icelandair Fleet;
+- Leifur Magnússon — VP Technical and Maintenance;
+- Árni Hermannsson — Managing Director, Aircraft Leasing and Consulting.
+
+**Best opening:** bounded finance/technical reconciliation of lease-linked maintenance entitlements and settlement evidence.
+
+**Pilot shape:** one fleet/engine cohort, 12–24 months of selected events, 1–3 entitlement families.
+
+## Tier 1B — high value, potentially harder sale
+
+### Wizz Air
+
+**Why fit:** one of Europe's largest and youngest Airbus fleets, with current CFO, Financial Operations and Supply Chain leadership publicly identifiable. Historical annual reporting states that the group leases most aircraft and spare engines and separately accounts for maintenance-reserve / lease-end compensation economics.
+
+**Public buyer anchors:**
+
+- Veronika Spanarova — Chief Financial Officer;
+- Michael Berlouis — Financial Operations Officer;
+- Julia Brix — Supply Chain Officer.
+
+**Best opening:** independent control/recovery layer on one engine/heavy-maintenance cohort, not a lease-management-system replacement.
+
+**Commercial note:** greater scale may imply stronger internal capability, so proof must be narrow, quantitative and non-disruptive.
+
+## Tier 2 — qualify / monitor
+
+### airBaltic
+
+**Why the use case is real:** 54+ A220-300 aircraft, sale-and-leaseback activity, additional lease commitments, and finance/turnaround-oriented leadership.
+
+**Public buyer anchors:**
+
+- Erno Hildén — Chief Executive Officer;
+- Pauls Cālītis — Chief Operations Officer;
+- Vitolds Jakovļevs — publicly identified as Chief Financial Officer.
+
+**Why not first paid pilot:** public 2026 reporting indicates acute financing and capital-structure pressure. The pain may be high, but procurement and payment risk are also higher.
+
+**Best opening:** working-capital/recovery assurance when the account has capacity to engage or after Aviation Recovery has a first reference customer.
 
 ## Deprioritized for initial wedge
 
 ### Ryanair
 
-Publicly stated in May 2026 that its 620-aircraft Boeing 737 fleet was unencumbered and that the group was effectively debt-free. That makes Ryanair materially less attractive for the initial **lease-entitlement** wedge than airlines with greater lease complexity.
+Ryanair publicly stated in May 2026 that its 620-aircraft Boeing 737 fleet was unencumbered and that the group was effectively debt-free. That makes it materially less attractive for the initial **lease-entitlement** wedge than airlines with greater lease complexity.
 
 Do not spend first-wave prospecting capacity here unless a separate leased-engine, wet-lease, maintenance-contribution or other directly relevant entitlement signal appears.
 
@@ -89,21 +104,24 @@ Do not spend first-wave prospecting capacity here unless a separate leased-engin
 Score 0–2 on each dimension before outreach:
 
 1. leased-fleet / leased-engine exposure;
-2. recent heavy-maintenance / shop-visit signal;
-3. identifiable finance/fleet/lease owner;
+2. recent heavy-maintenance / shop-visit / redelivery signal;
+3. identifiable finance/fleet/lease/technical owner;
 4. likely multi-document reconciliation burden;
 5. bounded pilot can be defined;
 6. reference-account value;
-7. accessibility of buyer/contact route.
+7. accessibility of buyer/contact route;
+8. ability to procure/pay for a first pilot now.
 
-**12–14:** Tier 1 immediate outreach
+**14–16:** Tier 1 immediate outreach
 
-**9–11:** Tier 2 qualify further
+**11–13:** Tier 1B / qualify carefully
 
-**0–8:** hold / monitor
+**8–10:** Tier 2 monitor or partner-led entry
 
-## First-wave recommendation
+**0–7:** hold
 
-Start with **Wizz Air, TAP Air Portugal and airBaltic**. They provide a useful mix of scale, European reference value, public buyer visibility and plausible lease/maintenance economics.
+## Current first-wave recommendation
 
-Do not contact prospects with claims of known leakage. The first message should offer a bounded independent recovery scan and ask how the airline currently proves that all eligible maintenance-reserve reimbursements and lessor contributions were captured, evidenced and settled.
+Start with **TAP Air Portugal, Norwegian and Icelandair Group**, then **Wizz Air**. Keep **airBaltic** as a high-pain monitored account rather than the first paid reference pilot.
+
+Do not contact prospects with claims of known leakage. The first message should offer a bounded independent recovery scan and ask how the airline currently proves that all eligible maintenance-reserve reimbursements, lessor contributions and selected end-of-lease economics were captured, evidenced and settled.
