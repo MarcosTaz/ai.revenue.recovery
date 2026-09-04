@@ -157,6 +157,52 @@ class AviationRecoveryEngineTests(unittest.TestCase):
         self.assertEqual(result.status, Status.BLOCKED)
         self.assertIn("excluded_cost_category_present:betterment", result.blocking_issues)
 
+    def test_evaluation_date_before_event_blocks_candidate(self):
+        rule = EntitlementRule(
+            rule_id="LEASE-CHRONOLOGY-2026",
+            entitlement_type=EntitlementType.LESSOR_CONTRIBUTION,
+            formula=Formula.PERCENT_OF_ELIGIBLE_COST,
+            currency="USD",
+            effective_from=date(2026, 1, 1),
+            contribution_rate=Decimal("0.50"),
+            required_evidence_types=("invoice",),
+        )
+        claim = ClaimInput(
+            claim_id="C-CHRONOLOGY",
+            rule_id=rule.rule_id,
+            event_date=date(2026, 6, 15),
+            evaluation_date=date(2026, 6, 1),
+            eligible_cost=Decimal("100000"),
+            evidence=(INVOICE,),
+        )
+        result = evaluate_claim(rule, claim)
+        self.assertEqual(result.status, Status.BLOCKED)
+        self.assertIn("evaluation_date_precedes_event_date", result.blocking_issues)
+
+    def test_malformed_required_evidence_reference_blocks_candidate(self):
+        rule = EntitlementRule(
+            rule_id="LEASE-EVIDENCE-2026",
+            entitlement_type=EntitlementType.MAINTENANCE_RESERVE,
+            formula=Formula.LOWER_OF_ELIGIBLE_COST_AND_AVAILABLE_FUND,
+            currency="USD",
+            effective_from=date(2026, 1, 1),
+            required_evidence_types=("invoice",),
+        )
+        malformed_invoice = EvidenceRef("E-BAD", "invoice", "   ")
+        claim = ClaimInput(
+            claim_id="C-EVIDENCE",
+            rule_id=rule.rule_id,
+            event_date=date(2026, 5, 1),
+            evaluation_date=date(2026, 5, 2),
+            eligible_cost=Decimal("100000"),
+            available_fund=Decimal("100000"),
+            evidence=(malformed_invoice,),
+        )
+        result = evaluate_claim(rule, claim)
+        self.assertEqual(result.status, Status.BLOCKED)
+        self.assertIn("evidence_ref_1_missing_source_name", result.blocking_issues)
+        self.assertIn("missing_evidence:invoice", result.blocking_issues)
+
     def test_unknown_rule_is_blocked_in_portfolio(self):
         claim = ClaimInput(
             claim_id="C-007",
