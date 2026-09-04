@@ -58,6 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           RUNTIME="$RUNNER_TEMP/dealrecover-runtime"
+          SOURCE_SNAPSHOT="$RUNNER_TEMP/dealrecover-base-source"
           BUNDLE="$RUNNER_TEMP/dealrecover-runtime.tgz"
           mkdir -p "$RUNTIME"
           base64 -d dealrecover/managed-src-v0.7.2.tgz.b64 > "$BUNDLE"
@@ -67,11 +68,20 @@ jobs:
           test -f "$RUNTIME/src/ppa.js"
           test -f "$RUNTIME/src/externalIdentity.js"
           test -f "$RUNTIME/src/remoteDocumentVault.js"
+          cp -a "$RUNTIME" "$SOURCE_SNAPSHOT"
           cp dealrecover/package.json "$RUNTIME/package.json"
           cp dealrecover/src/*.js "$RUNTIME/src/"
           cd "$RUNTIME"
           npm install --omit=dev --ignore-scripts --no-audit --no-fund
           while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -type f \( -name '*.js' -o -name '*.mjs' \) -print0)
+
+      - name: Upload reconstructed base source
+        uses: actions/upload-artifact@v4
+        with:
+          name: dealrecover-base-source-${{ github.sha }}
+          path: ${{ runner.temp }}/dealrecover-base-source
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Provision least-privilege platform roles
         env:
