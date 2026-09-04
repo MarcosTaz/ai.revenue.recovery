@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
+import socket
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -32,12 +34,70 @@ ROOT = Path(__file__).resolve().parent
 UI_ROOT = ROOT / "operator_ui"
 EXAMPLE_PATH = ROOT / "examples" / "pilot.json"
 MAX_REQUEST_BYTES = 2 * 1024 * 1024
+REQUEST_TIMEOUT_SECONDS = 15
 
 STATIC_FILES = {
     "/": (UI_ROOT / "index.html", "text/html; charset=utf-8"),
     "/app.css": (UI_ROOT / "app.css", "text/css; charset=utf-8"),
     "/app.js": (UI_ROOT / "app.js", "text/javascript; charset=utf-8"),
 }
+
+
+def _is_loopback_host(host: str) -> bool:
+    """Return True only for localhost or an IP address in a loopback range."""
+    normalized = str(host or "").strip().lower()
+    if normalized == "localhost":
+        return True
+    if normalized.startswith("[") and normalized.endswith("]"):
+        normalized = normalized[1:-1]
+    try:
+        return ipaddress.ip_address(normalized).is_loopback
+    except ValueError:
+        return False
+
+
+def _hostname_from_authority(authority: str) -> str | None:
+    """Parse a Host/authority value without accepting userinfo or malformed ports."""
+    raw = str(authority or "").strip()
+    if not raw or any(char in raw for char in ("/", "\\", "@")):
+        return None
+    try:
+        parsed = urlsplit(f"//{raw}")
+        _ = parsed.port  # Force invalid-port validation.
+    except ValueError:
+        return None
+    return parsed.hostname
+
+
+def _host_header_is_loopback(host_header: str) -> bool:
+    hostname = _hostname_from_authority(host_header)
+    return bool(hostname and _is_loopback_host(hostname))
+
+
+def _origin_matches_host(origin: str | None, host_header: str) -> bool:
+    """Browser state-changing calls must originate from the exact local authority."""
+    if not origin:
+        # Non-browser local clients do not necessarily send Origin.
+        return True
+    try:
+        parsed = urlsplit(origin)
+        _ = parsed.port
+    except ValueError:
+        return False
+    if parsed.scheme != "http" or not parsed.hostname or parsed.username or parsed.password:
+        return False
+    if not _is_loopback_host(parsed.hostname):
+        return False
+    return parsed.netloc.lower() == str(host_header or "").strip().lower()
+
+
+def _client_is_loopback(client_address: tuple[Any, ...]) -> bool:
+    if not client_address:
+        return False
+    try:
+        return ipaddress.ip_address(str(client_address[0])).is_loopback
+    except ValueError:
+        return False
 
 
 def load_synthetic_example() -> dict[str, Any]:
@@ -218,8 +278,21 @@ def build_case_export_response(
     }
 
 
+class LocalOnlyThreadingHTTPServer(ThreadingHTTPServer):
+    """Threaded local server with bounded idle request time and daemon workers."""
+
+    daemon_threads = True
+    allow_reuse_address = True
+
+    def get_request(self):  # type: ignore[override]
+        request, client_address = super().get_request()
+        request.settimeout(REQUEST_TIMEOUT_SECONDS)
+        return request, client_address
+
+
 class OperatorHandler(BaseHTTPRequestHandler):
-    server_version = "AERVINDOperator/1.2"
+    server_version = "AERVINDOperator"
+    sys_version = ""
 
     def log_message(self, format: str, *args: object) -> None:
         # Request bodies/customer evidence are never logged by this application.
@@ -258,6 +331,21 @@ class OperatorHandler(BaseHTTPRequestHandler):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self._send_bytes(status, body, "application/json; charset=utf-8")
 
+    def _guard_local_request(self, *, state_changing: bool = False) -> bool:
+        host_header = self.headers.get("Host", "")
+        if not _client_is_loopback(self.client_address):
+            self._send_json(HTTPStatus.FORBIDDEN, {"error": "local_client_required"})
+            return False
+        if not _host_header_is_loopback(host_header):
+            self._send_json(HTTPStatus.FORBIDDEN, {"error": "local_host_required"})
+            return False
+        if state_changing and not _origin_matches_host(
+            self.headers.get("Origin"), host_header
+        ):
+            self._send_json(HTTPStatus.FORBIDDEN, {"error": "local_origin_required"})
+            return False
+        return True
+
     def _read_json_body(self) -> dict[str, Any] | None:
         content_type = (
             self.headers.get("Content-Type", "")
@@ -269,6 +357,13 @@ class OperatorHandler(BaseHTTPRequestHandler):
             self._send_json(
                 HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
                 {"error": "content_type_must_be_application_json"},
+            )
+            return None
+
+        if self.headers.get("Transfer-Encoding"):
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "transfer_encoding_not_supported"},
             )
             return None
 
@@ -291,13 +386,34 @@ class OperatorHandler(BaseHTTPRequestHandler):
             )
             return None
 
-        raw = self.rfile.read(length)
+        try:
+            raw = self.rfile.read(length)
+        except (TimeoutError, socket.timeout):
+            try:
+                self._send_json(HTTPStatus.REQUEST_TIMEOUT, {"error": "request_timeout"})
+            except OSError:
+                pass
+            return None
+
+        if len(raw) != length:
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "incomplete_request_body"},
+            )
+            return None
+
         try:
             payload = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             self._send_json(
                 HTTPStatus.BAD_REQUEST,
                 {"error": "invalid_json", "detail": str(exc)},
+            )
+            return None
+        except (RecursionError, OverflowError):
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "json_structure_too_complex"},
             )
             return None
 
@@ -313,6 +429,8 @@ class OperatorHandler(BaseHTTPRequestHandler):
         return payload
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler contract
+        if not self._guard_local_request():
+            return
         path = urlsplit(self.path).path
 
         if path == "/api/health":
@@ -322,6 +440,7 @@ class OperatorHandler(BaseHTTPRequestHandler):
                     "status": "ok",
                     "service": "AERVIND Operator Console",
                     "mode": "assisted_pilot",
+                    "network_scope": "loopback_only",
                     "persistence": "none",
                     "case_state": "portable_export_only",
                 },
@@ -355,6 +474,8 @@ class OperatorHandler(BaseHTTPRequestHandler):
         self._send_bytes(HTTPStatus.OK, body, content_type)
 
     def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler contract
+        if not self._guard_local_request(state_changing=True):
+            return
         path = urlsplit(self.path).path
         supported = {
             "/api/evaluate",
@@ -429,10 +550,17 @@ class OperatorHandler(BaseHTTPRequestHandler):
 
 
 def run(host: str = "127.0.0.1", port: int = 8080) -> None:
-    server = ThreadingHTTPServer((host, port), OperatorHandler)
+    if not _is_loopback_host(host):
+        raise ValueError(
+            "AERVIND Operator Console is loopback-only; use 127.0.0.1 or localhost"
+        )
+    if not (1 <= int(port) <= 65535):
+        raise ValueError("port must be between 1 and 65535")
+
+    server = LocalOnlyThreadingHTTPServer((host, port), OperatorHandler)
     print(f"AERVIND Operator Console: http://{host}:{port}")
     print(
-        "Assisted-pilot mode. Customer payloads are processed in memory. "
+        "Assisted-pilot mode. Loopback-only. Customer payloads are processed in memory. "
         "Durable state exists only in operator-exported case files."
     )
     try:
@@ -447,7 +575,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run the AERVIND assisted operator console"
     )
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Loopback only: 127.0.0.1 or localhost",
+    )
     parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()
     run(host=args.host, port=args.port)
