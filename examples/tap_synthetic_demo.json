@@ -1,0 +1,116 @@
+{
+  "rules": [
+    {
+      "rule_id": "TAP-DEMO-LEASE-A-MR-ENGINE",
+      "entitlement_type": "maintenance_reserve_reimbursement",
+      "formula": "lower_of_eligible_cost_and_available_fund",
+      "currency": "EUR",
+      "effective_from": "2025-01-01",
+      "contribution_rate": "1",
+      "deadline_days_after_event": 120,
+      "required_evidence_types": ["invoice", "workscope", "payment_proof"],
+      "excluded_cost_categories": ["betterment", "late_fee"],
+      "notes": "Synthetic airline scenario only. Not derived from TAP contracts, events or financial data."
+    },
+    {
+      "rule_id": "TAP-DEMO-LEASE-B-CONTRIBUTION",
+      "entitlement_type": "lessor_contribution",
+      "formula": "percent_of_eligible_cost",
+      "currency": "EUR",
+      "effective_from": "2025-01-01",
+      "contribution_rate": "0.40",
+      "cap": "400000",
+      "deadline_days_after_event": 180,
+      "required_evidence_types": ["invoice", "workscope"],
+      "notes": "Synthetic airline scenario only. Not derived from TAP contracts, events or financial data."
+    },
+    {
+      "rule_id": "TAP-DEMO-LEASE-C-EOL",
+      "entitlement_type": "end_of_lease_adjustment",
+      "formula": "eligible_cost_minus_deductible",
+      "currency": "EUR",
+      "effective_from": "2025-01-01",
+      "contribution_rate": "0.75",
+      "deductible": "50000",
+      "deadline_days_after_event": 180,
+      "required_evidence_types": ["invoice", "redelivery_statement"],
+      "notes": "Synthetic redelivery adjustment for demonstration only."
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "TAP-DEMO-C-001",
+      "rule_id": "TAP-DEMO-LEASE-A-MR-ENGINE",
+      "event_date": "2026-06-15",
+      "evaluation_date": "2026-09-04",
+      "eligible_cost": "1600000",
+      "available_fund": "1100000",
+      "prior_paid_or_reimbursed": "100000",
+      "claimed_to_date": "50000",
+      "evidence": [
+        {"evidence_id": "TD-E-001", "evidence_type": "invoice", "source_name": "Synthetic Engine Shop Invoice"},
+        {"evidence_id": "TD-E-002", "evidence_type": "workscope", "source_name": "Synthetic Engine Workscope"},
+        {"evidence_id": "TD-E-003", "evidence_type": "payment_proof", "source_name": "Synthetic Finance Payment Ledger"}
+      ],
+      "source_refs": {
+        "rule_source": "TAPSyntheticLeaseA.pdf#MaintenanceReserves",
+        "event_date": "TAPSyntheticEngineRelease.pdf#Completion",
+        "eligible_cost": "TAPSyntheticEngineRecon.xlsx#EligibleCost",
+        "available_fund": "TAPSyntheticReserveStatement.pdf#EngineFund",
+        "prior_paid_or_reimbursed": "TAPSyntheticSettlementLedger.xlsx#PriorPaid",
+        "claimed_to_date": "TAPSyntheticClaimsRegister.xlsx#OpenClaim"
+      }
+    },
+    {
+      "claim_id": "TAP-DEMO-C-002",
+      "rule_id": "TAP-DEMO-LEASE-B-CONTRIBUTION",
+      "event_date": "2026-05-20",
+      "evaluation_date": "2026-09-04",
+      "eligible_cost": "900000",
+      "prior_paid_or_reimbursed": "50000",
+      "evidence": [
+        {"evidence_id": "TD-E-010", "evidence_type": "invoice", "source_name": "Synthetic Heavy Check Invoice"},
+        {"evidence_id": "TD-E-011", "evidence_type": "workscope", "source_name": "Synthetic Heavy Check Workscope"}
+      ],
+      "source_refs": {
+        "rule_source": "TAPSyntheticLeaseB.pdf#LessorContribution",
+        "event_date": "TAPSyntheticCheckRelease.pdf#Completion",
+        "eligible_cost": "TAPSyntheticHeavyCheckRecon.xlsx#EligibleCost",
+        "prior_paid_or_reimbursed": "TAPSyntheticSettlementLedger.xlsx#PriorContribution"
+      }
+    },
+    {
+      "claim_id": "TAP-DEMO-C-003",
+      "rule_id": "TAP-DEMO-LEASE-A-MR-ENGINE",
+      "event_date": "2026-07-10",
+      "evaluation_date": "2026-09-04",
+      "eligible_cost": "250000",
+      "available_fund": "200000",
+      "evidence": [
+        {"evidence_id": "TD-E-020", "evidence_type": "invoice", "source_name": "Synthetic Invoice With Incomplete Technical Pack"}
+      ],
+      "source_refs": {
+        "rule_source": "TAPSyntheticLeaseA.pdf#MaintenanceReserves",
+        "event_date": "TAPSyntheticEventRegister.xlsx#Event3",
+        "eligible_cost": "TAPSyntheticInvoiceRecon.xlsx#EligibleCost",
+        "available_fund": "TAPSyntheticReserveStatement.pdf#EngineFund2"
+      }
+    },
+    {
+      "claim_id": "TAP-DEMO-C-004",
+      "rule_id": "TAP-DEMO-LEASE-C-EOL",
+      "event_date": "2026-04-01",
+      "evaluation_date": "2026-09-04",
+      "eligible_cost": "300000",
+      "evidence": [
+        {"evidence_id": "TD-E-030", "evidence_type": "invoice", "source_name": "Synthetic Redelivery Invoice"},
+        {"evidence_id": "TD-E-031", "evidence_type": "redelivery_statement", "source_name": "Synthetic Redelivery Settlement Statement"}
+      ],
+      "source_refs": {
+        "rule_source": "TAPSyntheticLeaseC.pdf#RedeliveryAdjustment",
+        "event_date": "TAPSyntheticRedeliveryCertificate.pdf#Date",
+        "eligible_cost": "TAPSyntheticRedeliveryRecon.xlsx#EligibleCost"
+      }
+    }
+  ]
+}
