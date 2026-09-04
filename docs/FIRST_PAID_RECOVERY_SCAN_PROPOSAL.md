@@ -20,99 +20,123 @@ AERVIND is the commercial brand. Until a separate AERVIND company is actually in
 
 ### AERVIND Recovery Scan
 
-A bounded, evidence-led review of selected aircraft-lease entitlements designed to determine whether the agreed cohort reconciles cleanly from governing terms through maintenance / finance evidence and prior settlement.
+A bounded, evidence-led review of selected aircraft/engine lease entitlements designed to determine whether the agreed cohort reconciles cleanly from governing terms through event, finance, prior-claim and settlement evidence.
 
-### Recommended launch scope
+AERVIND does not assume leakage exists. Evidence-based assurance that the selected cohort reconciles correctly is a valid outcome.
+
+## Fixed launch scope
 
 - up to **5 aircraft and/or engines**;
-- **1 entitlement family** as the primary focus;
-- up to **12 months** of selected events, unless another fixed period is agreed;
+- **1 primary entitlement family**;
+- up to **12 months** of selected events;
 - one governing lease / amendment package per in-scope asset;
 - relevant reserve or lessor-contribution statements;
-- relevant MRO invoices, workscope / completion evidence and payment evidence;
-- prior claim / reimbursement / settlement records for the selected cohort.
+- relevant maintenance-event evidence, MRO invoices, workscope/completion evidence and payment evidence where required;
+- known prior claim / reimbursement / settlement records for the selected cohort.
 
-The parties may substitute an equivalent bounded cohort where that provides a better first proof case.
+The parties may substitute an equivalent bounded cohort before signature when it provides a better first proof case. Any later expansion is separately scoped.
+
+### No live system access required
+
+The first Recovery Scan operates from **PDFs, spreadsheets and controlled exports** supplied through the agreed transfer/storage route.
+
+AERVIND does not require customer credentials or live access to ERP, M&E, lease-management, banking or other operational systems for this engagement.
 
 ## Deliverables
 
-1. Contract / entitlement rule map.
-2. Evidence and source-lineage inventory.
-3. Deterministic entitlement reconciliation.
-4. Candidate register separating:
-   - identified potential;
-   - blocked potential;
-   - review-required pipeline;
-   - claim-ready value;
-   - verified settled / recovered value, if any settlement occurs and is evidenced.
-5. Deadline / time-bar register where determinable.
-6. False-positive / duplicate-recovery challenge log.
-7. Claim-ready dossier for items that pass both economic and evidence gates.
-8. Executive closeout with findings and recommended next actions.
+1. Scope and source inventory.
+2. Contract / entitlement rule map.
+3. Evidence and source-lineage register.
+4. Deterministic entitlement reconciliation.
+5. Candidate register with explicit status separation.
+6. Deadline / time-bar view where determinable.
+7. False-positive / duplicate-recovery challenge.
+8. Claim-ready dossier/package for candidates that pass economic, source-lineage and human-review gates.
+9. Executive closeout using mutually exclusive recovery-truth buckets.
+10. Portable assisted case/audit export where the AERVIND Operator Console is used.
 
-## Launch fixed fee
+## Fixed fee
 
-**EUR 9,500** for the scope above.
+**EUR 9,500** for the fixed launch scope above.
 
-This is the default first-reference price, within AERVIND's approved Recovery Scan range of EUR 7,500–15,000. Increase or reduce only when the cohort size, document volume or complexity is materially different and the change is agreed before signature.
+Any expansion to additional assets, entitlement families, review periods, forensic reconstruction, recurring monitoring or integrations is separately agreed and priced. It does not alter this fixed first-scan fee retrospectively.
 
 ### Payment structure
-
-Recommended launch structure:
 
 - **50% on engagement / scope confirmation**;
 - **50% on delivery of the Recovery Scan closeout**.
 
-Do not add a success fee to the first proposal unless separately agreed after reviewing the commercial and legal suitability for the specific customer.
+No success fee is included in this canonical first proposal unless separately negotiated and documented for the specific customer.
 
 ## Timing
 
-Target delivery window: **10 business days** from receipt of the complete agreed minimum data set, subject to customer response time for material evidence gaps or contract-interpretation questions.
+Target delivery: **10 business days** from receipt of the complete agreed minimum dataset.
 
-The clock should not be represented as running while critical customer inputs required for the agreed scope are unavailable.
+The delivery clock pauses for material customer evidence gaps or contract-interpretation questions that prevent completion of the agreed scope.
 
 ## Acceptance standard
 
 The Recovery Scan is complete when:
 
-- every reviewed candidate has an explicit status;
+- every reviewed candidate has an explicit economic status;
 - material calculation inputs are traceable to a supplied source or recorded as a gap;
-- known prior claims / payments in scope are reconciled;
+- known prior claims/payments in scope are reconciled;
 - deadlines are explicit where determinable;
 - false positives are rejected with recorded reasons;
-- claim-ready items pass economic and evidence-lineage gates;
-- the executive closeout does not report blocked, review-required, submitted or approved value as recovered.
+- claim-ready items pass economic, evidence-lineage and human-review gates;
+- external lifecycle events, if any, are recorded only from real supporting references/evidence;
+- the executive closeout does not combine blocked, review-required, claim-ready, submitted or approved value with verified recovery.
 
-A result of **no recoverable claim** does not by itself mean the engagement failed. Evidence-based assurance that the selected cohort reconciles correctly is a valid outcome.
+A result of **no recoverable claim** does not by itself mean the engagement failed. Evidence-based assurance that the selected cohort reconciles correctly is a valid completed outcome.
 
 ## Customer responsibilities
 
 The customer will:
 
-- provide authorized access to the agreed documents and records;
-- identify a finance / fleet / lease / technical owner able to resolve factual questions;
-- confirm material contract interpretations where language is ambiguous;
-- review and approve any claim package before external submission;
-- provide settlement evidence if recovered value is to be reported as verified recovered value.
+- provide the agreed bounded documents/exports through the approved transfer/storage route;
+- identify a finance / fleet / lease-management / technical-finance owner able to resolve factual questions;
+- help identify the governing contract/amendment position where version uncertainty exists;
+- confirm material contract interpretations where language remains ambiguous after source review;
+- provide known prior claim/reimbursement/settlement evidence in scope;
+- review and approve any external claim package;
+- perform or authorize any real external submission through the agreed channel;
+- provide counterparty and settlement evidence when those states are to be recorded.
+
+## AERVIND operating controls
+
+AERVIND will:
+
+- use the minimum evidence set necessary for the agreed scope;
+- preserve material source lineage;
+- make missing information explicit rather than infer favorable terms;
+- reconcile prior claims/payments to reduce duplicate-recovery risk;
+- challenge positive candidates before release;
+- require human review before claim-package generation;
+- keep generated packages `not_submitted` until a real external submission occurs;
+- record external submission/counterparty states only from real evidence/reference identifiers;
+- record recovered value only from positive settlement evidence.
 
 ## AERVIND boundaries
 
 AERVIND does not provide legal opinions, tax advice, statutory audit opinions, maintenance certification or airworthiness determinations, and does not guarantee that the cohort contains recoverable value.
 
-No external claim is submitted autonomously without customer approval.
+The AERVIND Operator Console does not autonomously submit claims, log into customer production systems or recognize settlement without evidence.
 
 ## Confidentiality and data handling
 
-Minimum-necessary data collection applies. Customer data is used only for the agreed engagement and is not used for model training. Retention / deletion expectations should be agreed before transfer of real lease or maintenance evidence.
+Minimum-necessary data collection applies. Customer confidential data is used only for the agreed engagement and is not used as model-training or public demonstration data.
+
+Before real evidence transfer, the parties agree the permitted transfer/storage route and retention/deletion expectations. Portable AERVIND case exports may contain confidential normalized financial/evidence metadata and must be stored only in the engagement-approved location.
 
 ## Procurement / tax condition
 
 Before signature and invoicing:
 
 - confirm the customer legal entity and billing details;
-- confirm the real AERVIND launch supplier legal / tax identity;
-- verify the applicable Portuguese and customer-country VAT / invoicing treatment;
-- satisfy any customer-specific procurement or insurance requirement.
+- confirm the real AERVIND launch supplier legal/tax identity;
+- verify that the supplier's Portuguese activity registration covers the service;
+- verify the applicable customer-specific VAT / invoicing treatment;
+- satisfy any customer-specific procurement, insurance or compliance requirement.
 
 If the buyer requires a registered company as a mandatory supplier condition, pause signature under the individual supplier model and decide whether the opportunity justifies incorporating **AERVIND, Unipessoal Lda.**.
 
