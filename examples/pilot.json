@@ -1,0 +1,86 @@
+{
+  "rules": [
+    {
+      "rule_id": "SYNTH-LEASE-001-MR-ENGINE",
+      "entitlement_type": "maintenance_reserve_reimbursement",
+      "formula": "lower_of_eligible_cost_and_available_fund",
+      "currency": "USD",
+      "effective_from": "2025-01-01",
+      "contribution_rate": "1",
+      "deadline_days_after_event": 120,
+      "required_evidence_types": ["invoice", "workscope", "payment_proof"],
+      "excluded_cost_categories": ["betterment", "late_fee"],
+      "notes": "Synthetic rule for product testing only."
+    },
+    {
+      "rule_id": "SYNTH-LEASE-002-CONTRIBUTION",
+      "entitlement_type": "lessor_contribution",
+      "formula": "percent_of_eligible_cost",
+      "currency": "USD",
+      "effective_from": "2025-01-01",
+      "contribution_rate": "0.50",
+      "cap": "400000",
+      "deadline_days_after_event": 180,
+      "required_evidence_types": ["invoice", "workscope"],
+      "notes": "Synthetic rule for product testing only."
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "SYNTH-C-001",
+      "rule_id": "SYNTH-LEASE-001-MR-ENGINE",
+      "event_date": "2026-06-01",
+      "evaluation_date": "2026-07-01",
+      "eligible_cost": "1250000",
+      "available_fund": "900000",
+      "evidence": [
+        {"evidence_id": "E-001", "evidence_type": "invoice", "source_name": "Synthetic MRO Invoice"},
+        {"evidence_id": "E-002", "evidence_type": "workscope", "source_name": "Synthetic Engine Workscope"},
+        {"evidence_id": "E-003", "evidence_type": "payment_proof", "source_name": "Synthetic Finance Ledger"}
+      ],
+      "source_refs": {
+        "rule_source": "SyntheticLease001.pdf#Schedule-6",
+        "event_date": "SyntheticCompletionCertificate.pdf#p1",
+        "eligible_cost": "SyntheticEligibleCost.xlsx#Summary",
+        "available_fund": "SyntheticReserveStatement.pdf#EngineFund"
+      }
+    },
+    {
+      "claim_id": "SYNTH-C-002",
+      "rule_id": "SYNTH-LEASE-002-CONTRIBUTION",
+      "event_date": "2026-05-15",
+      "evaluation_date": "2026-09-04",
+      "eligible_cost": "1000000",
+      "prior_paid_or_reimbursed": "125000",
+      "claimed_to_date": "50000",
+      "evidence": [
+        {"evidence_id": "E-010", "evidence_type": "invoice", "source_name": "Synthetic Heavy Check Invoice"},
+        {"evidence_id": "E-011", "evidence_type": "workscope", "source_name": "Synthetic Heavy Check Workscope"}
+      ],
+      "source_refs": {
+        "rule_source": "SyntheticLease002.pdf#MaintenanceContribution",
+        "event_date": "SyntheticReleaseToService.pdf#p1",
+        "eligible_cost": "SyntheticHeavyCheckRecon.xlsx#Eligible",
+        "prior_paid_or_reimbursed": "SyntheticSettlementLedger.xlsx#Paid",
+        "claimed_to_date": "SyntheticClaimsRegister.xlsx#OpenClaims"
+      }
+    },
+    {
+      "claim_id": "SYNTH-C-003",
+      "rule_id": "SYNTH-LEASE-001-MR-ENGINE",
+      "event_date": "2026-06-20",
+      "evaluation_date": "2026-07-01",
+      "eligible_cost": "220000",
+      "available_fund": "220000",
+      "evidence": [
+        {"evidence_id": "E-020", "evidence_type": "invoice", "source_name": "Synthetic Invoice Only"}
+      ],
+      "source_refs": {
+        "rule_source": "SyntheticLease001.pdf#Schedule-6",
+        "event_date": "SyntheticCompletionCertificate2.pdf#p1",
+        "eligible_cost": "SyntheticEligibleCost2.xlsx#Summary",
+        "available_fund": "SyntheticReserveStatement2.pdf#EngineFund"
+      }
+    }
+  ]
+}
