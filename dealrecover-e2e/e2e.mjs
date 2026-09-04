@@ -63,7 +63,25 @@ const snap=JSON.parse(finalSnap.body);
 if(snap.dispute?.state!=='RESOLVED'||snap.outcome?.outcome!=='RECOVERED'||Number(snap.outcome?.amount)!==10||snap.billing?.status!=='PAID_EXTERNALLY'||snap.documents?.length!==1)throw new Error('final commercial lifecycle snapshot mismatch');
 await test('cross_final_snapshot',`/api/deals/${dealA}`,{headers:headers(tokenB,tenantB)},404);
 
-const summary={result:'PASS',tests:results.length,dealA,dealB,docA,analysisDigest,recovered:10,billingStatus:'PAID_EXTERNALLY'};
+const analysisGet=await test('analysis_retrieval',`/api/deals/${dealA}/analyses/${analysisDigest}`,{headers:headers(tokenA,tenantA)},200);
+const analysisRow=JSON.parse(analysisGet.body);
+if(analysisRow.digest!==analysisDigest||analysisRow.payload?.state!=='SUPPORTED'||analysisRow.payload?.calculation?.difference!==10)throw new Error('analysis retrieval invariant failed');
+const dossierGet=await test('dossier_retrieval',`/api/deals/${dealA}/dossiers/${analysisDigest}`,{headers:headers(tokenA,tenantA)},200);
+const dossierRow=JSON.parse(dossierGet.body);
+if(dossierRow.digest!==analysisDigest||dossierRow.payload?.schema!=='dealrecover-ppa-dossier-v2'||dossierRow.payload?.digest!==analysisDigest)throw new Error('dossier retrieval invariant failed');
+await test('cross_analysis_retrieval',`/api/deals/${dealA}/analyses/${analysisDigest}`,{headers:headers(tokenB,tenantB)},404);
+await test('cross_dossier_retrieval',`/api/deals/${dealA}/dossiers/${analysisDigest}`,{headers:headers(tokenB,tenantB)},404);
+
+const auditGet=await test('audit_retrieval',`/api/deals/${dealA}/audit`,{headers:headers(tokenA,tenantA)},200);
+const audit=JSON.parse(auditGet.body);
+const expectedTypes=['DEAL_CREATED','DOCUMENT_STORED','ANALYSIS_SUPPORTED','DOSSIER_SAVED','DISPUTE_STATE_CHANGED','DISPUTE_STATE_CHANGED','DISPUTE_STATE_CHANGED','DISPUTE_STATE_CHANGED','OUTCOME_RECORDED','BILLING_STATE_CHANGED','BILLING_STATE_CHANGED','BILLING_STATE_CHANGED','BILLING_STATE_CHANGED'];
+if(audit.verification?.valid!==true||audit.verification?.count!==expectedTypes.length||audit.events?.length!==expectedTypes.length)throw new Error('audit verification/count failed');
+if(audit.events.map(e=>e.eventType).join('|')!==expectedTypes.join('|'))throw new Error('audit event sequence failed');
+for(let i=0;i<audit.events.length;i++){if(!/^[0-9a-f]{64}$/.test(audit.events[i].eventHash))throw new Error('audit hash format failed');if(i===0&&audit.events[i].prevHash!==null)throw new Error('audit genesis failed');if(i>0&&audit.events[i].prevHash!==audit.events[i-1].eventHash)throw new Error('audit chain linkage failed')}
+if(audit.verification.headHash!==audit.events.at(-1).eventHash)throw new Error('audit head hash failed');
+await test('cross_audit_retrieval',`/api/deals/${dealA}/audit`,{headers:headers(tokenB,tenantB)},404);
+
+const summary={result:'PASS',tests:results.length,dealA,dealB,docA,analysisDigest,recovered:10,billingStatus:'PAID_EXTERNALLY',auditEvents:audit.events.length,auditHead:audit.verification.headHash,dossierSchema:dossierRow.payload.schema};
 console.log(JSON.stringify({summary}));
 const port=Number(process.env.PORT||3000);
 http.createServer((req,res)=>{if(req.url==='/health'){res.writeHead(200,{'content-type':'application/json'});return res.end(JSON.stringify(summary));}res.writeHead(404);res.end();}).listen(port,'0.0.0.0');
