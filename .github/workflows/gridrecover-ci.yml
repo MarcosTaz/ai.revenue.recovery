@@ -83,3 +83,7 @@ jobs:
         run: node gridrecover/test/observability.test.js
       - name: Pilot readiness gate
         run: node gridrecover/test/pilot-readiness.test.js
+      - name: Retention legal-hold and deletion lifecycle
+        run: node gridrecover/test/data-lifecycle.test.js
+      - name: Versioned key rotation document vault
+        run: node gridrecover/test/rotating-document-vault.test.js
