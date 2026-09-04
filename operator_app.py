@@ -9,6 +9,7 @@ from typing import Any, Mapping
 from urllib.parse import urlsplit
 
 from aviation_io import evaluate_payload
+from claim_package import render_external_claim_markdown
 from executive_report import render_executive_markdown
 
 
@@ -40,8 +41,66 @@ def build_evaluation_response(payload: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def build_claim_package_response(
+    payload: Mapping[str, Any],
+    *,
+    claim_id: str,
+    human_release_confirmed: bool,
+) -> dict[str, Any]:
+    """Render, but never submit, an external-ready claim package.
+
+    The assisted console requires an explicit human confirmation for package
+    generation. The economic and source-lineage gates are re-evaluated from the
+    supplied cohort on every call so a stale browser view cannot bypass them.
+    """
+    if not human_release_confirmed:
+        raise ValueError("human release confirmation is required")
+
+    normalized_claim_id = str(claim_id).strip()
+    if not normalized_claim_id:
+        raise ValueError("claim_id is required")
+
+    evaluated = evaluate_payload(payload)
+    dossier = next(
+        (
+            item
+            for item in evaluated.get("dossiers", [])
+            if item.get("claim", {}).get("claim_id") == normalized_claim_id
+        ),
+        None,
+    )
+    if dossier is None:
+        raise ValueError("claim_id not found in evaluated cohort")
+
+    claim = dossier.get("claim", {})
+    status = str(claim.get("status", "unknown"))
+    if status != "claim_ready":
+        raise ValueError(f"claim package requires claim_ready candidate, got {status}")
+
+    blockers = list(dossier.get("blocking_issues", []))
+    lineage_gaps = list(dossier.get("lineage_gaps", []))
+    if blockers or lineage_gaps:
+        raise ValueError("claim package blocked by unresolved evidence or source lineage")
+
+    external_dossier = dict(dossier)
+    external_dossier["externalization_gate"] = "passed"
+    markdown = render_external_claim_markdown(external_dossier)
+
+    return {
+        "claim_id": normalized_claim_id,
+        "claim_package_markdown": markdown,
+        "external_dossier": external_dossier,
+        "human_release_confirmed": True,
+        "submission_status": "not_submitted",
+        "submission_note": (
+            "Package generation does not send or submit anything to a lessor, airline, "
+            "counterparty or external system."
+        ),
+    }
+
+
 class OperatorHandler(BaseHTTPRequestHandler):
-    server_version = "AERVINDOperator/1.0"
+    server_version = "AERVINDOperator/1.1"
 
     def log_message(self, format: str, *args: object) -> None:
         # Deliberately avoid logging request bodies or customer evidence.
@@ -69,6 +128,50 @@ class OperatorHandler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, payload: Mapping[str, Any]) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self._send_bytes(status, body, "application/json; charset=utf-8")
+
+    def _read_json_body(self) -> dict[str, Any] | None:
+        content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        if content_type != "application/json":
+            self._send_json(
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                {"error": "content_type_must_be_application_json"},
+            )
+            return None
+
+        raw_length = self.headers.get("Content-Length")
+        try:
+            length = int(raw_length or "0")
+        except ValueError:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "invalid_content_length"})
+            return None
+
+        if length <= 0:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "empty_request"})
+            return None
+        if length > MAX_REQUEST_BYTES:
+            self._send_json(
+                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                {"error": "request_too_large", "max_bytes": MAX_REQUEST_BYTES},
+            )
+            return None
+
+        raw = self.rfile.read(length)
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "invalid_json", "detail": str(exc)},
+            )
+            return None
+
+        if not isinstance(payload, dict):
+            self._send_json(
+                HTTPStatus.UNPROCESSABLE_ENTITY,
+                {"error": "invalid_recovery_payload", "detail": "top-level JSON must be an object"},
+            )
+            return None
+        return payload
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler contract
         path = urlsplit(self.path).path
@@ -111,47 +214,26 @@ class OperatorHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler contract
         path = urlsplit(self.path).path
-        if path != "/api/evaluate":
+        if path not in {"/api/evaluate", "/api/claim-package"}:
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
             return
 
-        content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
-        if content_type != "application/json":
-            self._send_json(
-                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                {"error": "content_type_must_be_application_json"},
-            )
+        request_payload = self._read_json_body()
+        if request_payload is None:
             return
 
-        raw_length = self.headers.get("Content-Length")
         try:
-            length = int(raw_length or "0")
-        except ValueError:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "invalid_content_length"})
-            return
-
-        if length <= 0:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "empty_request"})
-            return
-        if length > MAX_REQUEST_BYTES:
-            self._send_json(
-                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
-                {"error": "request_too_large", "max_bytes": MAX_REQUEST_BYTES},
-            )
-            return
-
-        raw = self.rfile.read(length)
-        try:
-            payload = json.loads(raw.decode("utf-8"))
-            if not isinstance(payload, dict):
-                raise ValueError("top-level JSON must be an object")
-            result = build_evaluation_response(payload)
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            self._send_json(
-                HTTPStatus.BAD_REQUEST,
-                {"error": "invalid_json", "detail": str(exc)},
-            )
-            return
+            if path == "/api/evaluate":
+                result = build_evaluation_response(request_payload)
+            else:
+                cohort = request_payload.get("payload")
+                if not isinstance(cohort, dict):
+                    raise ValueError("payload must contain the Recovery Scan cohort object")
+                result = build_claim_package_response(
+                    cohort,
+                    claim_id=str(request_payload.get("claim_id", "")),
+                    human_release_confirmed=request_payload.get("human_release_confirmed") is True,
+                )
         except (KeyError, TypeError, ValueError) as exc:
             self._send_json(
                 HTTPStatus.UNPROCESSABLE_ENTITY,
