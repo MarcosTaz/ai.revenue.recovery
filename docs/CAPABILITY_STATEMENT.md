@@ -1,12 +1,14 @@
-# Aviation Recovery — Capability Statement
+# AERVIND — Capability Statement
 
 _Last reviewed: 2026-09-04_
 
-## What Aviation Recovery does
+## What AERVIND does
 
-Aviation Recovery is an assisted, evidence-led recovery and financial-control service for airlines and aircraft lessees.
+**AERVIND** is an assisted, evidence-led recovery and financial-control service for airlines and aircraft lessees.
 
 It reconstructs lease-linked economic entitlements from governing contract terms, maintenance-event evidence, financial records and prior settlements, then separates unsupported potential from claim-ready value and verified recovered value.
+
+Product descriptor: **Aviation Lease Entitlement Recovery**.
 
 ## Initial recovery scope
 
@@ -18,7 +20,7 @@ It reconstructs lease-linked economic entitlements from governing contract terms
 
 ## The problem addressed
 
-Lease-linked maintenance economics can span multiple contract versions, technical records, MRO invoices, reserve statements, lessor correspondence, deadlines and prior payments. Aviation Recovery provides a bounded independent control that reconciles those sources into one reproducible economic view.
+Lease-linked maintenance economics can span multiple contract versions, technical records, MRO invoices, reserve statements, lessor correspondence, deadlines and prior payments. AERVIND provides a bounded independent control that reconciles those sources into one reproducible economic view.
 
 It does **not** assume leakage exists. A clean result is still a valuable control outcome when the evidence proves the cohort was handled correctly.
 
@@ -73,7 +75,7 @@ Typical deliverables:
 
 ## Commercial structure
 
-Aviation Recovery is initially sold as an assisted professional service, not as a self-service SaaS subscription.
+AERVIND is initially sold as an assisted professional service, not as a self-service SaaS subscription.
 
 Indicative commercial framework:
 
@@ -84,9 +86,9 @@ Indicative commercial framework:
 
 The preferred procurement format is a fixed-fee first cohort with explicit assumptions, evidence boundary and acceptance criteria.
 
-## What Aviation Recovery is not
+## What AERVIND is not
 
-Aviation Recovery does not provide:
+AERVIND does not provide:
 
 - legal opinions or representation as legal counsel;
 - statutory or external audit opinions;
@@ -114,6 +116,8 @@ Best-fit category: **Professional and Financial Services**, with aviation M&E / 
 
 The engagement should be evaluated as a specialist financial-control / recovery service, not as an MRO, legal service, accounting audit or airworthiness service.
 
-## Supplier identity fields
+## Supplier identity
 
-The service capability is ready. Formal procurement submissions must use the actual supplier legal entity and verified legal, tax, banking, insurance and signatory information. No such fields should be inferred or fabricated.
+During the initial launch phase, AERVIND is the commercial brand of the real Portuguese individual-professional supplier identified in each proposal, contract and invoice. Customer-facing documents must retain the actual legal supplier name, tax identity and professional address where required.
+
+A future **AERVIND, Unipessoal Lda.** may be created when buyer procurement, revenue, liability or operating complexity justifies it. No corporate registration, NIPC, banking, insurance or signatory facts may be inferred or fabricated before that occurs.
