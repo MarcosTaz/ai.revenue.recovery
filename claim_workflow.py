@@ -96,6 +96,21 @@ def allowed_transitions(state: ClaimLifecycle) -> tuple[ClaimLifecycle, ...]:
     return tuple(sorted(_ALLOWED_TRANSITIONS[state], key=lambda value: value.value))
 
 
+def external_reference_required(
+    current: ClaimLifecycle, target: ClaimLifecycle
+) -> bool:
+    if target == ClaimLifecycle.SUBMITTED:
+        return True
+    if current in _EXTERNAL_SOURCE_STATES and target in {
+        ClaimLifecycle.ACKNOWLEDGED,
+        ClaimLifecycle.DISPUTED,
+        ClaimLifecycle.APPROVED,
+        ClaimLifecycle.REJECTED,
+    }:
+        return True
+    return False
+
+
 def _validate_record(record: ClaimRecord) -> None:
     if not record.claim_id.strip():
         raise WorkflowError("claim_id is required")
@@ -112,21 +127,6 @@ def _validate_record(record: ClaimRecord) -> None:
             raise WorkflowError("settled workflow record requires positive verified settled value")
         if record.verified_settled_amount > record.asserted_recovery_amount:
             raise WorkflowError("verified settled value cannot exceed asserted recovery amount")
-
-
-def _external_reference_required(
-    current: ClaimLifecycle, target: ClaimLifecycle
-) -> bool:
-    if target == ClaimLifecycle.SUBMITTED:
-        return True
-    if current in _EXTERNAL_SOURCE_STATES and target in {
-        ClaimLifecycle.ACKNOWLEDGED,
-        ClaimLifecycle.DISPUTED,
-        ClaimLifecycle.APPROVED,
-        ClaimLifecycle.REJECTED,
-    }:
-        return True
-    return False
 
 
 def transition_claim(
@@ -159,7 +159,7 @@ def transition_claim(
     normalized_external_reference = (
         str(external_reference).strip() if external_reference is not None else ""
     )
-    if _external_reference_required(record.lifecycle, target) and not normalized_external_reference:
+    if external_reference_required(record.lifecycle, target) and not normalized_external_reference:
         raise WorkflowError(
             f"{target.value} requires an external evidence/reference identifier"
         )
