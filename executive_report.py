@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any, Mapping, Sequence
 
 from claim_workflow import ClaimLifecycle, ClaimRecord
+from markdown_safety import markdown_plain_text
 
 
 def _decimal(value: object) -> Decimal:
@@ -12,7 +13,7 @@ def _decimal(value: object) -> Decimal:
 
 
 def _money(value: Decimal, currency: str) -> str:
-    return f"{currency} {value:,.2f}"
+    return f"{markdown_plain_text(currency)} {value:,.2f}"
 
 
 def _workflow_index(
@@ -161,13 +162,19 @@ def render_executive_markdown(
 
     for result in sorted_candidates:
         issues = list(result.get("blocking_issues", [])) or list(result.get("warnings", []))
-        issue = str(issues[0]) if issues else "—"
-        claim_id = str(result.get("claim_id", "UNKNOWN"))
-        workflow = workflows.get(claim_id)
-        workflow_state = workflow.lifecycle.value if workflow is not None else "—"
+        issue = markdown_plain_text(issues[0], "—") if issues else "—"
+        claim_id_raw = str(result.get("claim_id", "UNKNOWN"))
+        claim_id = markdown_plain_text(claim_id_raw)
+        workflow = workflows.get(claim_id_raw)
+        workflow_state = markdown_plain_text(
+            workflow.lifecycle.value if workflow is not None else "—",
+            "—",
+        )
+        status = markdown_plain_text(result.get("status", "unknown"), "unknown")
+        result_currency = str(result.get("currency", currency))
         lines.append(
-            f"| {claim_id} | {result.get('status', 'unknown')} | {workflow_state} | "
-            f"{_money(_decimal(result.get('net_recoverable', '0')), str(result.get('currency', currency)))} | {issue} |"
+            f"| {claim_id} | {status} | {workflow_state} | "
+            f"{_money(_decimal(result.get('net_recoverable', '0')), result_currency)} | {issue} |"
         )
 
     lines.extend(["", "## Portfolio exceptions", ""])
@@ -178,13 +185,13 @@ def render_executive_markdown(
             lines.append("### Blocking issues")
             lines.append("")
             for issue, count in blockers.most_common():
-                lines.append(f"- {issue}: {count}")
+                lines.append(f"- {markdown_plain_text(issue, 'unknown')}: {count}")
             lines.append("")
         if warnings:
             lines.append("### Warnings")
             lines.append("")
             for warning, count in warnings.most_common():
-                lines.append(f"- {warning}: {count}")
+                lines.append(f"- {markdown_plain_text(warning, 'unknown')}: {count}")
             lines.append("")
 
     lines.extend(
