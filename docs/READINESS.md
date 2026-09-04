@@ -8,6 +8,8 @@ _Status basis: assisted, human-reviewed pilot; not self-service enterprise SaaS.
 
 A bounded customer engagement can be sold and executed now using the current workflow, provided customer contract/evidence inputs are supplied under an agreed confidentiality arrangement and material contract interpretation remains human-reviewed.
 
+The assisted operator product now has both CLI and browser-console execution paths over the same deterministic engine. The browser console is deliberately local/no-persistence by default; it is not a public customer SaaS deployment.
+
 ## Gate matrix
 
 | Capability | Status | Evidence in repository |
@@ -30,13 +32,16 @@ A bounded customer engagement can be sold and executed now using the current wor
 | Settlement truth | READY | economic-evidence gate + workflow tests |
 | Audit-event model | READY FOR ASSISTED PILOT | transition events exist; production persistence/identity hardening is scale-phase work |
 | Synthetic E2E demonstration | READY | `examples/pilot.json`, CLI, CLI tests |
+| Assisted browser operator console | READY | `operator_app.py`, `operator_ui/`, `tests/test_operator_app.py` |
+| Candidate drill-down / calculation trace | READY | operator console + evaluation dossiers |
+| Executive report export | READY | `executive_report.py` + operator console |
 | Automated regression gate | READY | GitHub Actions + unittest suite |
 | Pilot data request | READY | `docs/PILOT_DATA_REQUEST.md` |
 | Security/confidentiality baseline | READY FOR ASSISTED PILOT | `docs/SECURITY_AND_CONFIDENTIALITY.md` |
-| Operator runbook | READY | `docs/OPERATOR_RUNBOOK.md` |
+| Operator runbook | READY | `docs/OPERATOR_RUNBOOK.md`, `docs/OPERATOR_CONSOLE.md` |
 | Pilot SOW / commercial structure | READY | `docs/PILOT_SOW.md` |
 | ICP / discovery / outbound | READY | `docs/GTM.md`, `docs/OUTBOUND_PLAYBOOK.md` |
-| Self-service customer UI | POST-PILOT | not required for assisted-pilot milestone |
+| Self-service customer portal | POST-PILOT | not required for assisted-pilot milestone |
 | SSO / enterprise RBAC / tenant admin | POST-PILOT | scale-phase control |
 | Deep M&E / ERP integrations | POST-PILOT | scale after proof of recovery value |
 | Formal external security certification | POST-PILOT | do not claim before obtained |
@@ -70,7 +75,7 @@ A first paid pilot should answer four questions with evidence:
 Only after assisted pilots prove repeatable value, prioritize:
 
 1. persistent multi-customer data model and durable audit store;
-2. browser UI for portfolio/candidate/reviewer workflows;
+2. customer/reviewer portal over the proven operator workflow;
 3. tenant isolation, RBAC, SSO/MFA and enterprise audit controls;
 4. document ingestion/extraction assistance with human validation;
 5. M&E / ERP / lease-management integrations;

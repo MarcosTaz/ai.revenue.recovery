@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="description" content="AERVIND assisted operator console for aviation lease entitlement recovery." />
+  <title>AERVIND — Operator Console</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="identity">
+        <div class="brand">AERVIND</div>
+        <div class="descriptor">Aviation Lease Entitlement Recovery</div>
+      </div>
+
+      <nav class="side-nav" aria-label="Operator sections">
+        <button class="nav-item active" type="button" data-scroll="workspace">
+          <span>01</span> Recovery Scan
+        </button>
+        <button class="nav-item" type="button" data-scroll="truth">
+          <span>02</span> Recovery truth
+        </button>
+        <button class="nav-item" type="button" data-scroll="candidates">
+          <span>03</span> Candidates
+        </button>
+        <button class="nav-item" type="button" data-scroll="report">
+          <span>04</span> Executive report
+        </button>
+      </nav>
+
+      <div class="sidebar-note">
+        <div class="kicker">Operating boundary</div>
+        <p>Assisted, human-reviewed workflow. This console does not submit claims or report recovery without settlement evidence.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="kicker">Assisted operator workspace</div>
+          <h1>Recovery Scan</h1>
+        </div>
+        <div class="status-row">
+          <span class="status-dot"></span>
+          <span>Local processing · no server persistence</span>
+        </div>
+      </header>
+
+      <section class="panel input-panel" id="workspace">
+        <div class="panel-head">
+          <div>
+            <div class="kicker">01 · Source cohort</div>
+            <h2>Load the governed evidence cohort</h2>
+            <p>Use the canonical AERVIND JSON structure. The server evaluates the payload in memory and returns recovery truth, dossiers and an executive report.</p>
+          </div>
+          <div class="panel-actions compact">
+            <button id="load-example" class="btn secondary" type="button">Load synthetic example</button>
+            <label class="btn secondary file-btn">
+              Upload JSON
+              <input id="file-input" type="file" accept="application/json,.json" />
+            </label>
+          </div>
+        </div>
+
+        <div class="editor-frame">
+          <div class="editor-toolbar">
+            <div>
+              <span class="signal neutral" id="input-signal"></span>
+              <span id="input-label">No cohort loaded</span>
+            </div>
+            <button id="clear-input" class="text-btn" type="button">Clear</button>
+          </div>
+          <textarea id="payload" spellcheck="false" aria-label="Recovery Scan JSON payload" placeholder="Paste the Recovery Scan JSON cohort here…"></textarea>
+        </div>
+
+        <div class="run-row">
+          <div class="run-help">
+            <strong>Evaluation is deterministic.</strong>
+            <span>Missing evidence, deadlines, exclusions and prior payments remain visible as blockers or review items.</span>
+          </div>
+          <button id="evaluate" class="btn primary" type="button">Evaluate cohort</button>
+        </div>
+        <div id="error-box" class="error-box" role="alert" hidden></div>
+      </section>
+
+      <section class="panel truth-panel" id="truth" hidden>
+        <div class="panel-head">
+          <div>
+            <div class="kicker">02 · Recovery truth</div>
+            <h2>Separate identified value from recovered cash</h2>
+          </div>
+          <div class="truth-lock">Settlement truth enforced</div>
+        </div>
+
+        <div class="truth-grid">
+          <article class="metric metric-primary">
+            <div class="metric-label">Claim-ready value</div>
+            <div class="metric-value" id="metric-ready">—</div>
+            <div class="metric-meta" id="metric-ready-count">—</div>
+          </article>
+          <article class="metric">
+            <div class="metric-label">Review required</div>
+            <div class="metric-value" id="metric-review">—</div>
+            <div class="metric-meta" id="metric-review-count">—</div>
+          </article>
+          <article class="metric">
+            <div class="metric-label">Blocked potential</div>
+            <div class="metric-value" id="metric-blocked">—</div>
+            <div class="metric-meta" id="metric-blocked-count">—</div>
+          </article>
+          <article class="metric metric-settled">
+            <div class="metric-label">Verified recovered</div>
+            <div class="metric-value">0.00</div>
+            <div class="metric-meta">No settlement evidence loaded in this scan</div>
+          </article>
+        </div>
+
+        <div class="truth-note" id="truth-note"></div>
+      </section>
+
+      <section class="panel" id="candidates" hidden>
+        <div class="panel-head">
+          <div>
+            <div class="kicker">03 · Candidate register</div>
+            <h2>Every amount must explain itself</h2>
+            <p>Select a candidate to inspect blockers, warnings, evidence lineage and the calculation trace.</p>
+          </div>
+          <div class="panel-actions compact">
+            <button id="download-json" class="btn secondary" type="button">Export evaluation</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Candidate</th>
+                <th>Status</th>
+                <th>Rule</th>
+                <th class="numeric">Net economic amount</th>
+                <th>Primary issue</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="candidate-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="split-panel" id="detail-panel" hidden>
+        <div class="panel detail-card">
+          <div class="panel-head detail-head">
+            <div>
+              <div class="kicker">Candidate review</div>
+              <h2 id="detail-title">—</h2>
+            </div>
+            <button id="close-detail" class="icon-btn" type="button" aria-label="Close candidate detail">×</button>
+          </div>
+          <div class="detail-summary" id="detail-summary"></div>
+          <div class="detail-columns">
+            <div>
+              <h3>Blocking issues</h3>
+              <ul class="audit-list" id="detail-blockers"></ul>
+              <h3>Warnings</h3>
+              <ul class="audit-list" id="detail-warnings"></ul>
+            </div>
+            <div>
+              <h3>Evidence references</h3>
+              <ul class="audit-list" id="detail-evidence"></ul>
+              <h3>Lineage gaps</h3>
+              <ul class="audit-list" id="detail-lineage"></ul>
+            </div>
+          </div>
+          <div>
+            <h3>Calculation trace</h3>
+            <ol class="trace-list" id="detail-trace"></ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel report-panel" id="report" hidden>
+        <div class="panel-head">
+          <div>
+            <div class="kicker">04 · Executive output</div>
+            <h2>Management-ready recovery report</h2>
+            <p>The report preserves the same recovery-truth vocabulary as the engine.</p>
+          </div>
+          <div class="panel-actions compact">
+            <button id="download-report" class="btn secondary" type="button">Export Markdown</button>
+          </div>
+        </div>
+        <pre id="report-output"></pre>
+      </section>
+
+      <footer class="footer">
+        <div>AERVIND · Aviation Lease Entitlement Recovery</div>
+        <div>Assisted pilot mode · Human release gate required before externalization</div>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
