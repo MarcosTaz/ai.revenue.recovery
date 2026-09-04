@@ -1,6 +1,5 @@
 import json
 import unittest
-from pathlib import Path
 
 from operator_app import UI_ROOT, build_evaluation_response, load_synthetic_example
 
@@ -18,7 +17,7 @@ class OperatorAppTests(unittest.TestCase):
         self.assertEqual(summary["claim_ready_count"], 2)
         self.assertEqual(summary["blocked_count"], 1)
         self.assertIn("not recovered cash", response["truth_note"])
-        self.assertIn("Verified settled recovery: USD 0.00", response["executive_report_markdown"])
+        self.assertIn("**Verified settled recovery:** USD 0.00", response["executive_report_markdown"])
 
     def test_operator_ui_assets_exist_and_keep_assisted_boundary_visible(self):
         index = (UI_ROOT / "index.html").read_text(encoding="utf-8")
