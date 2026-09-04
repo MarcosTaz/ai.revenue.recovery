@@ -85,6 +85,10 @@ _ALLOWED_TRANSITIONS: dict[ClaimLifecycle, set[ClaimLifecycle]] = {
 }
 
 
+def allowed_transitions(state: ClaimLifecycle) -> tuple[ClaimLifecycle, ...]:
+    return tuple(sorted(_ALLOWED_TRANSITIONS[state], key=lambda value: value.value))
+
+
 def _validate_record(record: ClaimRecord) -> None:
     if not record.claim_id.strip():
         raise WorkflowError("claim_id is required")
@@ -94,6 +98,13 @@ def _validate_record(record: ClaimRecord) -> None:
         raise WorkflowError("asserted_recovery_amount cannot be negative")
     if record.verified_settled_amount < 0:
         raise WorkflowError("verified_settled_amount cannot be negative")
+    if record.lifecycle != ClaimLifecycle.SETTLED and record.verified_settled_amount != 0:
+        raise WorkflowError("unsettled workflow record cannot contain verified settled value")
+    if record.lifecycle == ClaimLifecycle.SETTLED:
+        if record.verified_settled_amount <= 0:
+            raise WorkflowError("settled workflow record requires positive verified settled value")
+        if record.verified_settled_amount > record.asserted_recovery_amount:
+            raise WorkflowError("verified settled value cannot exceed asserted recovery amount")
 
 
 def transition_claim(
@@ -136,12 +147,18 @@ def transition_claim(
             raise WorkflowError("settled requires economic settlement evidence")
         if settlement_evidence.amount <= 0:
             raise WorkflowError("settlement amount must be positive")
-        if settlement_evidence.currency != record.currency:
+        if settlement_evidence.amount > record.asserted_recovery_amount:
+            raise WorkflowError(
+                "settlement amount exceeds asserted recovery amount; revise and re-review the claim before settlement"
+            )
+        if settlement_evidence.currency.strip().upper() != record.currency.strip().upper():
             raise WorkflowError("settlement currency mismatch")
         if not settlement_evidence.reference.strip():
             raise WorkflowError("settlement evidence reference is required")
         settled_amount = settlement_evidence.amount
-        settlement_reference = settlement_evidence.reference
+        settlement_reference = settlement_evidence.reference.strip()
+    elif settlement_evidence is not None:
+        raise WorkflowError("settlement evidence is accepted only for a settled transition")
 
     updated = replace(
         record,
@@ -153,8 +170,9 @@ def transition_claim(
         from_state=record.lifecycle,
         to_state=target,
         occurred_at=occurred_at,
-        actor=actor,
-        reason=reason,
+        actor=actor.strip(),
+        reason=reason.strip(),
         settlement_reference=settlement_reference,
     )
+    _validate_record(updated)
     return updated, event
