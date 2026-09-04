@@ -1,4 +1,4 @@
-# Aviation Recovery — Procurement Readiness
+# AERVIND — Procurement Readiness
 
 _Last reviewed: 2026-09-04_
 
@@ -6,9 +6,15 @@ _Last reviewed: 2026-09-04_
 
 **SERVICE / PILOT PACKAGE: READY**
 
-**FORMAL SUPPLIER SUBMISSION: BLOCKED ONLY ON REAL LEGAL-ENTITY INPUTS + EXPLICIT SUBMISSION APPROVAL**
+**DIRECT PAID PILOT: READY SUBJECT TO REAL INDIVIDUAL-SUPPLIER TAX / CONTRACT FACTS**
+
+**FORMAL AIRLINE SUPPLIER ONBOARDING: CUSTOMER-SPECIFIC SUPPLIER-TYPE GATE**
 
 The commercial product itself no longer needs additional architecture before a bounded airline procurement conversation.
+
+A Portuguese company is no longer a default prerequisite for first revenue. The initial operating model is the operator's real Portuguese individual-professional activity, trading commercially as **AERVIND**, provided the activity classification, invoicing and customer procurement requirements are valid for the engagement.
+
+See `docs/SOLE_TRADER_LAUNCH.md`.
 
 ## Ready now
 
@@ -25,27 +31,31 @@ The commercial product itself no longer needs additional architecture before a b
 - buyer map and evidence ledger;
 - compliant channel strategy;
 - TAP supplier-intake positioning;
-- procurement capability statement.
+- procurement capability statement;
+- AERVIND canonical brand;
+- sole-trader first-revenue operating model.
 
-## Supplier questionnaire facts that must be supplied from reality
+## Supplier identity facts that must come from reality
 
-The following are not product gaps and must never be guessed:
+For an initial individual-professional engagement, the following must never be guessed:
 
 | Field | Status | Rule |
 | --- | --- | --- |
-| Legal entity name | REQUIRED | Use registered entity only |
-| Registered address | REQUIRED | Match official registration |
-| Company registration number | REQUIRED IF ASKED | Source from official registration |
-| VAT / tax number | REQUIRED | Verify before submission |
-| Country of incorporation | REQUIRED | Legal fact |
-| Beneficial ownership | IF ASKED | Formal declaration only |
-| Authorized signatory | REQUIRED FOR CONTRACT | Named real person with authority |
-| Bank / IBAN / SWIFT | LATER / IF ASKED | Never include in early capability outreach unless required |
+| Legal supplier name | REQUIRED | Real individual legal name |
+| Professional / tax address | REQUIRED | Match actual tax / professional records |
+| VAT / tax number | REQUIRED | Real Portuguese NIF / VAT identity |
+| Activity classification | REQUIRED | Must cover the service actually provided |
+| Customer legal entity | REQUIRED | Contract with the real buyer entity |
+| Customer VAT / tax ID | WHERE APPLICABLE | Verify before international B2B invoicing |
+| Authorized customer signatory / PO owner | CUSTOMER-SPECIFIC | Use actual authority / procurement flow |
+| Bank / IBAN | PAYMENT STAGE | Real account details only |
 | Insurance | IF REQUIRED | Declare actual coverage only |
 | Certifications | IF REQUIRED | Claim only held certifications |
-| Sanctions / ethics declarations | REQUIRED IF ASKED | Complete truthfully |
-| Supplier Code acceptance | REQUIRED IF ASKED | Human/legal acceptance gate |
+| Sanctions / ethics declarations | IF ASKED | Complete truthfully |
+| Supplier Code acceptance | IF ASKED | Human/legal acceptance gate |
 | Data-processing terms | CONTRACT STAGE | Agree scope and controller/processor roles |
+
+If a buyer requires a company-only supplier identity, do not invent one. Either use an accepted individual-supplier route or create the future **AERVIND, Unipessoal Lda.** when justified by the opportunity.
 
 ## TAP-specific readiness
 
@@ -60,17 +70,18 @@ The following are not product gaps and must never be guessed:
 - information-security baseline;
 - non-legal / non-audit / non-airworthiness boundary.
 
-### Remaining before submission
+### Remaining before TAP submission
 
-1. Fill legal supplier identity.
-2. Confirm who is authorized to register / sign for that entity.
-3. Review the live Ariba questionnaire fields at submission time.
-4. Complete only factual required declarations.
-5. Explicitly approve the external registration side effect.
+1. Inspect the live TAP/Ariba questionnaire for the supplier-type options actually accepted.
+2. If an individual professional is accepted, fill only the operator's real legal/tax facts.
+3. If TAP requires a registered company, do not fabricate one; treat incorporation as a TAP-specific procurement requirement rather than a global launch requirement.
+4. Confirm who is authorized to register / sign for the selected supplier identity.
+5. Complete only factual required declarations.
+6. Explicitly approve the external registration side effect.
 
-## Commercial proof target
+## Direct-pilot path
 
-The first paid airline engagement should optimize for **reference-quality proof**, not maximum contract value.
+AERVIND can pursue a first paid Recovery Scan with an airline/operator that accepts the operator's existing Portuguese individual-professional supplier status.
 
 Preferred proof:
 
@@ -84,14 +95,17 @@ Preferred proof:
 
 ## Go / no-go rule
 
-**GO** when legal supplier identity, buyer / procurement route and approval to submit are all real and verified.
+**GO** for commercial outreach now.
 
-**NO-GO** if the only way to progress would require inventing corporate facts, misusing customer/IR channels, sending prohibited cold email, or representing the service as legally/audit certified when it is not.
+**GO** for a paid engagement when the real supplier activity/tax facts, buyer entity, contract/SOW, invoice treatment and customer procurement requirements are verified.
+
+**NO-GO** if progression would require inventing corporate facts, misusing customer/IR channels, sending prohibited cold email, applying the wrong tax/VAT treatment, or representing the service as legally/audit certified when it is not.
 
 ## Scale items that remain post-pilot
 
 These are intentionally not prerequisites for the first paid assisted engagement:
 
+- Portuguese company incorporation unless a buyer requires it;
 - self-service tenant UI;
 - SSO / enterprise RBAC;
 - deep airline M&E / ERP integrations;
