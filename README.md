@@ -2,6 +2,12 @@
 
 Recovery-first software for airline/lessee aircraft-lease entitlements.
 
+## Current status
+
+**ASSISTED PILOT COMMERCIAL-READY**
+
+The current product is suitable for bounded, human-reviewed recovery engagements. It is **not yet positioned as self-service enterprise SaaS**. The commercial unit is an assisted Recovery Scan / Forensic Reconciliation / Claim Dossier engagement with deterministic calculations, evidence lineage, red-team review, claim lifecycle tracking and settlement-truth reporting.
+
 ## Initial wedge
 
 Recover value that is already contractually available but missed, under-claimed, delayed, or poorly evidenced:
@@ -30,9 +36,36 @@ A recovery candidate cannot become `claim_ready` unless:
 - all material exclusions and caps/floors have been evaluated;
 - the dossier contains source references for every material input.
 
-## Core engine
+An external claim package requires the evidence-lineage gate to pass. A claim cannot be reported as `settled` without economic settlement evidence.
 
-`aviation_recovery.py` contains a deterministic, contract-configured entitlement evaluator. It does not guess contract law or invent missing terms. It returns blocking issues when evidence or rule data is missing and supports multiple rule formulas so lease-specific language can be represented explicitly.
+## Core components
+
+- `aviation_recovery.py` — deterministic, contract-configured entitlement engine.
+- `recovery_truth.py` — separates claim-ready value, review pipeline and blocked potential.
+- `aviation_dossier.py` — internal review dossier and externalization lineage gate.
+- `claim_package.py` — external claim-package renderer after gate approval.
+- `claim_workflow.py` — claim lifecycle from detection through verified settlement.
+- `aviation_io.py` — JSON ingestion/evaluation pipeline.
+- `executive_report.py` — executive recovery truth reporting.
+- `cli.py` — assisted operator entrypoint.
+
+## Quickstart — synthetic pilot
+
+Run the complete synthetic evaluation and executive-report flow:
+
+```bash
+python cli.py examples/pilot.json \
+  --output evaluated.json \
+  --report executive.md
+```
+
+Run all automated tests:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The synthetic pilot intentionally includes both claim-ready value and a blocked candidate so reporting semantics can be verified.
 
 ## Commercial positioning
 
@@ -45,4 +78,17 @@ Initial assisted offer:
 - **Claim Dossier** — calculation, clause map, source evidence, exceptions and submission package.
 - **Recovery Monitoring** — recurring detection of new maintenance events and approaching contractual deadlines.
 
-The first product milestone is an assisted, audit-grade pilot rather than self-service SaaS.
+Commercial operating material lives in:
+
+- `docs/PILOT_SOW.md`
+- `docs/PILOT_DATA_REQUEST.md`
+- `docs/OPERATOR_RUNBOOK.md`
+- `docs/CLAIM_DOSSIER.md`
+- `docs/SECURITY_AND_CONFIDENTIALITY.md`
+- `docs/GTM.md`
+- `docs/OUTBOUND_PLAYBOOK.md`
+- `docs/READINESS.md`
+
+## Boundary of the current milestone
+
+The current milestone proves a sellable assisted recovery workflow. Enterprise SaaS capabilities such as tenant administration, SSO, deep ERP/M&E integrations, customer self-service and formal external security assurance belong to the post-pilot scale phase; they are not required to sell or execute the bounded assisted pilot defined here.
