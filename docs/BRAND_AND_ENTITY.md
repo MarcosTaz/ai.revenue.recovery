@@ -26,7 +26,7 @@ Formal legal/company-name availability in Portugal remains subject to the compet
 
 ## Domain state
 
-Checked on 2026-09-04:
+Checked / rechecked on 2026-09-04:
 
 - `aervind.com` — available; observed purchase price USD 11.25 / 1 year
 - `aervind.ai` — available; observed purchase price USD 160 / 2 years
@@ -37,36 +37,60 @@ Checked on 2026-09-04:
 Canonical domain priority:
 
 1. **aervind.com**
-2. aervind.pt as defensive/local acquisition if desired
-3. aervind.ai only if there is a later strategic reason; it is not required for positioning
+2. aervind.pt only as a later defensive/local acquisition if useful
+3. aervind.ai only if there is a later strategic reason
 
 No domain purchase has been executed by this project state.
 
-## Preferred Portuguese legal form
+## Initial legal supplier model
 
-Preferred company form:
+AERVIND will **not incorporate a company before first revenue by default**.
+
+Initial legal supplier:
+
+- the operator's real Portuguese individual-professional / sole-trader activity;
+- commercial trading brand: **AERVIND**;
+- contracts and invoices must preserve the operator's legally required name, tax identity and address;
+- the activity must be correctly classified for the service before the first paid engagement.
+
+Working activity classification for AERVIND is **CAE Rev.4 70200 — Atividades de consultoria para os negócios e outra consultoria para a gestão**, subject to the operator's real tax registration and any customer-specific facts.
+
+See `docs/SOLE_TRADER_LAUNCH.md`.
+
+## Future Portuguese company
+
+Preferred future company form, if and when justified:
 
 **AERVIND, Unipessoal Lda.**
 
-This exact legal denomination is a target, not yet an incorporated fact. It remains subject to Portuguese company-name admissibility and incorporation.
+This exact legal denomination is a future target, not an incorporated fact. Incorporation should be triggered by revenue, liability, buyer procurement requirements, hiring/subcontracting, banking/payment needs, or accounting/tax advice based on actual operations.
 
 Do not state that AERVIND, Unipessoal Lda. exists until incorporation is actually complete.
 
 ## External identity hierarchy
 
-After incorporation, use:
+### Initial phase
 
 - Brand: **AERVIND**
-- Company: **AERVIND, Unipessoal Lda.** (only if approved/registered exactly as such)
+- Legal supplier: **real individual professional identity**
 - Product: **Aviation Lease Entitlement Recovery**
 - Initial commercial offer: **Recovery Scan**
+
+### After future incorporation
+
+- Brand: **AERVIND**
+- Company: **AERVIND, Unipessoal Lda.** only if approved/registered exactly as such
+- Product: **Aviation Lease Entitlement Recovery**
+- Initial commercial offer remains: **Recovery Scan**
 
 ## Non-regression
 
 Do not:
 
 - invent company registration, VAT/NIPC, address or signatory data;
-- buy secondary domains before the primary `.com` decision is made;
+- hide the legally required individual supplier identity behind the brand on contracts/invoices;
+- incorporate merely for appearance before a commercial reason exists;
+- buy secondary domains before the primary `.com` is secured;
 - dilute the brand with generic names in new outbound assets;
 - claim formal trademark clearance from public search alone;
 - rename historical source-code modules merely for cosmetic reasons before the paid pilot.
