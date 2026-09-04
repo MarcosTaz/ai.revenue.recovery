@@ -9,7 +9,7 @@ Status: configuration in progress (custom domain claimed in Primitive; DNS verif
 Until the founder explicitly lifts this hold:
 
 - do not send from `@aervind.com` to any real person, company, airline, partner or supplier;
-- do not use a real external mailbox for a delivery test;
+- do not use any **real external recipient** or real external mailbox for a delivery test;
 - do not submit contact forms or LinkedIn messages;
 - do not enroll real contacts in automated sequences;
 - inbound monitoring, classification and reply drafting are allowed, but the reply remains unsent;
@@ -78,7 +78,7 @@ The branded domain may be considered **DNS-verified** when all of the following 
 - DMARC;
 - TLS-RPT.
 
-The branded mailbox may be considered **externally delivery-tested** only after the founder lifts the no-send hold and separately authorizes a real-recipient test. At that point validate:
+The branded mailbox may be considered **externally delivery-tested** only after the founder lifts the no-send hold and separately authorizes a test involving a **real external recipient**. At that point validate:
 
 - inbound delivery to `marcos@aervind.com`;
 - reply threading;
