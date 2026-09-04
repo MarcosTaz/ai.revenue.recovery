@@ -20,12 +20,13 @@
         <button class="nav-item active" type="button" data-scroll="workspace"><span>01</span> Recovery Scan</button>
         <button class="nav-item" type="button" data-scroll="truth"><span>02</span> Recovery truth</button>
         <button class="nav-item" type="button" data-scroll="candidates"><span>03</span> Candidates</button>
-        <button class="nav-item" type="button" data-scroll="report"><span>04</span> Executive report</button>
+        <button class="nav-item" type="button" data-scroll="lifecycle"><span>04</span> Lifecycle & audit</button>
+        <button class="nav-item" type="button" data-scroll="report"><span>05</span> Executive report</button>
       </nav>
 
       <div class="sidebar-note">
         <div class="kicker">Operating boundary</div>
-        <p>Assisted, human-reviewed workflow. This console does not submit claims or report recovery without settlement evidence.</p>
+        <p>Assisted, human-reviewed workflow. No claim is submitted by this console. No value becomes recovered until economic settlement evidence is recorded.</p>
       </div>
     </aside>
 
@@ -33,61 +34,72 @@
       <header class="topbar">
         <div>
           <div class="kicker">Assisted operator workspace</div>
-          <h1>Recovery Scan</h1>
+          <h1>Recovery Control Room</h1>
         </div>
-        <div class="status-row"><span class="status-dot"></span><span>Local processing · no server persistence</span></div>
+        <div class="top-actions">
+          <div class="status-row"><span class="status-dot"></span><span>Local processing · portable case state</span></div>
+          <label class="btn secondary file-btn">Open case file<input id="case-file-input" type="file" accept="application/json,.json" /></label>
+          <button id="export-case" class="btn secondary" type="button" disabled>Export case file</button>
+        </div>
       </header>
 
       <section class="panel input-panel" id="workspace">
         <div class="panel-head">
           <div>
-            <div class="kicker">01 · Source cohort</div>
-            <h2>Load the governed evidence cohort</h2>
-            <p>Use the canonical AERVIND JSON structure. The server evaluates the payload in memory and returns recovery truth, dossiers and an executive report.</p>
+            <div class="kicker">01 · Governed source cohort</div>
+            <h2>Start with evidence, not system access</h2>
+            <p>Load a bounded normalized cohort built from lease/amendment terms, event evidence, reserve statements, invoices, prior claims and settlement records. Source documents remain in the engagement-approved repository.</p>
           </div>
           <div class="panel-actions compact">
             <button id="load-example" class="btn secondary" type="button">Load synthetic example</button>
-            <label class="btn secondary file-btn">Upload JSON<input id="file-input" type="file" accept="application/json,.json" /></label>
+            <label class="btn secondary file-btn">Upload cohort JSON<input id="file-input" type="file" accept="application/json,.json" /></label>
           </div>
+        </div>
+
+        <div class="control-strip">
+          <div><strong>No live airline-system access required.</strong><span> PDFs, spreadsheets and controlled exports are sufficient for the first Recovery Scan.</span></div>
+          <div class="case-revision" id="case-revision">No case revision bound</div>
         </div>
 
         <div class="editor-frame">
           <div class="editor-toolbar">
             <div><span class="signal neutral" id="input-signal"></span><span id="input-label">No cohort loaded</span></div>
-            <button id="clear-input" class="text-btn" type="button">Clear</button>
+            <button id="clear-input" class="text-btn" type="button">Clear case</button>
           </div>
           <textarea id="payload" spellcheck="false" aria-label="Recovery Scan JSON payload" placeholder="Paste the Recovery Scan JSON cohort here…"></textarea>
         </div>
 
         <div class="run-row">
-          <div class="run-help"><strong>Evaluation is deterministic.</strong><span>Missing evidence, deadlines, exclusions and prior payments remain visible as blockers or review items.</span></div>
-          <button id="evaluate" class="btn primary" type="button">Evaluate cohort</button>
+          <div class="run-help"><strong>Evaluation is deterministic and fail-conservative.</strong><span>Missing evidence, source lineage, chronology, exclusions, deadlines and prior payments remain visible and can block release.</span></div>
+          <button id="evaluate" class="btn primary" type="button">Evaluate case</button>
         </div>
         <div id="error-box" class="error-box" role="alert" hidden></div>
       </section>
 
       <section class="panel truth-panel" id="truth" hidden>
         <div class="panel-head">
-          <div><div class="kicker">02 · Recovery truth</div><h2>Separate identified value from recovered cash</h2></div>
+          <div><div class="kicker">02 · Management recovery truth</div><h2>One economic opportunity. One bucket.</h2><p>Released lifecycle states remove the same candidate from earlier buckets, preventing claim-ready, submitted and settled value from being counted twice.</p></div>
           <div class="truth-lock">Settlement truth enforced</div>
         </div>
-        <div class="truth-grid">
-          <article class="metric metric-primary"><div class="metric-label">Claim-ready value</div><div class="metric-value" id="metric-ready">—</div><div class="metric-meta" id="metric-ready-count">—</div></article>
-          <article class="metric"><div class="metric-label">Review required</div><div class="metric-value" id="metric-review">—</div><div class="metric-meta" id="metric-review-count">—</div></article>
-          <article class="metric"><div class="metric-label">Blocked potential</div><div class="metric-value" id="metric-blocked">—</div><div class="metric-meta" id="metric-blocked-count">—</div></article>
-          <article class="metric metric-settled"><div class="metric-label">Verified recovered</div><div class="metric-value">0.00</div><div class="metric-meta">No settlement evidence loaded in this scan</div></article>
+        <div class="truth-grid truth-grid-six">
+          <article class="metric metric-settled"><div class="metric-label">Verified recovered</div><div class="metric-value" id="metric-settled">—</div><div class="metric-meta">Settlement evidence only</div></article>
+          <article class="metric metric-primary"><div class="metric-label">Claim-ready · not submitted</div><div class="metric-value" id="metric-ready">—</div><div class="metric-meta">Human-reviewed release bucket</div></article>
+          <article class="metric"><div class="metric-label">Counterparty process</div><div class="metric-value" id="metric-external">—</div><div class="metric-meta">Submitted / acknowledged / disputed / approved</div></article>
+          <article class="metric"><div class="metric-label">Review required</div><div class="metric-value" id="metric-review">—</div><div class="metric-meta">Economic review pipeline</div></article>
+          <article class="metric metric-warning"><div class="metric-label">Workflow review / rejected</div><div class="metric-value" id="metric-workflow-review">—</div><div class="metric-meta">Released candidate returned to review</div></article>
+          <article class="metric metric-blocked"><div class="metric-label">Blocked potential</div><div class="metric-value" id="metric-blocked">—</div><div class="metric-meta">Not releasable</div></article>
         </div>
         <div class="truth-note" id="truth-note"></div>
       </section>
 
       <section class="panel" id="candidates" hidden>
         <div class="panel-head">
-          <div><div class="kicker">03 · Candidate register</div><h2>Every amount must explain itself</h2><p>Select a candidate to inspect blockers, warnings, evidence lineage and the calculation trace.</p></div>
+          <div><div class="kicker">03 · Candidate register</div><h2>Every amount must explain itself</h2><p>Economic status and lifecycle are separate. Select a candidate to inspect evidence, calculation, current workflow state and audit history.</p></div>
           <div class="panel-actions compact"><button id="download-json" class="btn secondary" type="button">Export evaluation</button></div>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Candidate</th><th>Status</th><th>Rule</th><th class="numeric">Net economic amount</th><th>Primary issue</th><th></th></tr></thead>
+            <thead><tr><th>Candidate</th><th>Economic status</th><th>Lifecycle</th><th>Rule</th><th class="numeric">Net amount</th><th>Primary issue</th><th></th></tr></thead>
             <tbody id="candidate-body"></tbody>
           </table>
         </div>
@@ -114,25 +126,68 @@
 
           <div class="claim-package-gate" id="claim-package-actions" hidden>
             <div>
-              <div class="kicker">Human release gate</div>
-              <h3>Generate external-ready claim package</h3>
-              <p>Available only for a currently claim-ready candidate. Human confirmation is required. Generation does not submit, email or transmit the package anywhere.</p>
+              <div class="kicker">Human release artifact</div>
+              <h3>Generate claim package</h3>
+              <p>The server re-evaluates the current cohort, verifies the workflow is still claim-ready, hashes the generated package and records the artifact in the portable audit case. It does not submit, email or transmit it.</p>
               <div id="claim-package-status" class="claim-package-status">Not generated</div>
             </div>
-            <button id="generate-claim-package" class="btn primary" type="button">Generate claim package · does not submit</button>
+            <button id="generate-claim-package" class="btn primary" type="button">Generate · never submits</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel lifecycle-panel" id="lifecycle" hidden>
+        <div class="panel-head">
+          <div><div class="kicker">04 · Lifecycle & audit</div><h2>Record what happened. Never simulate what happened.</h2><p>This control records external events after they occur. “Submitted” means a real submission exists and therefore requires an external evidence/reference identifier.</p></div>
+          <div class="truth-lock" id="workflow-state-badge">No candidate selected</div>
+        </div>
+
+        <div class="workflow-layout">
+          <div class="transition-card">
+            <h3>Record next state</h3>
+            <div class="form-grid">
+              <label>Candidate<input id="workflow-claim-id" type="text" readonly placeholder="Select a candidate" /></label>
+              <label>Next state<select id="workflow-target" disabled><option value="">Select candidate first</option></select></label>
+              <label>Actor<input id="workflow-actor" type="text" autocomplete="off" placeholder="reviewer@aervind.com" /></label>
+              <label>Event time<input id="workflow-time" type="datetime-local" /></label>
+              <label class="wide">Reason<input id="workflow-reason" type="text" autocomplete="off" placeholder="What evidence or decision justifies this transition?" /></label>
+              <label class="wide">External reference<input id="workflow-reference" type="text" autocomplete="off" placeholder="Required for submitted and external counterparty states; e.g. portal ID / email message ID" /></label>
+            </div>
+
+            <div class="settlement-fields" id="settlement-fields" hidden>
+              <div class="settlement-title">Settlement evidence</div>
+              <div class="form-grid">
+                <label>Settlement type<select id="settlement-type"><option value="cash_receipt">Cash receipt</option><option value="credit_memo">Credit memo</option><option value="refund">Refund</option><option value="contractual_offset">Contractual offset</option></select></label>
+                <label>Amount<input id="settlement-amount" type="number" min="0" step="0.01" /></label>
+                <label>Currency<input id="settlement-currency" type="text" maxlength="3" placeholder="USD" /></label>
+                <label>Evidence reference<input id="settlement-reference" type="text" autocomplete="off" placeholder="Bank / credit memo / offset reference" /></label>
+              </div>
+            </div>
+
+            <div class="transition-foot">
+              <span>No external action is performed. This only records an event that already occurred.</span>
+              <button id="record-transition" class="btn primary" type="button" disabled>Record transition</button>
+            </div>
+          </div>
+
+          <div class="audit-card">
+            <div class="audit-head"><h3>Immutable case trail</h3><span id="audit-count">0 events</span></div>
+            <ol id="workflow-audit" class="timeline"><li class="empty">Select a candidate to inspect its lifecycle.</li></ol>
+            <div class="artifact-head"><h3>Generated artifacts</h3><span id="artifact-count">0</span></div>
+            <ul id="workflow-artifacts" class="artifact-list"><li class="empty">No artifacts recorded.</li></ul>
           </div>
         </div>
       </section>
 
       <section class="panel report-panel" id="report" hidden>
         <div class="panel-head">
-          <div><div class="kicker">04 · Executive output</div><h2>Management-ready recovery report</h2><p>The report preserves the same recovery-truth vocabulary as the engine.</p></div>
+          <div><div class="kicker">05 · Executive output</div><h2>Management-ready recovery report</h2><p>Candidate buckets are mutually exclusive and the report moves value only when the audit lifecycle supports the move.</p></div>
           <div class="panel-actions compact"><button id="download-report" class="btn secondary" type="button">Export Markdown</button></div>
         </div>
         <pre id="report-output"></pre>
       </section>
 
-      <footer class="footer"><div>AERVIND · Aviation Lease Entitlement Recovery</div><div>Assisted pilot mode · Human release gate required before externalization</div></footer>
+      <footer class="footer"><div>AERVIND · Aviation Lease Entitlement Recovery</div><div>Assisted pilot · Local processing · Portable audit case · Human release required</div></footer>
     </main>
   </div>
 
