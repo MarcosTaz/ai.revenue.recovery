@@ -1,0 +1,29 @@
+[
+  {
+    "probe_type": "OIDC_TOKEN_JWKS_VERIFY",
+    "provider": "Neon Auth / Better Auth",
+    "result": "FAIL",
+    "synthetic": true,
+    "payload_hash": "0bcde1c9f48a65370c3e392f1465326e37d0223efb175505acd8667417f11d9d",
+    "observed_at": "2026-09-04T17:02:09Z",
+    "evidence_id": "neon-auth-v043-provisioned-no-token-e2e"
+  },
+  {
+    "probe_type": "DATABASE_WRITE_READ",
+    "provider": "Neon Postgres",
+    "result": "PASS",
+    "synthetic": true,
+    "payload_hash": "58aeb9574a0b47aa5cdfea58d19dad04bf3e9965bcb7721e3a69bcb071370f12",
+    "observed_at": "2026-09-04T16:47:44.626Z",
+    "evidence_id": "neon-postgres-v042-001"
+  },
+  {
+    "probe_type": "OBJECT_STORAGE_PUT_GET_DELETE",
+    "provider": "Neon Branchable Object Storage",
+    "result": "FAIL",
+    "synthetic": true,
+    "payload_hash": "1b7966f5ff6c27fa10a0a8de71373e1cdd53dd3785e8bc8bb9240647ae4a3293",
+    "observed_at": "2026-09-04T17:00:46Z",
+    "evidence_id": "neon-storage-v043-dns-transfer-failed"
+  }
+]
