@@ -25,6 +25,9 @@
     detailEvidence: document.getElementById('detail-evidence'),
     detailLineage: document.getElementById('detail-lineage'),
     detailTrace: document.getElementById('detail-trace'),
+    claimPackageActions: document.getElementById('claim-package-actions'),
+    claimPackageStatus: document.getElementById('claim-package-status'),
+    generateClaimPackage: document.getElementById('generate-claim-package'),
     metricReady: document.getElementById('metric-ready'),
     metricReadyCount: document.getElementById('metric-ready-count'),
     metricReview: document.getElementById('metric-review'),
@@ -35,6 +38,7 @@
 
   let latestResponse = null;
   let currentLabel = 'Manual cohort';
+  let currentClaimId = null;
 
   const statusClass = (status) => `status-${String(status || 'unknown').replace(/[^a-z0-9_]/gi, '_')}`;
 
@@ -52,6 +56,17 @@
   function clearError() {
     els.errorBox.hidden = true;
     els.errorBox.textContent = '';
+  }
+
+  function resetEvaluationViews() {
+    latestResponse = null;
+    currentClaimId = null;
+    els.truth.hidden = true;
+    els.candidates.hidden = true;
+    els.report.hidden = true;
+    els.detailPanel.hidden = true;
+    els.claimPackageActions.hidden = true;
+    els.claimPackageStatus.textContent = 'Not generated';
   }
 
   function parsePayload() {
@@ -183,6 +198,7 @@
     const dossier = (evaluation.dossiers || []).find((item) => item.claim?.claim_id === claimId);
     if (!result) return;
 
+    currentClaimId = claimId;
     els.detailTitle.textContent = claimId;
     els.detailSummary.replaceChildren();
     els.detailSummary.append(
@@ -202,12 +218,17 @@
     listItems(els.detailLineage, dossier?.lineage_gaps);
     listItems(els.detailTrace, result.calculation_trace);
 
+    const canGeneratePackage = result.status === 'claim_ready' && !(result.blocking_issues || []).length && !(dossier?.lineage_gaps || []).length;
+    els.claimPackageActions.hidden = !canGeneratePackage;
+    els.claimPackageStatus.textContent = canGeneratePackage ? 'Eligible for human-gated generation · not submitted' : 'Not eligible';
+
     els.detailPanel.hidden = false;
     els.detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function renderResponse(response) {
     latestResponse = response;
+    currentClaimId = null;
     const evaluation = response.evaluation || {};
     renderSummary(evaluation.summary || {}, response.truth_note);
     renderCandidates(evaluation);
@@ -216,6 +237,7 @@
     els.candidates.hidden = false;
     els.report.hidden = false;
     els.detailPanel.hidden = true;
+    els.claimPackageActions.hidden = true;
     setInputState('ready', `${currentLabel} · evaluated`);
   }
 
@@ -252,9 +274,7 @@
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || data.error || `Evaluation failed (${response.status})`);
-      }
+      if (!response.ok) throw new Error(data.detail || data.error || `Evaluation failed (${response.status})`);
       renderResponse(data);
       els.truth.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
@@ -265,12 +285,64 @@
     }
   }
 
+  async function generateClaimPackage() {
+    clearError();
+    if (!currentClaimId) {
+      showError('Select a claim-ready candidate first.');
+      return;
+    }
+
+    let payload;
+    try {
+      payload = parsePayload();
+    } catch (error) {
+      showError(error.message);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Confirm that human review is complete and you want to generate this claim package. This action does not submit, email or transmit the package.'
+    );
+    if (!confirmed) return;
+
+    const claimId = currentClaimId;
+    els.generateClaimPackage.disabled = true;
+    els.generateClaimPackage.textContent = 'Re-validating gates…';
+    els.claimPackageStatus.textContent = 'Re-evaluating the current cohort before generation…';
+
+    try {
+      const response = await fetch('/api/claim-package', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payload,
+          claim_id: claimId,
+          human_release_confirmed: true,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || data.error || `Package generation failed (${response.status})`);
+      if (data.submission_status !== 'not_submitted') {
+        throw new Error('Safety gate failed: unexpected submission state.');
+      }
+      download(`${claimId}-claim-package.md`, data.claim_package_markdown || '', 'text/markdown');
+      els.claimPackageStatus.textContent = 'Generated and downloaded · not submitted';
+    } catch (error) {
+      els.claimPackageStatus.textContent = 'Generation blocked';
+      showError(error.message || 'Claim package generation failed.');
+    } finally {
+      els.generateClaimPackage.disabled = false;
+      els.generateClaimPackage.textContent = 'Generate claim package · does not submit';
+    }
+  }
+
   els.loadExample.addEventListener('click', async () => {
     clearError();
     try {
       const response = await fetch('/api/example', { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not load the synthetic example.');
+      resetEvaluationViews();
       els.payload.value = prettyPayload(data.payload);
       currentLabel = 'Synthetic example';
       setInputState('ready', 'Synthetic example loaded · not customer data');
@@ -290,6 +362,7 @@
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
+      resetEvaluationViews();
       els.payload.value = prettyPayload(parsed);
       currentLabel = file.name;
       setInputState('ready', `${file.name} · loaded locally`);
@@ -302,24 +375,26 @@
 
   els.payload.addEventListener('input', () => {
     clearError();
+    if (latestResponse) resetEvaluationViews();
     currentLabel = 'Manual cohort';
-    setInputState(els.payload.value.trim() ? 'ready' : 'neutral', els.payload.value.trim() ? 'Manual cohort · unsaved' : 'No cohort loaded');
+    setInputState(els.payload.value.trim() ? 'ready' : 'neutral', els.payload.value.trim() ? 'Manual cohort · re-evaluation required' : 'No cohort loaded');
   });
 
   els.clearInput.addEventListener('click', () => {
     els.payload.value = '';
-    latestResponse = null;
     currentLabel = 'Manual cohort';
     clearError();
+    resetEvaluationViews();
     setInputState('neutral', 'No cohort loaded');
-    els.truth.hidden = true;
-    els.candidates.hidden = true;
-    els.report.hidden = true;
-    els.detailPanel.hidden = true;
   });
 
   els.evaluate.addEventListener('click', evaluate);
-  els.closeDetail.addEventListener('click', () => { els.detailPanel.hidden = true; });
+  els.generateClaimPackage.addEventListener('click', generateClaimPackage);
+  els.closeDetail.addEventListener('click', () => {
+    currentClaimId = null;
+    els.detailPanel.hidden = true;
+    els.claimPackageActions.hidden = true;
+  });
 
   els.downloadJson.addEventListener('click', () => {
     if (!latestResponse) return;
