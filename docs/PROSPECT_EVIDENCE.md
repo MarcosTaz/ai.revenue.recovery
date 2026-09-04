@@ -8,8 +8,13 @@ This ledger supports target-account qualification. It does **not** prove that an
 
 ### Current buyer / public routing
 
-- CFO biography — Gonçalo Pires: https://www.tapairportugal.com/en/-/media/Institucional/PDFs/Administracao/2025/GoncaloPires-Bio.pdf
+- TAP-distributed 4 Feb 2026 announcement naming Renato Inácio as the new CFO after Gonçalo Pires's resignation: https://news.cision.com/pt/tap-portugal/r/renato-inacio-e-o-novo-cfo-da-tap%2Cc639057961090000000
+- The announcement states Renato joined TAP in Q1 2021 as Senior Director of Corporate Finance and Risk, after earlier work as a Deloitte Financial Advisory partner and in private equity.
 - Public capital-markets / IR route (`investors@tap.pt`) appears in TAP market communications: https://www.tapairportugal.com/en/-/media/Institucional/PDFs/Investidores/Comunicados/2025/MAR/26MAR/TAP-SA-Q4-FY24-Earnings-Release-ENG.pdf
+
+### Operational-owner freshness
+
+TAP's operations leadership changed during 2026. Re-verify the current COO / Maintenance & Engineering owner immediately before outreach rather than persisting a possibly stale operational buyer.
 
 ### Lease / maintenance economics
 
