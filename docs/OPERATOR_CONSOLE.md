@@ -73,6 +73,7 @@ The console has no hidden server-side persistence. Durable assisted-pilot state 
 
 A case file contains:
 
+- an explicit case/workflow schema version;
 - the normalized cohort;
 - a SHA-256 binding to the reviewed cohort revision;
 - claim lifecycle records;
@@ -81,13 +82,15 @@ A case file contains:
 - settlement evidence reference and verified amount;
 - generated claim-package artifact hashes.
 
-The case file can be reopened in the console to resume the engagement.
+The case file can be reopened in the console to resume the engagement. An imported workflow without an explicit supported schema version is rejected rather than silently interpreted as the current format.
 
 ### Revision integrity
 
-Before release, a reviewing case may be rebound to a corrected/revised cohort and then re-reviewed.
+During pre-release review, a **non-economic source/reference correction** may be rebound to the case only when the claim population, currency and evaluated economic amounts still reconcile. The corrected cohort is then re-reviewed before release.
 
-Once any claim reaches a released lifecycle state (`claim_ready`, submitted, counterparty process or settled), the existing workflow is bound to that cohort digest. Silent source changes are rejected. A material source revision then requires a new reviewed case revision rather than rewriting the prior audit history.
+A material change that alters claim population, currency or evaluated economics is not silently rebound to an existing workflow; it requires a new reviewed case revision.
+
+Once any claim reaches a released lifecycle state (`claim_ready`, submitted, counterparty process or settled), the workflow is bound to that exact cohort digest. Any subsequent cohort change is rejected for that case revision. This preserves the historical basis of the package, submission and settlement trail instead of rewriting it after the fact.
 
 ## Claim-package integrity
 
