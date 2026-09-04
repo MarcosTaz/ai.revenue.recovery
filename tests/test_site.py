@@ -12,6 +12,14 @@ class AervindLandingPageTests(unittest.TestCase):
         self.assertIn("AERVIND", self.html)
         self.assertIn("Aviation Lease Entitlement Recovery", self.html)
         self.assertIn("Recovery Scan", self.html)
+        self.assertIn("€9,500", self.html)
+        self.assertIn("Up to 5", self.html)
+        self.assertIn("10 business days", self.html)
+
+    def test_first_scan_does_not_require_live_system_access(self):
+        self.assertIn("No live system access required", self.html)
+        self.assertIn("PDFs, spreadsheets and controlled exports", self.html)
+        self.assertIn("Do you need access to our systems?", self.html)
 
     def test_recovery_truth_boundary_is_public(self):
         self.assertIn("A claim is not recovery", self.html)

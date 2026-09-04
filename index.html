@@ -7,46 +7,70 @@
   <meta name="robots" content="index,follow" />
   <title>AERVIND — Aviation Lease Entitlement Recovery</title>
   <style>
-    :root{--ink:#0e1724;--muted:#5e6a78;--line:#dce2e8;--paper:#f7f9fb;--white:#fff;--accent:#183f5f;--accent2:#0c6d67;--max:1120px}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--white);line-height:1.55}a{color:inherit}.wrap{width:min(var(--max),calc(100% - 40px));margin:auto}.nav{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{font-weight:800;letter-spacing:.18em;font-size:20px}.nav small{color:var(--muted)}.hero{padding:96px 0 78px;background:linear-gradient(180deg,#fff 0%,var(--paper) 100%)}.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:700;color:var(--accent2)}h1{font-size:clamp(44px,7vw,84px);line-height:.98;letter-spacing:-.045em;max-width:930px;margin:18px 0 28px}.lead{font-size:clamp(19px,2.4vw,26px);max-width:820px;color:var(--muted)}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:36px}.btn{display:inline-block;padding:14px 20px;border-radius:6px;text-decoration:none;font-weight:700;border:1px solid var(--ink)}.btn.primary{background:var(--ink);color:#fff}.btn.secondary{background:#fff}.trust{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:60px}.trust div{background:#fff;padding:22px}.trust b{display:block;font-size:14px}.trust span{color:var(--muted);font-size:13px}.section{padding:82px 0;border-top:1px solid var(--line)}.section h2{font-size:clamp(34px,4vw,52px);line-height:1.08;letter-spacing:-.03em;margin:0 0 18px;max-width:780px}.section-intro{max-width:780px;color:var(--muted);font-size:19px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:42px}.card{border:1px solid var(--line);padding:28px;border-radius:8px;background:#fff}.card h3{margin:0 0 10px;font-size:19px}.card p{margin:0;color:var(--muted)}.steps{counter-reset:step;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:42px}.step{padding-top:18px;border-top:2px solid var(--ink)}.step:before{counter-increment:step;content:"0" counter(step);font-weight:800;font-size:12px;letter-spacing:.12em;color:var(--accent2)}.step h3{margin:10px 0 8px}.step p{margin:0;color:var(--muted);font-size:14px}.offer{background:var(--ink);color:#fff}.offer .section-intro,.offer .card p{color:#b7c2ce}.offer .card{background:#132033;border-color:#2b3b4f}.offer .card h3{color:#fff}.price{font-size:34px;font-weight:800;margin:12px 0 4px}.small{font-size:13px;color:var(--muted)}.offer .small{color:#b7c2ce}.proof{display:grid;grid-template-columns:1.2fr .8fr;gap:50px;align-items:start}.list{padding:0;margin:30px 0 0;list-style:none}.list li{padding:13px 0;border-bottom:1px solid var(--line)}.list li:before{content:"✓";margin-right:10px;color:var(--accent2);font-weight:800}.faq{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:38px}.faq .card h3{font-size:17px}.footer{padding:42px 0;background:var(--paper);border-top:1px solid var(--line)}.footer-row{display:flex;justify-content:space-between;gap:24px;align-items:flex-start}.footer p{margin:6px 0;color:var(--muted);font-size:13px;max-width:700px}
-    @media(max-width:850px){.trust,.grid3,.steps,.faq{grid-template-columns:1fr 1fr}.proof{grid-template-columns:1fr}.hero{padding-top:70px}}
-    @media(max-width:560px){.wrap{width:min(var(--max),calc(100% - 28px))}.nav small{display:none}.hero{padding:56px 0}.trust,.grid3,.steps,.faq{grid-template-columns:1fr}.section{padding:58px 0}.footer-row{display:block}}
+    :root{--ink:#0a1420;--ink2:#132131;--muted:#607080;--line:#dfe5ea;--paper:#f5f7f9;--white:#fff;--teal:#0e6f69;--teal-soft:#e9f4f2;--gold:#9b7429;--max:1180px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--white);line-height:1.55}a{color:inherit}.wrap{width:min(var(--max),calc(100% - 44px));margin:auto}.nav{height:78px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.12)}.brand{font-weight:850;letter-spacing:.19em;font-size:20px}.nav small{color:#99a8b7}.hero-shell{background:radial-gradient(circle at 82% 22%,#1a3448 0,#0d1c2a 32%,#08121d 70%);color:#fff}.hero{padding:108px 0 84px}.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:800;color:#72b5ae}h1{font-size:clamp(48px,7vw,86px);line-height:.98;letter-spacing:-.05em;max-width:980px;margin:18px 0 28px}.lead{font-size:clamp(19px,2.3vw,26px);max-width:840px;color:#bac5ce}.hero-note{max-width:760px;color:#8fa0ae;font-size:14px;margin-top:20px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:38px}.btn{display:inline-block;padding:14px 20px;border-radius:7px;text-decoration:none;font-weight:800;border:1px solid currentColor;font-size:14px}.btn.primary{background:#fff;color:var(--ink);border-color:#fff}.btn.secondary{color:#d8e3eb;border-color:#667888}.trust{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,.12);border-left:1px solid rgba(255,255,255,.12)}.trust div{padding:23px 20px;border-right:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.018)}.trust b{display:block;font-size:13px;color:#fff}.trust span{display:block;color:#8fa0ae;font-size:12px;margin-top:5px}.section{padding:88px 0;border-top:1px solid var(--line)}.section h2{font-size:clamp(34px,4.2vw,54px);line-height:1.06;letter-spacing:-.035em;margin:8px 0 18px;max-width:860px}.section-intro{max-width:800px;color:var(--muted);font-size:18px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px}.card{border:1px solid var(--line);padding:27px;border-radius:10px;background:#fff}.card .number{font-size:11px;font-weight:900;letter-spacing:.13em;color:var(--teal);margin-bottom:24px}.card h3{margin:0 0 10px;font-size:19px;letter-spacing:-.01em}.card p{margin:0;color:var(--muted);font-size:14px}.highlight{background:var(--paper)}.signal-strip{display:grid;grid-template-columns:1.2fr .8fr;gap:55px;align-items:start}.dataset{margin:30px 0 0;padding:0;list-style:none}.dataset li{padding:14px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;font-size:14px}.dataset li:before{content:"→";color:var(--teal);font-weight:900}.no-access{border:1px solid #c4dcd8;background:var(--teal-soft);padding:26px;border-radius:10px}.no-access strong{font-size:20px;display:block;letter-spacing:-.015em}.no-access p{margin:9px 0 0;color:#416760;font-size:14px}.steps{counter-reset:step;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:42px}.step{padding-top:18px;border-top:2px solid var(--ink)}.step:before{counter-increment:step;content:"0" counter(step);font-weight:900;font-size:11px;letter-spacing:.12em;color:var(--teal)}.step h3{margin:10px 0 8px;font-size:18px}.step p{margin:0;color:var(--muted);font-size:13px}.offer{background:var(--ink);color:#fff}.offer .section-intro,.offer .card p{color:#b4c0cb}.offer .card{background:var(--ink2);border-color:#2d3c4d}.offer .card h3{color:#fff}.offer .eyebrow{color:#77beb7}.price{font-size:35px;font-weight:850;letter-spacing:-.035em;margin:12px 0 5px}.small{font-size:12px;color:var(--muted)}.offer .small{color:#9cabb8}.proof{display:grid;grid-template-columns:1.08fr .92fr;gap:58px;align-items:start}.list{padding:0;margin:28px 0 0;list-style:none}.list li{padding:13px 0;border-bottom:1px solid var(--line);font-size:14px}.list li:before{content:"✓";margin-right:10px;color:var(--teal);font-weight:900}.faq{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:38px}.faq .card h3{font-size:17px}.footer{padding:44px 0;background:var(--paper);border-top:1px solid var(--line)}.footer-row{display:flex;justify-content:space-between;gap:26px;align-items:flex-start}.footer p{margin:6px 0;color:var(--muted);font-size:12px;max-width:720px}
+    @media(max-width:900px){.trust,.grid3,.steps,.faq{grid-template-columns:1fr 1fr}.signal-strip,.proof{grid-template-columns:1fr}.hero{padding-top:76px}}
+    @media(max-width:580px){.wrap{width:min(var(--max),calc(100% - 28px))}.nav small{display:none}.hero{padding:62px 0}.trust,.grid3,.steps,.faq{grid-template-columns:1fr}.section{padding:62px 0}.footer-row{display:block}}
   </style>
 </head>
 <body>
-  <header class="wrap nav">
-    <div class="brand">AERVIND</div>
-    <small>Aviation Lease Entitlement Recovery</small>
-  </header>
+  <div class="hero-shell">
+    <header class="wrap nav">
+      <div class="brand">AERVIND</div>
+      <small>Aviation Lease Entitlement Recovery</small>
+    </header>
 
-  <main>
     <section class="hero">
       <div class="wrap">
         <div class="eyebrow">Recovery-first aviation finance</div>
-        <h1>Lease entitlements. Reconciled. Proven. Recoverable.</h1>
-        <p class="lead">AERVIND helps airlines and lessees identify, reconcile and evidence eligible value across maintenance reserves, lessor contributions and other aircraft-lease economics.</p>
+        <h1>From lease clause to settlement.</h1>
+        <p class="lead">AERVIND helps airlines and lessees independently reconcile maintenance reserves, lessor contributions and other lease entitlements against the evidence that should turn contractual rights into economic outcomes.</p>
+        <p class="hero-note">The first engagement starts with a bounded exported evidence set. No ERP rollout, no replacement of existing lease-management systems and no live access to operational or banking systems is required.</p>
         <div class="actions">
-          <a class="btn primary" href="#recovery-scan">Explore the Recovery Scan</a>
-          <a class="btn secondary" href="#controls">See the control model</a>
+          <a class="btn primary" href="#recovery-scan">See the €9,500 Recovery Scan</a>
+          <a class="btn secondary" href="#start">How the first scan works</a>
         </div>
-        <div class="trust" aria-label="AERVIND operating principles">
-          <div><b>Contract-configured</b><span>Rules trace back to the governing lease terms.</span></div>
-          <div><b>Evidence-gated</b><span>Missing proof blocks externalization rather than being ignored.</span></div>
-          <div><b>Human-reviewed</b><span>Claim-ready status requires controlled review.</span></div>
-          <div><b>Settlement-truth</b><span>Approved or submitted value is never reported as recovered.</span></div>
+      </div>
+    </section>
+
+    <div class="wrap trust" aria-label="AERVIND operating principles">
+      <div><b>Contract-configured</b><span>Rules trace to the governing lease version.</span></div>
+      <div><b>Evidence-gated</b><span>Missing proof blocks externalization.</span></div>
+      <div><b>Human-reviewed</b><span>Material interpretation remains controlled.</span></div>
+      <div><b>Settlement-truth</b><span>Approved is not reported as recovered.</span></div>
+    </div>
+  </div>
+
+  <main>
+    <section class="section highlight" id="start">
+      <div class="wrap signal-strip">
+        <div>
+          <div class="eyebrow">Start without system access</div>
+          <h2>A small evidence cohort is enough to test the control.</h2>
+          <p class="section-intro">AERVIND does not need a customer to hand over passwords or adopt a new platform for the first Recovery Scan. Finance, fleet or technical teams provide controlled exports and documents for the selected cohort.</p>
+          <ul class="dataset">
+            <li>Governing lease, schedules and relevant amendments</li>
+            <li>Maintenance-reserve or lessor-contribution statements</li>
+            <li>Selected maintenance event, invoice and workscope evidence</li>
+            <li>Prior claims, reimbursements, credits or settlement evidence</li>
+          </ul>
         </div>
+        <aside class="no-access">
+          <strong>No live system access required.</strong>
+          <p>PDFs, spreadsheets and controlled exports can support the first bounded scan. Deep ERP, M&amp;E or lease-management integrations are only considered after value is proven and a buyer actually needs them.</p>
+        </aside>
       </div>
     </section>
 
     <section class="section">
       <div class="wrap">
-        <div class="eyebrow">Where value hides</div>
-        <h2>Economic rights can disappear between lease language, maintenance evidence and finance.</h2>
-        <p class="section-intro">AERVIND creates one defensible chain from contractual entitlement to supporting evidence, calculation, review, claim package and verified settlement.</p>
+        <div class="eyebrow">What is reconciled</div>
+        <h2>The problem lives between contract, maintenance and finance.</h2>
+        <p class="section-intro">AERVIND reconstructs one defensible chain from the governing economic rule to the event, cost, reserve position, claim history and settlement evidence.</p>
         <div class="grid3">
-          <article class="card"><h3>Maintenance reserves</h3><p>Reconcile eligible maintenance events, available reserve funds, prior reimbursements, exclusions and evidence requirements.</p></article>
-          <article class="card"><h3>Lessor contributions</h3><p>Test contribution and cost-sharing economics against caps, percentages, deductibles, timing and prior payments.</p></article>
-          <article class="card"><h3>Lease close-out economics</h3><p>Extend the same controlled approach to security deposits, prepaid rent releases and end-of-lease adjustments where the governing terms support them.</p></article>
+          <article class="card"><div class="number">01</div><h3>Maintenance reserves</h3><p>Reconcile eligible events, available funds, prior reimbursements, exclusions, deadlines and evidence requirements.</p></article>
+          <article class="card"><div class="number">02</div><h3>Lessor contributions</h3><p>Test contribution and cost-sharing economics against percentages, caps, deductibles, timing and prior payments.</p></article>
+          <article class="card"><div class="number">03</div><h3>Lease close-out economics</h3><p>Apply the same controlled method to security deposits, prepaid-rent releases and selected end-of-lease adjustments where the lease supports them.</p></article>
         </div>
       </div>
     </section>
@@ -54,44 +78,44 @@
     <section class="section" id="controls">
       <div class="wrap">
         <div class="eyebrow">Recovery truth</div>
-        <h2>A claim is not recovery. AERVIND keeps those states separate.</h2>
+        <h2>A claim is not recovery. AERVIND keeps every state separate.</h2>
         <div class="steps">
-          <div class="step"><h3>Identify</h3><p>Reconstruct the governing rule, event and economic potential.</p></div>
-          <div class="step"><h3>Evidence</h3><p>Map invoices, workscope, payment and source lineage to material inputs.</p></div>
-          <div class="step"><h3>Review</h3><p>Surface blockers, deadline risk, prior offsets and false-recovery scenarios.</p></div>
-          <div class="step"><h3>Recover</h3><p>Generate a claim-ready package and record settlement only when economic evidence confirms it.</p></div>
+          <div class="step"><h3>Reconstruct</h3><p>Identify the governing rule/version, event and economic inputs.</p></div>
+          <div class="step"><h3>Reconcile</h3><p>Compare invoices, workscope, reserve statements, prior claims and payments.</p></div>
+          <div class="step"><h3>Challenge</h3><p>Surface evidence gaps, deadlines, exclusions, offsets and false-recovery scenarios.</p></div>
+          <div class="step"><h3>Prove</h3><p>Produce a controlled dossier; count recovery only when settlement evidence exists.</p></div>
         </div>
       </div>
     </section>
 
     <section class="section offer" id="recovery-scan">
       <div class="wrap">
-        <div class="eyebrow">First engagement</div>
-        <h2>Start with a bounded Recovery Scan — not a platform rollout.</h2>
-        <p class="section-intro">Designed for finance, fleet, lease-management and technical-finance teams that want a controlled answer before committing to larger transformation work.</p>
+        <div class="eyebrow">First paid engagement</div>
+        <h2>A bounded Recovery Scan before any larger commitment.</h2>
+        <p class="section-intro">One small cohort, one primary entitlement family and a defined evidence boundary. The objective is to determine whether the control closes cleanly or produces evidence-backed exceptions worth investigating.</p>
         <div class="grid3">
-          <article class="card"><h3>Typical scope</h3><div class="price">3–10</div><p>aircraft or engines, 1–3 entitlement families, commonly 12–24 months of relevant events.</p></article>
-          <article class="card"><h3>Indicative fee</h3><div class="price">€7.5k–€15k</div><p>Fixed-scope Recovery Scan. Larger forensic reconciliations are separately scoped.</p></article>
-          <article class="card"><h3>Deliverable</h3><div class="price">Evidence-led</div><p>Candidate register, calculation trail, blockers, deadlines and claim-ready dossier where the evidence gate passes.</p></article>
+          <article class="card"><h3>Scope</h3><div class="price">Up to 5</div><p>aircraft and/or engines, one primary entitlement family and up to 12 months of selected events.</p></article>
+          <article class="card"><h3>Fixed fee</h3><div class="price">€9,500</div><p>50% at engagement/scope confirmation and 50% at delivery, subject to the agreed commercial terms.</p></article>
+          <article class="card"><h3>Target delivery</h3><div class="price">10 business days</div><p>after the complete agreed minimum dataset is available to AERVIND.</p></article>
         </div>
-        <p class="small" style="margin-top:22px">Pricing is indicative and subject to scope. AERVIND does not guarantee that a given portfolio contains recoverable value.</p>
+        <p class="small" style="margin-top:22px">AERVIND does not guarantee that a given cohort contains recoverable value. Larger forensic reconciliations or claim-support work are separately scoped.</p>
       </div>
     </section>
 
     <section class="section">
       <div class="wrap proof">
         <div>
-          <div class="eyebrow">Built for scrutiny</div>
-          <h2>Finance-grade controls before external claims.</h2>
-          <p class="section-intro">The operating model is deliberately conservative: no missing evidence is silently treated as complete, and no submitted or approved amount is promoted to recovered value without settlement evidence.</p>
+          <div class="eyebrow">What the customer receives</div>
+          <h2>An answer that can survive internal scrutiny.</h2>
+          <p class="section-intro">If the control closes, the customer gets evidence-backed assurance for the cohort. If it does not, AERVIND isolates the exact candidates, gaps and calculation trail that require action or further review.</p>
         </div>
         <ul class="list">
-          <li>Lease / rule version traceability</li>
-          <li>Caps, floors, deductibles and deadlines</li>
-          <li>Prior reimbursement and duplicate-recovery checks</li>
-          <li>Source-lineage requirements for material inputs</li>
-          <li>Human release gate before externalization</li>
-          <li>Verified settlement evidence for recovered value</li>
+          <li>Candidate register with recovery-truth status</li>
+          <li>Calculation trail and governing rule reference</li>
+          <li>Evidence and source-lineage gaps</li>
+          <li>Deadline, prior-payment and duplicate-recovery controls</li>
+          <li>Claim-ready dossier where all gates pass</li>
+          <li>Executive recovery report for management review</li>
         </ul>
       </div>
     </section>
@@ -99,12 +123,12 @@
     <section class="section">
       <div class="wrap">
         <div class="eyebrow">Boundaries</div>
-        <h2>Specialized recovery and proof — without pretending to be something else.</h2>
+        <h2>Specialized recovery and proof, with a deliberately narrow first step.</h2>
         <div class="faq">
-          <article class="card"><h3>Is AERVIND an MRO?</h3><p>No. AERVIND uses customer-provided technical and financial evidence to support economic reconciliation; it does not perform maintenance or airworthiness certification.</p></article>
+          <article class="card"><h3>Do you need access to our systems?</h3><p>No for the first Recovery Scan. A bounded set of customer-approved documents and exports is sufficient to begin. Any later integration is buyer-driven and separately designed.</p></article>
+          <article class="card"><h3>Is AERVIND an MRO?</h3><p>No. AERVIND uses customer-provided technical and financial evidence for economic reconciliation; it does not perform maintenance or airworthiness certification.</p></article>
           <article class="card"><h3>Does AERVIND provide legal opinions?</h3><p>No. Contractual rules are configured for economic reconciliation. Matters requiring legal interpretation remain subject to customer or external legal review.</p></article>
-          <article class="card"><h3>Is this a generic lease-management system?</h3><p>No. AERVIND is a recovery/proof layer focused on reconstructing entitlement truth and producing controlled recovery outputs.</p></article>
-          <article class="card"><h3>Can AERVIND promise recovery?</h3><p>No. Outcomes depend on contract terms, evidence, counterparty review and settlement. The service is designed to identify and prove eligible value, not guarantee it.</p></article>
+          <article class="card"><h3>Can AERVIND promise recovery?</h3><p>No. Outcomes depend on contract terms, evidence, counterparty review and settlement. AERVIND does not guarantee recoverable value.</p></article>
         </div>
       </div>
     </section>
