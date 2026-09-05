@@ -39,6 +39,7 @@ REQUEST_TIMEOUT_SECONDS = 15
 STATIC_FILES = {
     "/": (UI_ROOT / "index.html", "text/html; charset=utf-8"),
     "/app.css": (UI_ROOT / "app.css", "text/css; charset=utf-8"),
+    "/checkpoint.js": (UI_ROOT / "checkpoint.js", "text/javascript; charset=utf-8"),
     "/app.js": (UI_ROOT / "app.js", "text/javascript; charset=utf-8"),
 }
 
@@ -63,7 +64,7 @@ def _hostname_from_authority(authority: str) -> str | None:
         return None
     try:
         parsed = urlsplit(f"//{raw}")
-        _ = parsed.port  # Force invalid-port validation.
+        _ = parsed.port
     except ValueError:
         return None
     return parsed.hostname
@@ -77,7 +78,6 @@ def _host_header_is_loopback(host_header: str) -> bool:
 def _origin_matches_host(origin: str | None, host_header: str) -> bool:
     """Browser state-changing calls must originate from the exact local authority."""
     if not origin:
-        # Non-browser local clients do not necessarily send Origin.
         return True
     try:
         parsed = urlsplit(origin)
@@ -441,8 +441,8 @@ class OperatorHandler(BaseHTTPRequestHandler):
                     "service": "AERVIND Operator Console",
                     "mode": "assisted_pilot",
                     "network_scope": "loopback_only",
-                    "persistence": "none",
-                    "case_state": "portable_export_only",
+                    "persistence": "operator_downloaded_portable_case",
+                    "case_state": "validated_export_and_mutation_checkpoints",
                 },
             )
             return
@@ -539,7 +539,7 @@ class OperatorHandler(BaseHTTPRequestHandler):
                     )
                 else:
                     result = build_case_export_response(cohort, workflow)
-        except (KeyError, TypeError, ValueError) as exc:
+        except (ArithmeticError, KeyError, TypeError, ValueError) as exc:
             self._send_json(
                 HTTPStatus.UNPROCESSABLE_ENTITY,
                 {"error": "invalid_recovery_payload", "detail": str(exc)},
@@ -561,7 +561,7 @@ def run(host: str = "127.0.0.1", port: int = 8080) -> None:
     print(f"AERVIND Operator Console: http://{host}:{port}")
     print(
         "Assisted-pilot mode. Loopback-only. Customer payloads are processed in memory. "
-        "Durable state exists only in operator-exported case files."
+        "Durable state exists only in operator-downloaded portable case files/checkpoints."
     )
     try:
         server.serve_forever()
