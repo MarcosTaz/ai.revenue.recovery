@@ -74,6 +74,7 @@
           <button id="evaluate" class="btn primary" type="button">Evaluate case</button>
         </div>
         <div id="error-box" class="error-box" role="alert" hidden></div>
+        <div id="checkpoint-warning" class="error-box" role="alert" hidden></div>
       </section>
 
       <section class="panel truth-panel" id="truth" hidden>
@@ -84,7 +85,7 @@
         <div class="truth-grid truth-grid-six">
           <article class="metric metric-settled"><div class="metric-label">Verified recovered</div><div class="metric-value" id="metric-settled">—</div><div class="metric-meta">Settlement evidence only</div></article>
           <article class="metric metric-primary"><div class="metric-label">Claim-ready · not submitted</div><div class="metric-value" id="metric-ready">—</div><div class="metric-meta">Human-reviewed release bucket</div></article>
-          <article class="metric"><div class="metric-label">Counterparty process</div><div class="metric-value" id="metric-external">—</div><div class="metric-meta">Submitted / acknowledged / disputed / approved</div></article>
+          <article class="metric"><div class="metric-label">Counterparty process</div><div class="metric-value" id="metric-external">—</div><div class="metric-meta">Asserted value · submitted / acknowledged / disputed / approved</div></article>
           <article class="metric"><div class="metric-label">Review required</div><div class="metric-value" id="metric-review">—</div><div class="metric-meta">Economic review pipeline</div></article>
           <article class="metric metric-warning"><div class="metric-label">Workflow review / rejected</div><div class="metric-value" id="metric-workflow-review">—</div><div class="metric-meta">Released candidate returned to review</div></article>
           <article class="metric metric-blocked"><div class="metric-label">Blocked potential</div><div class="metric-value" id="metric-blocked">—</div><div class="metric-meta">Not releasable</div></article>
@@ -165,13 +166,13 @@
             </div>
 
             <div class="transition-foot">
-              <span>No external action is performed. This only records an event that already occurred.</span>
+              <span>No external action is performed. Every successful lifecycle/package mutation also triggers a validated local case-checkpoint download.</span>
               <button id="record-transition" class="btn primary" type="button" disabled>Record transition</button>
             </div>
           </div>
 
           <div class="audit-card">
-            <div class="audit-head"><h3>Immutable case trail</h3><span id="audit-count">0 events</span></div>
+            <div class="audit-head"><h3>Validated case trail</h3><span id="audit-count">0 events</span></div>
             <ol id="workflow-audit" class="timeline"><li class="empty">Select a candidate to inspect its lifecycle.</li></ol>
             <div class="artifact-head"><h3>Generated artifacts</h3><span id="artifact-count">0</span></div>
             <ul id="workflow-artifacts" class="artifact-list"><li class="empty">No artifacts recorded.</li></ul>
@@ -191,6 +192,7 @@
     </main>
   </div>
 
+  <script src="/checkpoint.js" defer></script>
   <script src="/app.js" defer></script>
 </body>
 </html>
