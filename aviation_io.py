@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 
 from aviation_dossier import build_internal_review_dossier
@@ -21,16 +21,45 @@ from recovery_truth import summarize_recovery_truth
 
 
 def _date(value: str) -> date:
-    return date.fromisoformat(value)
+    try:
+        return date.fromisoformat(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid ISO date: {value!r}") from exc
 
 
 def _decimal(value: Any, default: str = "0") -> Decimal:
     if value is None:
         value = default
-    return Decimal(str(value))
+    try:
+        parsed = Decimal(str(value))
+    except (InvalidOperation, ValueError) as exc:
+        raise ValueError(f"invalid decimal value: {value!r}") from exc
+    if not parsed.is_finite():
+        raise ValueError("decimal values must be finite")
+    return parsed
+
+
+def _require_list(raw: Mapping[str, Any], key: str) -> list[Any]:
+    value = raw.get(key, [])
+    if not isinstance(value, list):
+        raise ValueError(f"{key} must be a JSON array")
+    return value
+
+
+def _require_mapping(raw: Mapping[str, Any], key: str) -> Mapping[str, Any]:
+    value = raw.get(key, {})
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{key} must be a JSON object")
+    return value
+
+
+def _string_list(raw: Mapping[str, Any], key: str) -> tuple[str, ...]:
+    return tuple(str(value).strip() for value in _require_list(raw, key))
 
 
 def parse_rule(raw: Mapping[str, Any]) -> EntitlementRule:
+    if not isinstance(raw, Mapping):
+        raise ValueError("each rule must be a JSON object")
     return EntitlementRule(
         rule_id=str(raw["rule_id"]).strip(),
         entitlement_type=EntitlementType(str(raw["entitlement_type"]).strip()),
@@ -48,25 +77,30 @@ def parse_rule(raw: Mapping[str, Any]) -> EntitlementRule:
             if raw.get("deadline_days_after_event") is not None
             else None
         ),
-        required_evidence_types=tuple(
-            str(v).strip() for v in raw.get("required_evidence_types", [])
-        ),
-        excluded_cost_categories=tuple(
-            str(v).strip() for v in raw.get("excluded_cost_categories", [])
-        ),
+        required_evidence_types=_string_list(raw, "required_evidence_types"),
+        excluded_cost_categories=_string_list(raw, "excluded_cost_categories"),
         notes=str(raw.get("notes", "")),
     )
 
 
 def parse_claim(raw: Mapping[str, Any]) -> ClaimInput:
-    evidence = tuple(
-        EvidenceRef(
-            evidence_id=str(item["evidence_id"]).strip(),
-            evidence_type=str(item["evidence_type"]).strip(),
-            source_name=str(item["source_name"]).strip(),
+    if not isinstance(raw, Mapping):
+        raise ValueError("each claim must be a JSON object")
+
+    evidence_items = _require_list(raw, "evidence")
+    evidence: list[EvidenceRef] = []
+    for item in evidence_items:
+        if not isinstance(item, Mapping):
+            raise ValueError("each evidence reference must be a JSON object")
+        evidence.append(
+            EvidenceRef(
+                evidence_id=str(item["evidence_id"]).strip(),
+                evidence_type=str(item["evidence_type"]).strip(),
+                source_name=str(item["source_name"]).strip(),
+            )
         )
-        for item in raw.get("evidence", [])
-    )
+
+    source_refs = _require_mapping(raw, "source_refs")
     return ClaimInput(
         claim_id=str(raw["claim_id"]).strip(),
         rule_id=str(raw["rule_id"]).strip(),
@@ -76,12 +110,10 @@ def parse_claim(raw: Mapping[str, Any]) -> ClaimInput:
         available_fund=_decimal(raw.get("available_fund"), "0"),
         prior_paid_or_reimbursed=_decimal(raw.get("prior_paid_or_reimbursed"), "0"),
         claimed_to_date=_decimal(raw.get("claimed_to_date"), "0"),
-        cost_categories=tuple(str(v).strip() for v in raw.get("cost_categories", [])),
-        evidence=evidence,
-        source_refs={str(k).strip(): str(v).strip() for k, v in raw.get("source_refs", {}).items()},
-        human_waived_evidence_types=tuple(
-            str(v).strip() for v in raw.get("human_waived_evidence_types", [])
-        ),
+        cost_categories=_string_list(raw, "cost_categories"),
+        evidence=tuple(evidence),
+        source_refs={str(k).strip(): str(v).strip() for k, v in source_refs.items()},
+        human_waived_evidence_types=_string_list(raw, "human_waived_evidence_types"),
     )
 
 
@@ -128,8 +160,18 @@ def _apply_lineage_gate(
 
 
 def evaluate_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
-    rules = [parse_rule(item) for item in payload.get("rules", [])]
-    claims = [parse_claim(item) for item in payload.get("claims", [])]
+    if not isinstance(payload, Mapping):
+        raise ValueError("recovery payload must be a JSON object")
+
+    rules_raw = payload.get("rules", [])
+    claims_raw = payload.get("claims", [])
+    if not isinstance(rules_raw, list):
+        raise ValueError("rules must be a JSON array")
+    if not isinstance(claims_raw, list):
+        raise ValueError("claims must be a JSON array")
+
+    rules = [parse_rule(item) for item in rules_raw]
+    claims = [parse_claim(item) for item in claims_raw]
 
     for rule in rules:
         validate_rule(rule)
