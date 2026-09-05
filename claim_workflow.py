@@ -38,6 +38,12 @@ class SettlementEvidence:
     currency: str
     reference: str
 
+    def __post_init__(self) -> None:
+        _validate_amount(self.amount, "settlement amount")
+        _validate_currency(self.currency, "settlement currency")
+        if not self.reference.strip():
+            raise WorkflowError("settlement evidence reference is required")
+
 
 @dataclass(frozen=True)
 class ClaimRecord:
@@ -46,6 +52,9 @@ class ClaimRecord:
     currency: str
     asserted_recovery_amount: Decimal
     verified_settled_amount: Decimal = Decimal("0")
+
+    def __post_init__(self) -> None:
+        _validate_record(self)
 
 
 @dataclass(frozen=True)
@@ -116,6 +125,8 @@ def external_reference_required(
 
 
 def _validate_amount(value: Decimal, name: str) -> None:
+    if not isinstance(value, Decimal):
+        raise WorkflowError(f"{name} must be a Decimal")
     if not value.is_finite():
         raise WorkflowError(f"{name} must be finite")
     if value < 0:
@@ -123,7 +134,7 @@ def _validate_amount(value: Decimal, name: str) -> None:
 
 
 def _validate_currency(value: str, name: str = "currency") -> None:
-    if not _CURRENCY_RE.fullmatch(value.strip().upper()):
+    if not _CURRENCY_RE.fullmatch(str(value).strip().upper()):
         raise WorkflowError(f"{name} must be a three-letter code")
 
 
