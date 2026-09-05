@@ -1,0 +1,65 @@
+name: DebtRecover Public Launch Acceptance
+
+on:
+  push:
+    branches: [debtrecover-launch-v045]
+    paths:
+      - '.github/workflows/debtrecover-public-launch-verify.yml'
+      - 'debtrecover-launch/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-launch-acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Verify health endpoint
+        run: |
+          set -euo pipefail
+          base='https://debtrecover-synthetic-demo-production.up.railway.app'
+          curl --fail --silent --show-error --retry 4 --retry-all-errors --max-time 20 \
+            -D health.headers "$base/health" -o health.json
+          python - <<'PY'
+          import json
+          x=json.load(open('health.json'))
+          assert x == {'status':'ok','mode':'synthetic','version':'0.4.5'}, x
+          print('HEALTH_PAYLOAD=PASS')
+          PY
+
+      - name: Verify public surface and security boundary
+        run: |
+          set -euo pipefail
+          base='https://debtrecover-synthetic-demo-production.up.railway.app'
+          curl --fail --silent --show-error --retry 4 --retry-all-errors --max-time 20 \
+            -D root.headers "$base/" -o index.html
+          curl --fail --silent --show-error --retry 4 --retry-all-errors --max-time 20 \
+            "$base/app.js" -o app.js
+
+          grep -Fq 'DebtRecover' index.html
+          grep -Fq 'Synthetic environment' index.html
+          grep -Fq 'no real borrower data' index.html
+          grep -Fq 'Human review' index.html
+          ! grep -Eqi '<form([[:space:]>])|<input([[:space:]>])|type=["'"']file["'"']' index.html
+          ! grep -Eq 'fetch\(|XMLHttpRequest|WebSocket|EventSource' app.js
+
+          tr -d '\r' < root.headers | tr '[:upper:]' '[:lower:]' > headers.lower
+          grep -Fq 'x-content-type-options: nosniff' headers.lower
+          grep -Fq 'x-frame-options: deny' headers.lower
+          grep -Fq 'referrer-policy: no-referrer' headers.lower
+          grep -Fq 'permissions-policy:' headers.lower
+          grep -Fq "content-security-policy:" headers.lower
+          grep -Fq "form-action 'none'" headers.lower
+          grep -Fq "connect-src 'none'" headers.lower
+          echo 'PUBLIC_SURFACE_BOUNDARY=PASS'
+
+      - name: Verify deny-by-default routing
+        run: |
+          set -euo pipefail
+          base='https://debtrecover-synthetic-demo-production.up.railway.app'
+          code=$(curl --silent --show-error --max-time 20 -o missing.txt -w '%{http_code}' "$base/definitely-not-a-route")
+          test "$code" = '404'
+          grep -Fq 'Not found' missing.txt
+          echo 'DENY_BY_DEFAULT_ROUTING=PASS'
