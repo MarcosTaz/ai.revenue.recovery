@@ -2,6 +2,11 @@
   "name": "debtrecover-synthetic-demo",
   "version": "0.4.5",
   "private": true,
-  "scripts": {"start": "node server.js"},
-  "engines": {"node": ">=20"}
+  "packageManager": "npm@10.8.2",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "20.20.2"
+  }
 }

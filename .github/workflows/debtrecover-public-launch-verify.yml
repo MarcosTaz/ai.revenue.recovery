@@ -16,18 +16,33 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Verify health endpoint
+      - name: Wait for canonical runtime and verify health
         run: |
           set -euo pipefail
           base='https://debtrecover-synthetic-demo-production.up.railway.app'
-          curl --fail --silent --show-error --retry 4 --retry-all-errors --max-time 20 \
-            -D health.headers "$base/health" -o health.json
-          python - <<'PY'
-          import json
-          x=json.load(open('health.json'))
-          assert x == {'status':'ok','mode':'synthetic','version':'0.4.5'}, x
-          print('HEALTH_PAYLOAD=PASS')
-          PY
+          ready=0
+          for i in $(seq 1 60); do
+            code=$(curl --silent --show-error --max-time 10 -D health.headers -o health.json -w '%{http_code}' "$base/health" || true)
+            tr -d '\r' < health.headers | tr '[:upper:]' '[:lower:]' > health.lower || true
+            if [ "$code" = '200' ] && grep -Fq 'x-debtrecover-runtime: canonical-files-v2' health.lower; then
+              if python - <<'PY'
+import json
+try:
+    x=json.load(open('health.json'))
+    assert x == {'status':'ok','mode':'synthetic','version':'0.4.5'}, x
+except Exception:
+    raise SystemExit(1)
+PY
+              then
+                ready=1
+                break
+              fi
+            fi
+            sleep 2
+          done
+          test "$ready" = '1'
+          echo 'CANONICAL_RUNTIME=PASS'
+          echo 'HEALTH_PAYLOAD=PASS'
 
       - name: Verify public surface and security boundary
         run: |
@@ -40,36 +55,44 @@ jobs:
           tr -d '\r' < root.headers | tr '[:upper:]' '[:lower:]' > headers.lower
 
           python - <<'PY'
-          import re
-          html=open('index.html', encoding='utf-8').read()
-          js=open('app.js', encoding='utf-8').read()
-          headers=open('headers.lower', encoding='utf-8').read()
+import re
+html_bytes=open('index.html','rb').read()
+js_bytes=open('app.js','rb').read()
+html=html_bytes.decode('utf-8', errors='strict')
+js=js_bytes.decode('utf-8', errors='strict')
+headers=open('headers.lower', encoding='utf-8').read()
+for text in ('DebtRecover','Synthetic environment','no real borrower data','Human review'):
+    assert text in html, text
+assert not re.search(r'<\s*form\b', html, re.I)
+assert not re.search(r'<\s*input\b', html, re.I)
+assert not re.search(r'type\s*=\s*["\']file["\']', html, re.I)
+for token in ('fetch(', 'XMLHttpRequest', 'WebSocket', 'EventSource'):
+    assert token not in js, token
+for header in (
+    'x-content-type-options: nosniff',
+    'x-frame-options: deny',
+    'referrer-policy: no-referrer',
+    'permissions-policy:',
+    'content-security-policy:',
+    "form-action 'none'",
+    "connect-src 'none'",
+    'x-debtrecover-mode: synthetic-only',
+    'x-debtrecover-runtime: canonical-files-v2',
+):
+    assert header in headers, header
+print('UTF8_BYTE_BOUNDARY=PASS')
+print('PUBLIC_SURFACE_BOUNDARY=PASS')
+PY
 
-          for text in ('DebtRecover','Synthetic environment','no real borrower data','Human review'):
-              assert text in html, text
-          assert not re.search(r'<\s*form\b', html, re.I)
-          assert not re.search(r'<\s*input\b', html, re.I)
-          assert not re.search(r'type\s*=\s*["\']file["\']', html, re.I)
-          for token in ('fetch(', 'XMLHttpRequest', 'WebSocket', 'EventSource'):
-              assert token not in js, token
-          for header in (
-              'x-content-type-options: nosniff',
-              'x-frame-options: deny',
-              'referrer-policy: no-referrer',
-              'permissions-policy:',
-              'content-security-policy:',
-              "form-action 'none'",
-              "connect-src 'none'",
-          ):
-              assert header in headers, header
-          print('PUBLIC_SURFACE_BOUNDARY=PASS')
-          PY
-
-      - name: Verify deny-by-default routing
+      - name: Verify deny-by-default routing and methods
         run: |
           set -euo pipefail
           base='https://debtrecover-synthetic-demo-production.up.railway.app'
           code=$(curl --silent --show-error --max-time 20 -o missing.txt -w '%{http_code}' "$base/definitely-not-a-route")
           test "$code" = '404'
           grep -Fq 'Not found' missing.txt
+          post_code=$(curl --silent --show-error --max-time 20 -X POST -o post.txt -w '%{http_code}' "$base/")
+          test "$post_code" = '405'
+          grep -Fq 'Method not allowed' post.txt
           echo 'DENY_BY_DEFAULT_ROUTING=PASS'
+          echo 'METHOD_BOUNDARY=PASS'
