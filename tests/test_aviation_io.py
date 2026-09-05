@@ -94,6 +94,48 @@ class AviationIOTests(unittest.TestCase):
         self.assertIn("SYNTH-C-001", by_id)
         self.assertEqual(by_id["SYNTH-C-001"]["currency"], "USD")
 
+    def test_non_finite_financial_values_are_rejected(self):
+        for value in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(value=value):
+                payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+                payload["claims"][0]["eligible_cost"] = value
+                with self.assertRaisesRegex(ValueError, "finite"):
+                    evaluate_payload(payload)
+
+    def test_non_finite_rule_values_are_rejected(self):
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        payload["rules"][0]["contribution_rate"] = "NaN"
+        with self.assertRaisesRegex(ValueError, "finite"):
+            evaluate_payload(payload)
+
+    def test_invalid_currency_code_is_rejected(self):
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        payload["rules"][0]["currency"] = "USDX"
+        with self.assertRaisesRegex(ValueError, "three-letter"):
+            evaluate_payload(payload)
+
+    def test_malformed_json_shapes_are_rejected_cleanly(self):
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        payload["claims"][0]["source_refs"] = ["not", "an", "object"]
+        with self.assertRaisesRegex(ValueError, "source_refs must be a JSON object"):
+            evaluate_payload(payload)
+
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        payload["rules"][0]["required_evidence_types"] = "invoice"
+        with self.assertRaisesRegex(ValueError, "required_evidence_types must be a JSON array"):
+            evaluate_payload(payload)
+
+    def test_duplicate_evidence_id_blocks_candidate(self):
+        payload = json.loads(Path("examples/pilot.json").read_text(encoding="utf-8"))
+        duplicate = dict(payload["claims"][0]["evidence"][0])
+        duplicate["evidence_type"] = "workscope"
+        payload["claims"][0]["evidence"].append(duplicate)
+
+        evaluated = evaluate_payload(payload)
+        result = next(item for item in evaluated["results"] if item["claim_id"] == "SYNTH-C-001")
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("duplicate_evidence_id:E-001", result["blocking_issues"])
+
 
 if __name__ == "__main__":
     unittest.main()
