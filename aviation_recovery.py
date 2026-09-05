@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
@@ -8,6 +9,7 @@ from typing import Iterable, Mapping, Sequence
 
 
 MONEY = Decimal("0.01")
+_CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
 
 
 class EntitlementType(str, Enum):
@@ -101,33 +103,43 @@ class RuleConfigurationError(ValueError):
 
 
 def _money(value: Decimal) -> Decimal:
+    if not value.is_finite():
+        raise ValueError("money value must be finite")
     return value.quantize(MONEY, rounding=ROUND_HALF_UP)
 
 
 def _non_negative(value: Decimal, name: str) -> None:
+    if not value.is_finite():
+        raise ValueError(f"{name} must be finite")
     if value < 0:
         raise ValueError(f"{name} cannot be negative")
+
+
+def _rule_non_negative(value: Decimal, name: str) -> None:
+    if not value.is_finite():
+        raise RuleConfigurationError(f"{name} must be finite")
+    if value < 0:
+        raise RuleConfigurationError(f"{name} cannot be negative")
 
 
 def validate_rule(rule: EntitlementRule) -> None:
     if not rule.rule_id.strip():
         raise RuleConfigurationError("rule_id is required")
-    if not rule.currency.strip():
-        raise RuleConfigurationError("currency is required")
+    if not _CURRENCY_RE.fullmatch(rule.currency.strip().upper()):
+        raise RuleConfigurationError("currency must be a three-letter code")
     if rule.effective_to is not None and rule.effective_to < rule.effective_from:
         raise RuleConfigurationError("effective_to cannot precede effective_from")
-    if rule.contribution_rate < 0:
-        raise RuleConfigurationError("contribution_rate cannot be negative")
+
+    _rule_non_negative(rule.contribution_rate, "contribution_rate")
     if rule.formula == Formula.FIXED_AMOUNT and rule.fixed_amount is None:
         raise RuleConfigurationError("fixed_amount is required for fixed_amount formula")
-    if rule.fixed_amount is not None and rule.fixed_amount < 0:
-        raise RuleConfigurationError("fixed_amount cannot be negative")
-    if rule.deductible < 0:
-        raise RuleConfigurationError("deductible cannot be negative")
-    if rule.cap is not None and rule.cap < 0:
-        raise RuleConfigurationError("cap cannot be negative")
-    if rule.floor is not None and rule.floor < 0:
-        raise RuleConfigurationError("floor cannot be negative")
+    if rule.fixed_amount is not None:
+        _rule_non_negative(rule.fixed_amount, "fixed_amount")
+    _rule_non_negative(rule.deductible, "deductible")
+    if rule.cap is not None:
+        _rule_non_negative(rule.cap, "cap")
+    if rule.floor is not None:
+        _rule_non_negative(rule.floor, "floor")
     if rule.cap is not None and rule.floor is not None and rule.floor > rule.cap:
         raise RuleConfigurationError("floor cannot exceed cap")
     if rule.deadline_days_after_event is not None and rule.deadline_days_after_event < 0:
@@ -182,13 +194,23 @@ def _base_entitlement(rule: EntitlementRule, claim: ClaimInput) -> tuple[Decimal
 
 def _evidence_integrity_issues(evidence: Sequence[EvidenceRef]) -> tuple[str, ...]:
     issues: list[str] = []
+    seen_ids: set[str] = set()
+    duplicate_ids: set[str] = set()
+
     for index, item in enumerate(evidence, start=1):
-        if not item.evidence_id.strip():
+        evidence_id = item.evidence_id.strip()
+        if not evidence_id:
             issues.append(f"evidence_ref_{index}_missing_id")
+        elif evidence_id in seen_ids:
+            duplicate_ids.add(evidence_id)
+        else:
+            seen_ids.add(evidence_id)
         if not item.evidence_type.strip():
             issues.append(f"evidence_ref_{index}_missing_type")
         if not item.source_name.strip():
             issues.append(f"evidence_ref_{index}_missing_source_name")
+
+    issues.extend(f"duplicate_evidence_id:{item}" for item in sorted(duplicate_ids))
     return tuple(issues)
 
 
@@ -221,6 +243,9 @@ def evaluate_claim(rule: EntitlementRule, claim: ClaimInput) -> EvaluationResult
 
     evidence_integrity = _evidence_integrity_issues(claim.evidence)
     blocking.extend(evidence_integrity)
+
+    if any(not item.strip() for item in claim.human_waived_evidence_types):
+        blocking.append("human_waived_evidence_types_contains_blank")
 
     present_types = {
         item.evidence_type
