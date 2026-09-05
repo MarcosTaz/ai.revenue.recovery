@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, replace
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
 from aviation_recovery import Status
+
+
+_CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
 
 
 class ClaimLifecycle(str, Enum):
@@ -111,15 +115,24 @@ def external_reference_required(
     return False
 
 
+def _validate_amount(value: Decimal, name: str) -> None:
+    if not value.is_finite():
+        raise WorkflowError(f"{name} must be finite")
+    if value < 0:
+        raise WorkflowError(f"{name} cannot be negative")
+
+
+def _validate_currency(value: str, name: str = "currency") -> None:
+    if not _CURRENCY_RE.fullmatch(value.strip().upper()):
+        raise WorkflowError(f"{name} must be a three-letter code")
+
+
 def _validate_record(record: ClaimRecord) -> None:
     if not record.claim_id.strip():
         raise WorkflowError("claim_id is required")
-    if not record.currency.strip():
-        raise WorkflowError("currency is required")
-    if record.asserted_recovery_amount < 0:
-        raise WorkflowError("asserted_recovery_amount cannot be negative")
-    if record.verified_settled_amount < 0:
-        raise WorkflowError("verified_settled_amount cannot be negative")
+    _validate_currency(record.currency)
+    _validate_amount(record.asserted_recovery_amount, "asserted_recovery_amount")
+    _validate_amount(record.verified_settled_amount, "verified_settled_amount")
     if record.lifecycle != ClaimLifecycle.SETTLED and record.verified_settled_amount != 0:
         raise WorkflowError("unsettled workflow record cannot contain verified settled value")
     if record.lifecycle == ClaimLifecycle.SETTLED:
@@ -176,12 +189,14 @@ def transition_claim(
     if target == ClaimLifecycle.SETTLED:
         if settlement_evidence is None:
             raise WorkflowError("settled requires economic settlement evidence")
+        _validate_amount(settlement_evidence.amount, "settlement amount")
         if settlement_evidence.amount <= 0:
             raise WorkflowError("settlement amount must be positive")
         if settlement_evidence.amount > record.asserted_recovery_amount:
             raise WorkflowError(
                 "settlement amount exceeds asserted recovery amount; revise and re-review the claim before settlement"
             )
+        _validate_currency(settlement_evidence.currency, "settlement currency")
         if settlement_evidence.currency.strip().upper() != record.currency.strip().upper():
             raise WorkflowError("settlement currency mismatch")
         if not settlement_evidence.reference.strip():
