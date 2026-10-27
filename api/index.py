@@ -45,7 +45,7 @@ def example():
     return jsonify(synthetic=True,label="SYNTHETIC ONLY — NOT CUSTOMER DATA",payload=EXAMPLE)
 @app.get("/")
 @app.get("/<path:path>")
-def static(path=""):
+def preview_asset(path=""):
     asset=STATIC.get("/"+path)
     if not asset:
         return jsonify(error="not_found"),404
